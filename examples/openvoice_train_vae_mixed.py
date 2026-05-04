@@ -186,6 +186,9 @@ def main():
     data = torch.load(args.embeddings, weights_only=False)
     embeddings = data['data'].to(device).squeeze()
     print(f"Embeddings shape: {embeddings.shape}")
+    mixture_report = data.get('mixture_report', {})
+    teacher_info = data.get('commonvoice_pseudo_style_teacher') or {}
+    filter_info = data.get('commonvoice_pseudo_style_filter_report') or {}
 
     supported_styles = data.get('supported_styles')
     if not supported_styles:
@@ -216,6 +219,14 @@ def main():
     labeled_rows = int((style_label_mask.view(-1) > 0).sum().item())
     print(f"Supported styles: {supported_styles}")
     print(f"Labeled rows: {labeled_rows}/{len(embeddings)}")
+    if teacher_info:
+        print(f"Pseudo-label teacher: {teacher_info.get('model')}")
+        if teacher_info.get('teacher_checkpoint'):
+            print(f"Teacher checkpoint: {teacher_info.get('teacher_checkpoint')}")
+    if mixture_report.get('commonvoice_acceptance_policy'):
+        print(f"CommonVoice acceptance policy: {mixture_report['commonvoice_acceptance_policy']}")
+    if filter_info.get('acceptance_policy'):
+        print(f"Pre-filtered CommonVoice policy: {filter_info['acceptance_policy']}")
 
     model = dpvc.VariationalAutoencoder(
         latent_dims=args.latent_dims,

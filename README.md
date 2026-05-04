@@ -6,7 +6,7 @@ This repository provides a library for defining differentially private speaker a
 
 ## Current work — controllable DP voice conversion
 
-Current integration branch: **`integration/research-rollup`**. That branch now carries the accepted sequential research line in one PR to `main`, so collaborators do not have to review the project branch by branch anymore. The immediate next queue is:
+Current active research branch: **`research/mixed-data-pseudolabel-teacher`**. The consolidation work already landed through `integration/research-rollup`, so collaborators can now review the accepted project history on `main` while this branch focuses narrowly on improving the mixed-data pseudo-label teacher and class-balanced acceptance logic. The immediate next queue is:
 
 1. merge PR `#3` from `integration/research-rollup` into `main`
 2. prune the merged sequential research branches from remote

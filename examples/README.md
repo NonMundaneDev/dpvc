@@ -794,6 +794,36 @@ python scripts/build_mixed_training_set.py \
     --pseudo-confidence-scale
 ```
 
+For the new teacher-focused follow-up, the pseudo-label path can now be split
+into **score -> filter -> build** instead of forcing the builder to rediscover
+everything from the raw top-1 pseudo labels each time:
+
+```bash
+python scripts/annotate_commonvoice_pseudolabels.py \
+    --embeddings embeddings/openvoice_commonvoice_cv500_emb.pt \
+    --output embeddings/openvoice_commonvoice_cv500_pseudo_scored.pt \
+    --save-style-score-map \
+    --top-k 3
+
+python scripts/filter_commonvoice_pseudolabels.py \
+    --input embeddings/openvoice_commonvoice_cv500_pseudo_scored.pt \
+    --output embeddings/openvoice_commonvoice_cv500_pseudo_filtered.pt \
+    --acceptance-policy balanced_targets \
+    --style-thresholds neutral=0.995,sad=0.98,happy=0.92,disgust=0.92,anger=0.90,fear=0.90 \
+    --style-caps neutral=120,sad=110,happy=60,disgust=50,anger=20,fear=20 \
+    --style-targets anger=20,fear=20,happy=60,disgust=50,neutral=120,sad=110
+
+python scripts/build_mixed_training_set.py \
+    --commonvoice embeddings/openvoice_commonvoice_cv500_pseudo_filtered.pt \
+    --cremad embeddings/openvoice_cremad_emb.pt \
+    --expresso embeddings/openvoice_expresso_emb.pt \
+    --output embeddings/openvoice_mixed_teacher_base.pt \
+    --commonvoice-max-speakers 500 \
+    --commonvoice-max-clips-per-speaker 1 \
+    --acceptance-policy artifact_selected \
+    --commonvoice-prefer-pseudo
+```
+
 What the builder writes:
 
 - `data`: the stacked mixed embeddings
@@ -802,8 +832,14 @@ What the builder writes:
 - `style_label_row_weight`: inverse-frequency style weights, with optional
   pseudo-label confidence scaling
 - `source_dataset`: `CommonVoice`, `CREMA-D`, or `Expresso` per row
+- `style_label_acceptance_reason`: why each row kept its label or fell back to
+  unlabeled speaker-breadth selection
 - `mixture_report`: dataset counts, labeled counts, pseudo-label counts, and
-  the exact CommonVoice sampling config used to build the artifact
+  the exact CommonVoice sampling config used to build the artifact, including
+  acceptance policy, per-style caps/targets, candidate reasons, and target
+  shortfalls; when the input artifact is scored/filtered first, the report also
+  preserves the pseudo-label score/filter provenance needed to explain later
+  teacher-branch results
 
 Train the first three schedule variants:
 
@@ -1125,9 +1161,11 @@ scores more interpretable.
 | 10b | `../scripts/summarize_commonvoice_finetune_ablation.py` | CommonVoice finetune ablation eval CSVs | `eval_commonvoice_finetune_summary_pass5.csv` + `eval_commonvoice_finetune_collapse_pass5.csv` |
 | 10c | `../scripts/summarize_commonvoice_objective_ablation.py` | CommonVoice objective ablation eval CSVs | `eval_commonvoice_objective_summary_pass6.csv` + `eval_commonvoice_objective_collapse_pass6.csv` |
 | 10d | `../scripts/summarize_commonvoice_rich_objectives.py` | CommonVoice rich-objective ablation eval CSVs | `eval_commonvoice_rich_objectives_summary_pass7.csv` + `eval_commonvoice_rich_objectives_collapse_pass7.csv` |
-| 10e | `../scripts/annotate_commonvoice_pseudolabels.py` | CommonVoice embedding artifact | enriched artifact with `pseudo_style`, `pseudo_style_confidence`, and `pseudo_style_report` |
+| 10e | `../scripts/annotate_commonvoice_pseudolabels.py` | CommonVoice embedding artifact | enriched artifact with `pseudo_style`, `pseudo_style_confidence`, `pseudo_style_topk_*`, `pseudo_style_teacher`, and `pseudo_style_report` |
+| 10ea | `../scripts/filter_commonvoice_pseudolabels.py` | scored CommonVoice artifact | filtered artifact with `pseudo_style_selected*` fields and `pseudo_style_filter_report` |
 | 10f | `../scripts/summarize_commonvoice_partial_label.py` | CommonVoice partial-label pretraining eval CSVs | `eval_commonvoice_partial_label_summary_pass8.csv` + `eval_commonvoice_partial_label_collapse_pass8.csv` |
 | 10g | `../scripts/summarize_mixed_data_results.py` | mixed-data pseudolabel mix eval CSVs | `eval_mixed_data_summary_pass9.csv` + `eval_mixed_data_collapse_pass9.csv` |
+| 10h | `../scripts/summarize_mixed_teacher_results.py` | mixed-data pseudo-label teacher eval CSVs | `eval_mixed_teacher_summary.csv` + `eval_mixed_teacher_collapse.csv` |
 
 ### Other files
 - `openvoice_train_vae.py` — Trains basic (non-controllable) VAE. Not needed for style control.
@@ -1138,9 +1176,11 @@ scores more interpretable.
 - `eval_novelty.py` — Measures source-vs-generated speaker novelty in OpenVoice embedding space.
 - `../scripts/prepare_commonvoice_subset.py` — Filters a full Common Voice `validated.tsv` down to the locally available clip subset.
 - `../scripts/build_mixed_training_set.py` — Builds the first mixed-data bootstrap artifact with CommonVoice speaker-first sampling, pseudo-label filtering, style caps, and a saved mixture report.
+- `../scripts/filter_commonvoice_pseudolabels.py` — Applies reusable row-level pseudo-label acceptance rules so CommonVoice scoring and class-balanced selection can be iterated separately.
 - `../scripts/prepare_ablation_embeddings.py` — Builds the evaluation ablation matrix `cremad_only` / `expresso_only` embedding sets.
 - `../scripts/run_ablation_inference.py` — Generates the evaluation ablation matrix corpora, the CommonVoice finetune ablation corpora, the CommonVoice objective ablation corpora, the CommonVoice rich-objective ablation corpora, the CommonVoice partial-label pretraining corpora, and the mixed-data pseudolabel mix corpora.
 - `../scripts/annotate_commonvoice_pseudolabels.py` — Adds confidence-scored pseudo-style labels to a CommonVoice embedding artifact so weak-label pretraining can be reproduced without rerunning the teacher every time.
+- `../scripts/summarize_mixed_teacher_results.py` — Convenience wrapper for summarizing the teacher-focused mixed-data branch with the dedicated `mixed_teacher` result tag.
 - `../scripts/summarize_ablation_results.py` — Aggregates evaluation ablation matrix metrics into a condition table and a collapse taxonomy.
 - `../scripts/summarize_commonvoice_finetune_ablation.py` — Aggregates CommonVoice finetune metrics into a condition table and a collapse taxonomy.
 - `../scripts/summarize_commonvoice_objective_ablation.py` — Aggregates CommonVoice objective metrics into a condition table and a collapse taxonomy.

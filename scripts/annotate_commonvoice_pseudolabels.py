@@ -17,7 +17,7 @@ confidence threshold without re-running the annotation pass.
 """
 
 import argparse
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import torch
@@ -61,6 +61,16 @@ def parse_args():
         help='funasr model id (default: iic/emotion2vec_plus_large)',
     )
     ap.add_argument(
+        '--teacher-checkpoint',
+        default='',
+        help='Optional local checkpoint or teacher identifier recorded in the artifact metadata',
+    )
+    ap.add_argument(
+        '--teacher-config',
+        default='',
+        help='Optional path or note describing the teacher config recorded in the artifact metadata',
+    )
+    ap.add_argument(
         '--report-threshold',
         type=float,
         default=0.60,
@@ -71,6 +81,17 @@ def parse_args():
         type=int,
         default=None,
         help='Optional limit for smoke runs',
+    )
+    ap.add_argument(
+        '--top-k',
+        type=int,
+        default=3,
+        help='How many ranked teacher predictions to store per row (default: 3)',
+    )
+    ap.add_argument(
+        '--save-style-score-map',
+        action='store_true',
+        help='Save mapped per-style score dictionaries for later class-aware filtering',
     )
     return ap.parse_args()
 
@@ -99,25 +120,45 @@ def main():
     pseudo_style = [None] * len(clip_paths)
     pseudo_style_confidence = [None] * len(clip_paths)
     pseudo_style_raw_label = [None] * len(clip_paths)
+    pseudo_style_topk_labels = [None] * len(clip_paths)
+    pseudo_style_topk_scores = [None] * len(clip_paths)
+    pseudo_style_score_map = [None] * len(clip_paths)
 
     raw_counts = Counter()
     mapped_counts = Counter()
     accepted_counts = Counter()
+    mapped_score_totals = defaultdict(float)
 
     for idx, clip_rel in enumerate(tqdm(clip_paths[:total_rows], desc='Pseudo labels')):
         clip_path = resolve_clip_path(corpus_path, clip_rel)
         rec = model.generate(str(clip_path), granularity='utterance', extract_embedding=False)
         row = rec[0]
         labels = [canonical_label(label) for label in row['labels']]
-        scores = row['scores']
+        scores = [float(score) for score in row['scores']]
         top_idx = int(max(range(len(scores)), key=lambda i: scores[i]))
         raw_label = labels[top_idx]
         confidence = float(scores[top_idx])
         mapped_style = E2V_TO_STYLE.get(raw_label)
+        ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+        topk_indexes = ranked[: max(args.top_k, 1)]
+        score_map = defaultdict(float)
+        for label, score in zip(labels, scores):
+            mapped = E2V_TO_STYLE.get(label)
+            if mapped is not None:
+                score_map[mapped] += float(score)
+                mapped_score_totals[mapped] += float(score)
 
         pseudo_style[idx] = mapped_style
         pseudo_style_confidence[idx] = confidence
         pseudo_style_raw_label[idx] = raw_label
+        pseudo_style_topk_labels[idx] = [labels[i] for i in topk_indexes]
+        pseudo_style_topk_scores[idx] = [float(scores[i]) for i in topk_indexes]
+        if args.save_style_score_map:
+            pseudo_style_score_map[idx] = {
+                style: float(score_map.get(style, 0.0))
+                for style in sorted(E2V_TO_STYLE.values())
+                if score_map.get(style, 0.0) > 0
+            }
 
         raw_counts[raw_label] += 1
         if mapped_style:
@@ -135,18 +176,37 @@ def main():
 
     pseudo_style_report = {
         'model': args.model,
+        'teacher_checkpoint': args.teacher_checkpoint or None,
+        'teacher_config': args.teacher_config or None,
         'report_threshold': args.report_threshold,
+        'top_k': args.top_k,
+        'save_style_score_map': bool(args.save_style_score_map),
         'rows_annotated': total_rows,
         'raw_label_counts': dict(raw_counts),
         'mapped_style_counts': dict(mapped_counts),
         'accepted_style_counts': dict(accepted_counts),
+        'mapped_style_score_totals': {
+            style: float(score)
+            for style, score in sorted(mapped_score_totals.items())
+        },
     }
 
     enriched = dict(data)
     enriched['pseudo_style'] = pseudo_style
     enriched['pseudo_style_confidence'] = pseudo_style_confidence
     enriched['pseudo_style_raw_label'] = pseudo_style_raw_label
+    enriched['pseudo_style_topk_labels'] = pseudo_style_topk_labels
+    enriched['pseudo_style_topk_scores'] = pseudo_style_topk_scores
+    if args.save_style_score_map:
+        enriched['pseudo_style_score_map'] = pseudo_style_score_map
     enriched['pseudo_style_source'] = args.model
+    enriched['pseudo_style_teacher'] = {
+        'model': args.model,
+        'teacher_checkpoint': args.teacher_checkpoint or None,
+        'teacher_config': args.teacher_config or None,
+        'top_k': args.top_k,
+        'save_style_score_map': bool(args.save_style_score_map),
+    }
     enriched['pseudo_style_report'] = pseudo_style_report
     enriched['metadata_report'] = metadata_report
 

@@ -242,3 +242,81 @@ If this branch works well:
 - expand the sweep to a larger panel
 - add style presets backed by metrics
 - add repeated-seed uncertainty before freezing any paper table
+
+## 10. Current implementation status
+
+The branch now has the first real teacher-focused plumbing in place:
+
+- `scripts/annotate_commonvoice_pseudolabels.py`
+  - records `pseudo_style_topk_labels`
+  - records `pseudo_style_topk_scores`
+  - optionally records mapped per-style score dictionaries
+  - records `pseudo_style_teacher` metadata so later artifacts can report which
+    teacher produced the pseudo labels
+
+- `scripts/filter_commonvoice_pseudolabels.py`
+  - adds a reusable row-level acceptance step
+  - supports `confidence_only`, `threshold_plus_caps`, and `balanced_targets`
+  - writes `pseudo_style_selected*` fields plus `pseudo_style_filter_report`
+
+- `scripts/build_mixed_training_set.py`
+  - now supports `--acceptance-policy`
+  - supports `--commonvoice-style-targets`
+  - preserves richer `mixture_report` fields including target shortfalls,
+    selected reasons, and teacher/filter metadata
+
+- `examples/openvoice_train_vae_mixed.py`
+  - prints teacher and acceptance-policy metadata when present in the artifact
+
+Real local validation completed so far:
+
+- `scripts/annotate_commonvoice_pseudolabels.py`
+  - smoke-tested on `8` real CommonVoice clips
+  - confirmed that `pseudo_style_topk_labels`, `pseudo_style_topk_scores`,
+    `pseudo_style_score_map`, `pseudo_style_teacher`, and
+    `pseudo_style_report` are written as expected
+  - full `1202`-row rescoring now completed to:
+    - `embeddings/openvoice_commonvoice_cv500_pseudo_scored.pt`
+  - current teacher distribution at the report threshold:
+    - `anger=11`
+    - `disgust=46`
+    - `fear=5`
+    - `happy=51`
+    - `neutral=640`
+    - `sad=336`
+
+- `scripts/filter_commonvoice_pseudolabels.py`
+  - validated on the full `1202`-row rescored CommonVoice artifact
+  - balanced-target acceptance with the current threshold profile selected:
+    - `anger=6`
+    - `disgust=36`
+    - `fear=4`
+    - `happy=42`
+    - `neutral=120`
+    - `sad=110`
+
+- `scripts/build_mixed_training_set.py`
+  - built the first real local mixed teacher base:
+    - `embeddings/openvoice_mixed_teacher_base.pt`
+  - the rebuilt artifact now carries teacher/report/filter provenance inside
+    `mixture_report`, so later checkpoints can be traced back without digging
+    through branch history
+  - current composition:
+    - `500` CommonVoice rows / speakers
+    - `232` labeled CommonVoice rows
+    - selected CommonVoice pseudo-style counts in the mixed artifact:
+      - `anger=5`
+      - `disgust=30`
+      - `fear=4`
+      - `happy=35`
+      - `neutral=78`
+      - `sad=80`
+
+Immediate next execution steps on this branch:
+
+1. Train the first teacher-focused mixed-data checkpoint family from the new
+   scored/filterable artifact path.
+2. Compare at least one alternate teacher choice or teacher-agreement rule,
+   because the current `emotion2vec_plus_large` rescore reproduced the previous
+   pseudo-style distribution almost exactly and therefore may not be strong
+   enough by itself to move recall materially.

@@ -141,6 +141,17 @@ def parse_args():
         help="Optional per-style cap for selected CommonVoice pseudo labels, e.g. neutral=150,sad=120",
     )
     ap.add_argument(
+        "--commonvoice-style-targets",
+        default="",
+        help="Optional per-style selected-row targets, e.g. anger=30,fear=30,happy=80",
+    )
+    ap.add_argument(
+        "--acceptance-policy",
+        default="threshold_plus_caps",
+        choices=["confidence_only", "threshold_plus_caps", "balanced_targets", "artifact_selected"],
+        help="How CommonVoice pseudo labels become selectable rows (default: threshold_plus_caps)",
+    )
+    ap.add_argument(
         "--expresso-only-cap",
         type=int,
         default=90,
@@ -191,6 +202,10 @@ def parse_style_caps(raw: str) -> Dict[str, int]:
             raise ValueError(f"Unknown style in --commonvoice-style-caps: {style}")
         caps[style] = int(value.strip())
     return caps
+
+
+def parse_style_targets(raw: str) -> Dict[str, int]:
+    return parse_style_caps(raw)
 
 
 def parse_style_thresholds(raw: str, default: float) -> Dict[str, float]:
@@ -340,23 +355,53 @@ def resolve_expresso_rows(expresso_data, parquet_df, cap, seed):
     return rows
 
 
-def accepted_commonvoice_style(cv_data, row_idx: int, threshold_map: Dict[str, float]):
+def _scalar_confidence(value):
+    if value is None:
+        return None
+    if torch.is_tensor(value):
+        if value.numel() == 0:
+            return None
+        return float(value.reshape(-1)[0].item())
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def accepted_commonvoice_style(cv_data, row_idx: int, threshold_map: Dict[str, float], acceptance_policy: str):
+    if acceptance_policy == "artifact_selected":
+        selected_mask = cv_data.get('pseudo_style_selected_mask')
+        selected_style = cv_data.get('pseudo_style_selected', [None])[row_idx]
+        selected_reason = cv_data.get('pseudo_style_selected_reason', ['artifact_missing'])[row_idx]
+        selected_conf = None
+        if selected_mask is None:
+            raise ValueError(
+                "acceptance-policy=artifact_selected requires pseudo_style_selected_mask "
+                "from scripts/filter_commonvoice_pseudolabels.py"
+            )
+        selected_conf_tensor = cv_data.get('pseudo_style_selected_confidence')
+        if selected_conf_tensor is not None:
+            selected_conf = _scalar_confidence(selected_conf_tensor[row_idx])
+        if bool(selected_mask[row_idx]) and selected_style in UNIFIED_STYLES:
+            return selected_style, selected_conf, selected_reason or 'artifact_selected'
+        return None, selected_conf, selected_reason or 'artifact_rejected'
+
     style = cv_data.get('pseudo_style', [None])[row_idx]
     confidence = cv_data.get('pseudo_style_confidence', [None])[row_idx]
     if style is None or confidence is None:
-        return None, None
-    try:
-        confidence = float(confidence)
-    except (TypeError, ValueError):
-        return None, None
+        return None, None, 'missing_style_or_confidence'
+    confidence = _scalar_confidence(confidence)
+    if confidence is None:
+        return None, None, 'bad_confidence'
     if style not in UNIFIED_STYLES:
-        return None, confidence
+        return None, confidence, 'unmapped_style'
     if confidence < threshold_map.get(style, 0.0):
-        return None, confidence
-    return style, confidence
+        return None, confidence, 'below_threshold'
+    return style, confidence, 'threshold_pass'
 
 
 def select_commonvoice_rows(cv_data, args, style_caps, threshold_map):
+    style_targets = parse_style_targets(args.commonvoice_style_targets)
     speaker_to_rows = defaultdict(list)
     for row_idx, speaker_id in enumerate(cv_data['speaker_ids']):
         speaker_to_rows[str(speaker_id)].append(row_idx)
@@ -370,24 +415,37 @@ def select_commonvoice_rows(cv_data, args, style_caps, threshold_map):
     selected = []
     selected_style_counts = Counter()
     skipped_by_cap_counts = Counter()
+    skipped_by_target_counts = Counter()
+    candidate_reason_counts = Counter()
+    selected_reason_counts = Counter()
+    fallback_forced_unlabeled_counts = Counter()
+    selected_labeled_rows = 0
 
     for speaker_id in speakers:
         candidates = speaker_to_rows[speaker_id][:]
         rng.shuffle(candidates)
 
         def sort_key(row_idx):
-            style, conf = accepted_commonvoice_style(cv_data, row_idx, threshold_map)
+            style, conf, _reason = accepted_commonvoice_style(
+                cv_data, row_idx, threshold_map, args.acceptance_policy
+            )
             has_label = style is not None
             is_neutral = style == 'neutral'
-            priority = 0
-            if args.commonvoice_prefer_pseudo:
-                if has_label and not is_neutral:
-                    priority = 0
-                elif has_label and is_neutral:
-                    priority = 1
-                else:
-                    priority = 2
-            return (priority, -(conf or -1.0), row_idx)
+            target_remaining = 0
+            if style is not None and style in style_targets:
+                target_remaining = max(style_targets[style] - selected_style_counts[style], 0)
+
+            if has_label and target_remaining > 0:
+                priority = 0
+            elif args.commonvoice_prefer_pseudo and has_label and not is_neutral:
+                priority = 1
+            elif args.commonvoice_prefer_pseudo and has_label and is_neutral:
+                priority = 2
+            elif has_label:
+                priority = 3
+            else:
+                priority = 4
+            return (priority, -target_remaining, -(conf or -1.0), row_idx)
 
         ordered = sorted(candidates, key=sort_key)
         target_count = len(ordered)
@@ -401,31 +459,65 @@ def select_commonvoice_rows(cv_data, args, style_caps, threshold_map):
         for row_idx in ordered:
             if len(chosen) >= target_count:
                 break
-            style, confidence = accepted_commonvoice_style(cv_data, row_idx, threshold_map)
+            style, confidence, candidate_reason = accepted_commonvoice_style(
+                cv_data, row_idx, threshold_map, args.acceptance_policy
+            )
+            candidate_reason_counts[candidate_reason] += 1
+            if (
+                style is not None
+                and args.acceptance_policy == 'balanced_targets'
+                and style in style_targets
+                and selected_style_counts[style] >= style_targets[style]
+            ):
+                skipped_by_target_counts[style] += 1
+                continue
             if style is not None and style in style_caps and selected_style_counts[style] >= style_caps[style]:
                 skipped_by_cap_counts[style] += 1
                 continue
-            chosen.append((row_idx, style, confidence))
+            selection_reason = 'pseudo_selected' if style is not None else candidate_reason
+            chosen.append((row_idx, style, confidence, selection_reason))
             used.add(row_idx)
             if style is not None:
                 selected_style_counts[style] += 1
+                selected_labeled_rows += 1
+            selected_reason_counts[selection_reason] += 1
 
         if len(chosen) < target_count:
             for row_idx in ordered:
                 if row_idx in used:
                     continue
-                style, confidence = accepted_commonvoice_style(cv_data, row_idx, threshold_map)
+                style, confidence, candidate_reason = accepted_commonvoice_style(
+                    cv_data, row_idx, threshold_map, args.acceptance_policy
+                )
+                selection_reason = 'speaker_breadth_fallback'
+                if (
+                    style is not None
+                    and args.acceptance_policy == 'balanced_targets'
+                    and style in style_targets
+                    and selected_style_counts[style] >= style_targets[style]
+                ):
+                    skipped_by_target_counts[style] += 1
+                    fallback_forced_unlabeled_counts[style] += 1
+                    style, confidence = None, None
+                    selection_reason = 'fallback_after_target_limit'
                 if style is not None and style in style_caps and selected_style_counts[style] >= style_caps[style]:
                     skipped_by_cap_counts[style] += 1
+                    fallback_forced_unlabeled_counts[style] += 1
                     style, confidence = None, None
-                chosen.append((row_idx, style, confidence))
+                    selection_reason = 'fallback_after_cap_limit'
+                elif style is None and candidate_reason not in {'threshold_pass', 'artifact_selected'}:
+                    selection_reason = f'speaker_breadth_fallback:{candidate_reason}'
+                chosen.append((row_idx, style, confidence, selection_reason))
                 used.add(row_idx)
                 if style is not None:
                     selected_style_counts[style] += 1
+                    selected_labeled_rows += 1
+                    selection_reason = 'pseudo_selected'
+                selected_reason_counts[selection_reason] += 1
                 if len(chosen) >= target_count:
                     break
 
-        for row_idx, style, confidence in chosen:
+        for row_idx, style, confidence, selection_reason in chosen:
             selected.append({
                 'dataset': 'CommonVoice',
                 'row_idx': row_idx,
@@ -434,10 +526,23 @@ def select_commonvoice_rows(cv_data, args, style_caps, threshold_map):
                 'style': style,
                 'label_source': 'pseudo' if style is not None else 'none',
                 'label_confidence': float(confidence) if confidence is not None else 0.0,
+                'selection_reason': selection_reason,
             })
 
     selection_report = {
+        'acceptance_policy': args.acceptance_policy,
+        'style_targets': style_targets,
         'skipped_by_cap_counts': dict(skipped_by_cap_counts),
+        'skipped_by_target_counts': dict(skipped_by_target_counts),
+        'fallback_forced_unlabeled_counts': dict(fallback_forced_unlabeled_counts),
+        'candidate_reason_counts': dict(candidate_reason_counts),
+        'selected_reason_counts': dict(selected_reason_counts),
+        'selected_speaker_count': len(speakers),
+        'selected_labeled_row_count': int(selected_labeled_rows),
+        'target_shortfall_counts': {
+            style: max(target - selected_style_counts.get(style, 0), 0)
+            for style, target in style_targets.items()
+        },
     }
     return selected, selection_report
 
@@ -490,6 +595,13 @@ def compute_style_row_weights(rows, args):
         row['style_row_weight'] = float(base)
 
 
+def normalize_embedding(embedding):
+    tensor = torch.as_tensor(embedding)
+    if tensor.dim() == 0:
+        raise ValueError("Encountered scalar embedding; expected a vector-like tensor")
+    return tensor.squeeze()
+
+
 def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoice_selection_report):
     compute_style_row_weights(rows, args)
 
@@ -500,12 +612,13 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
     source_datasets = []
     style_sources = []
     style_confidences = []
+    acceptance_reasons = []
     style_mask = []
     style_row_weights = []
 
     for row in rows:
         source_payload = payloads[row['dataset']]
-        emb = source_payload['data'][row['row_idx']]
+        emb = normalize_embedding(source_payload['data'][row['row_idx']])
         embeddings.append(emb)
 
         if row['style'] is None:
@@ -523,6 +636,7 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
         source_datasets.append(row['dataset'])
         style_sources.append(row['label_source'])
         style_confidences.append(float(row['label_confidence']))
+        acceptance_reasons.append(row.get('selection_reason', row['label_source']))
         style_mask.append(mask)
         style_row_weights.append(float(row['style_row_weight']))
 
@@ -533,6 +647,7 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
         'clip_paths': clip_paths,
         'source_dataset': source_datasets,
         'style_label_source': style_sources,
+        'style_label_acceptance_reason': acceptance_reasons,
         'style_label_confidence': torch.tensor(style_confidences, dtype=torch.float32).unsqueeze(1),
         'style_label_mask': torch.tensor(style_mask, dtype=torch.float32).unsqueeze(1),
         'style_label_row_weight': torch.tensor(style_row_weights, dtype=torch.float32).unsqueeze(1),
@@ -579,6 +694,8 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
         'pseudo_style_threshold': args.pseudo_style_threshold,
         'pseudo_style_thresholds': dict(threshold_map),
         'commonvoice_style_caps': parse_style_caps(args.commonvoice_style_caps),
+        'commonvoice_style_targets': parse_style_targets(args.commonvoice_style_targets),
+        'commonvoice_acceptance_policy': args.acceptance_policy,
         'commonvoice_selection': {
             'max_speakers': args.commonvoice_max_speakers,
             'min_clips_per_speaker': args.commonvoice_min_clips_per_speaker,
@@ -600,13 +717,51 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
         'commonvoice_skipped_by_cap_counts': dict(
             commonvoice_selection_report.get('skipped_by_cap_counts', {})
         ),
+        'commonvoice_skipped_by_target_counts': dict(
+            commonvoice_selection_report.get('skipped_by_target_counts', {})
+        ),
+        'commonvoice_fallback_forced_unlabeled_counts': dict(
+            commonvoice_selection_report.get('fallback_forced_unlabeled_counts', {})
+        ),
+        'commonvoice_candidate_reason_counts': dict(
+            commonvoice_selection_report.get('candidate_reason_counts', {})
+        ),
+        'commonvoice_selected_reason_counts': dict(
+            commonvoice_selection_report.get('selected_reason_counts', {})
+        ),
+        'commonvoice_selected_speaker_count': int(
+            commonvoice_selection_report.get('selected_speaker_count', 0)
+        ),
+        'commonvoice_selected_labeled_row_count': int(
+            commonvoice_selection_report.get('selected_labeled_row_count', 0)
+        ),
+        'commonvoice_target_shortfall_counts': dict(
+            commonvoice_selection_report.get('target_shortfall_counts', {})
+        ),
         'style_counts_all_labeled_rows': dict(Counter(row['style'] for row in rows if row['style'] is not None)),
         'label_source_counts': dict(Counter(style_sources)),
+        'style_label_acceptance_reason_counts': dict(Counter(acceptance_reasons)),
     }
+    if 'pseudo_style_report' in payloads['CommonVoice']:
+        save_dict['mixture_report']['commonvoice_pseudo_style_report'] = payloads['CommonVoice'][
+            'pseudo_style_report'
+        ]
+    if 'pseudo_style_teacher' in payloads['CommonVoice']:
+        save_dict['mixture_report']['commonvoice_pseudo_style_teacher'] = payloads['CommonVoice'][
+            'pseudo_style_teacher'
+        ]
+    if 'pseudo_style_filter_report' in payloads['CommonVoice']:
+        save_dict['mixture_report']['commonvoice_pseudo_style_filter_report'] = payloads['CommonVoice'][
+            'pseudo_style_filter_report'
+        ]
     if 'metadata_report' in payloads['CommonVoice']:
         save_dict['commonvoice_metadata_report'] = payloads['CommonVoice']['metadata_report']
     if 'pseudo_style_report' in payloads['CommonVoice']:
         save_dict['commonvoice_pseudo_style_report'] = payloads['CommonVoice']['pseudo_style_report']
+    if 'pseudo_style_teacher' in payloads['CommonVoice']:
+        save_dict['commonvoice_pseudo_style_teacher'] = payloads['CommonVoice']['pseudo_style_teacher']
+    if 'pseudo_style_filter_report' in payloads['CommonVoice']:
+        save_dict['commonvoice_pseudo_style_filter_report'] = payloads['CommonVoice']['pseudo_style_filter_report']
     return save_dict
 
 
@@ -614,6 +769,7 @@ def print_report(save_dict):
     report = save_dict['mixture_report']
     print('Mixed-data training artifact report')
     print(f"  total rows: {save_dict['data'].shape[0]}")
+    print(f"  acceptance policy: {report.get('commonvoice_acceptance_policy')}")
     print('  dataset counts:')
     for dataset, count in report['dataset_counts'].items():
         labeled = report['dataset_labeled_counts'].get(dataset, 0)
@@ -646,6 +802,20 @@ def print_report(save_dict):
         print('  cap-skipped CommonVoice pseudo-style counts:')
         for style in UNIFIED_STYLES:
             count = skipped_by_cap.get(style, 0)
+            if count:
+                print(f"    {style:11s} {count:4d}")
+    skipped_by_target = report.get('commonvoice_skipped_by_target_counts', {})
+    if skipped_by_target:
+        print('  target-skipped CommonVoice pseudo-style counts:')
+        for style in UNIFIED_STYLES:
+            count = skipped_by_target.get(style, 0)
+            if count:
+                print(f"    {style:11s} {count:4d}")
+    shortfalls = report.get('commonvoice_target_shortfall_counts', {})
+    if shortfalls:
+        print('  CommonVoice target shortfalls:')
+        for style in UNIFIED_STYLES:
+            count = shortfalls.get(style, 0)
             if count:
                 print(f"    {style:11s} {count:4d}")
 
