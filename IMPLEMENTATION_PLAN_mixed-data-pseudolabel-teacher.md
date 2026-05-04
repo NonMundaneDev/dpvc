@@ -329,15 +329,39 @@ Real local validation completed so far:
     - `mixed_teacher_labeled_finish` = `labeled_finish` with `--schedule-epochs 1000`
     - `mixed_teacher_labeled_guarded` = `labeled_finish` with `--schedule-epochs 1000` and end masses `CommonVoice=0.10,CREMA-D=0.45,Expresso=0.45`
 
+- `scripts/annotate_commonvoice_latent_prototypes.py`
+  - added a genuinely different pseudo-label teacher that scores CommonVoice
+    rows against combined-VAE latent style prototypes instead of
+    `emotion2vec_plus_large`
+  - real prototype artifacts now on disk:
+    - `embeddings/openvoice_commonvoice_cv500_pseudo_prototype.pt`
+    - `embeddings/openvoice_commonvoice_cv500_pseudo_prototype_filtered.pt`
+    - `embeddings/openvoice_mixed_teacher_prototype_base.pt`
+    - `embeddings/openvoice_vae_mixed_teacher_prototype_balanced.pt`
+  - the prototype condition now has a matched corpus and full metric bundle:
+    - `output/mixed_teacher_prototype_balanced_eval/`
+    - `results/eval_emotion_mixed_teacher_mixed_teacher_prototype_balanced.csv`
+    - `results/eval_novelty_mixed_teacher_mixed_teacher_prototype_balanced.csv`
+    - `results/eval_wer_mixed_teacher_mixed_teacher_prototype_balanced.csv`
+    - `results/eval_mos_mixed_teacher_mixed_teacher_prototype_balanced.csv`
+  - result: `mixed_teacher_prototype_balanced` ties the best mixed-data recall
+    at `18.2%`, improves novelty to `0.0854`, and slightly lowers identity /
+    mixed collapse, but gives back WER/MOS versus
+    `mixed_teacher_threshold_balanced`
+
 Immediate next execution steps on this branch:
 
-1. Compare a genuinely different teacher or a richer multi-teacher agreement
-   rule, because the softer same-teacher mapped-score agreement follow-up only
-   raised novelty slightly and still underperformed
-   `mixed_teacher_threshold_balanced` on recall, WER, and MOS.
-2. Keep `mixed_teacher_threshold_balanced` as the current teacher-family
-   reference checkpoint, because it improved novelty, WER, MOS, and identity
-   collapse versus `mixed_quality_labeled_guarded` at the same recall.
-3. Revisit rare-class supply only after the alternate-teacher experiment
-   stabilizes, because the current single-teacher family still leaves `anger`
-   and `fear` scarce inside the speaker-breadth-first CommonVoice slice.
+1. Test `mixed_teacher_prototype_guarded` with pseudo-confidence scaling,
+   lower CommonVoice pseudo row weight, and stronger true-label protection,
+   because the prototype teacher improved coverage/novelty but over-steered
+   WER/MOS.
+2. Compare a prototype+emotion2vec multi-teacher rule if the guarded prototype
+   run still ties recall without improving WER/MOS; the goal is to combine
+   emotion2vec precision on canonical emotions with prototype coverage for
+   `confused`, `enunciated`, and `whisper`.
+3. Keep `mixed_teacher_threshold_balanced` as the current best overall
+   mixed-data teacher reference, while treating
+   `mixed_teacher_prototype_balanced` as the best novelty/coverage candidate.
+4. Revisit rare-class supply only after the guarded prototype or multi-teacher
+   experiment stabilizes, because the current prototype run improves rare-style
+   coverage but still leaves `whisper` confidence-limited.

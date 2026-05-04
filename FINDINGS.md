@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-04 (Finding 21 from the mapped-score teacher-agreement follow-up added; descriptive experiment titles now replace internal pass numbering)
+**Last updated:** 2026-05-04 (Finding 22 from the latent prototype pseudo-label teacher follow-up added; descriptive experiment titles now replace internal pass numbering)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -1332,6 +1332,85 @@ So the next meaningful mixed-data teacher gain now likely requires:
 
 ---
 
+## Finding 22: A Combined-VAE Latent Prototype Teacher Improves Novelty and Coverage, But Still Does Not Break the Recall Ceiling
+
+### Methodology
+
+After Finding 21, the next clean test was to change the pseudo-label teacher
+instead of polishing `emotion2vec_plus_large` filtering.
+
+The alternate teacher uses the existing combined controllable VAE as a
+prototype model:
+
+- encode the labeled combined CREMA-D + Expresso artifact with
+  `embeddings/openvoice_vae_combined.pt`
+- build one prototype per style from the VAE style dims `0-8`
+- encode the CommonVoice `cv500` rows with the same VAE encoder
+- assign pseudo-style labels by similarity to the style prototypes
+- filter with the same balanced-target path used by the earlier teacher branch
+
+This produced:
+
+- `scripts/annotate_commonvoice_latent_prototypes.py`
+- `embeddings/openvoice_commonvoice_cv500_pseudo_prototype.pt`
+- `embeddings/openvoice_commonvoice_cv500_pseudo_prototype_filtered.pt`
+- `embeddings/openvoice_mixed_teacher_prototype_base.pt`
+- `embeddings/openvoice_vae_mixed_teacher_prototype_balanced.pt`
+
+The important difference from Findings 20-21 is that this teacher is not an
+emotion classifier. It is a **model-internal latent geometry teacher**: it asks
+which combined-VAE style prototype each CommonVoice row is nearest to.
+
+### Pseudo-label coverage
+
+The prototype teacher produced broad all-style coverage after filtering:
+
+| Style | Selected before mixing | Selected in mixed artifact |
+|-------|------------------------|----------------------------|
+| anger | 40 | 25 |
+| confused | 40 | 25 |
+| disgust | 40 | 33 |
+| enunciated | 40 | 29 |
+| fear | 36 | 21 |
+| happy | 40 | 27 |
+| neutral | 40 | 23 |
+| sad | 40 | 34 |
+| whisper | 12 | 10 |
+
+This is a major coverage improvement over the emotion2vec teacher, which was
+restricted to canonical emotion classes and stayed heavily neutral/sad.
+
+### Results
+
+| Condition | Recall | Novelty gain vs baseline | Mean WER | Mean MOS delta | Identity collapse | Mixed collapse | Takeaway |
+|-----------|--------|--------------------------|----------|----------------|-------------------|----------------|----------|
+| `mixed_teacher_threshold_balanced` | 18.2% | 0.0785 | 0.0829 | -0.1012 | 62 | 49 | Best overall mixed-data teacher reference |
+| `mixed_teacher_mapped015_balanced` | 16.7% | 0.0818 | 0.1090 | -0.1115 | 63 | 51 | Softer same-teacher agreement raised novelty but lost recall/WER/MOS |
+| `mixed_teacher_prototype_balanced` | 18.2% | 0.0854 | 0.1009 | -0.1086 | 60 | 48 | Best mixed-teacher novelty and slightly lower collapse, but still not the best overall tradeoff |
+
+### Interpretation
+
+1. **Changing the teacher helps, but not enough.** The prototype teacher ties the best mixed-data recall at `18.2%` and improves novelty to `0.0854`, the best mixed-teacher novelty result so far.
+2. **Coverage improves substantially.** Unlike emotion2vec, the prototype teacher supplies pseudo labels for `confused`, `enunciated`, and `whisper`, which are important because those styles are part of the actual controllable interface.
+3. **WER and MOS reveal over-steering.** The prototype model gives back intelligibility and naturalness versus `mixed_teacher_threshold_balanced`, so broader pseudo-label coverage alone is not a clean win.
+4. **The recall ceiling remains.** Even a genuinely different teacher does not move the mixed-data line above `18.2%` recall on the current corpus.
+5. **The next variant should be guarded, not simply larger.** The promising direction is to keep the prototype teacher's coverage but reduce its risk with pseudo-confidence scaling, lower pseudo row weight, stronger true-label protection, or multi-teacher agreement with emotion2vec.
+
+### Implication
+
+Finding 22 makes the mixed-data supervision bottleneck sharper:
+
+- same-teacher cleanup was too weak (Findings 20-21)
+- a different latent prototype teacher improves novelty and coverage
+- but the model still trades off WER/MOS and remains below the combined-only checkpoint on controllability
+
+The best current mixed-data teacher reference remains
+`mixed_teacher_threshold_balanced`. The best next research move is
+`mixed_teacher_prototype_guarded` or a prototype+emotion2vec agreement rule,
+not another unguarded pseudo-label expansion.
+
+---
+
 ## April 30 Meeting Alignment with Joe
 
 The April 30 call with Joe did **not** change the scientific findings above,
@@ -1407,7 +1486,7 @@ style-strength sweep are now complete, so the current follow-up framing is:
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** The first mixed-data pseudolabel mix experiment compared a static balanced mix, a CommonVoice-heavy warmup, and a labeled-data-heavy finish. None improved recall beyond `16.7%`. The mixed-data pseudo-label quality follow-up then added per-class thresholds/caps and stronger labeled-data protection. That finally moved the best mixed-data condition to `18.2%` recall (`mixed_quality_labeled_guarded`), but at the cost of worse WER (`0.0978`) and weaker novelty (`0.0764`) than the best original mixed schedules. The first mixed-data pseudo-label teacher family then showed that cleaner use of the current teacher can match that `18.2%` recall while improving WER, MOS, novelty, and identity collapse somewhat (`mixed_teacher_threshold_balanced`), but still does not break the recall ceiling. The next open question is therefore narrower: can a stronger teacher, class-balanced teacher-agreement rule, richer style supervision, or architecture change move recall without giving back the mixed-data intelligibility gains?
+12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** The first mixed-data pseudolabel mix experiment compared a static balanced mix, a CommonVoice-heavy warmup, and a labeled-data-heavy finish. None improved recall beyond `16.7%`. The mixed-data pseudo-label quality follow-up then added per-class thresholds/caps and stronger labeled-data protection. That finally moved the best mixed-data condition to `18.2%` recall (`mixed_quality_labeled_guarded`), but at the cost of worse WER (`0.0978`) and weaker novelty (`0.0764`) than the best original mixed schedules. The first mixed-data pseudo-label teacher family then showed that cleaner use of the current teacher can match that `18.2%` recall while improving WER, MOS, novelty, and identity collapse somewhat (`mixed_teacher_threshold_balanced`), but still does not break the recall ceiling. A same-teacher mapped-score agreement rule raised novelty slightly but lost recall/WER/MOS, while a combined-VAE latent prototype teacher restored `18.2%` recall and improved novelty to `0.0854` but gave back WER/MOS. The next open question is therefore narrower: can a guarded prototype teacher, prototype+emotion2vec agreement rule, richer style supervision, or architecture change move recall without giving back the mixed-data intelligibility gains?
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---
@@ -1450,6 +1529,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 19. A small non-Trump style-strength sweep shows that `5.0` is still the safest global default, `7.5` is a useful stronger compromise for styles like `whisper` and `confused`, and `10.0-12.5` behave more like high-novelty style-specific settings than new global defaults.
 20. The first mixed-data pseudo-label teacher checkpoint family does not raise recall above `18.2%`, but `mixed_teacher_threshold_balanced` matches the best mixed-data recall while improving WER, MOS, novelty, and identity collapse versus `mixed_quality_labeled_guarded`. The next mixed-data gains likely require a stronger pseudo-label teacher or agreement rule rather than more tuning of the same single-teacher family.
 21. A softer mapped-score agreement rule on the same teacher (`mixed_teacher_mapped015_balanced`) nudges novelty slightly higher (`0.0818`) but drops back to `16.7%` recall and gives back WER/MOS versus `mixed_teacher_threshold_balanced`. That makes the next mixed-data teacher step narrower: change the teacher or move to a richer multi-teacher rule, not just a softer same-teacher agreement heuristic.
+22. A combined-VAE latent prototype teacher (`mixed_teacher_prototype_balanced`) gives broader CommonVoice pseudo-label coverage and the best mixed-teacher novelty so far (`0.0854`) while tying the best mixed-data recall (`18.2%`) and slightly reducing identity/mixed collapse. It still gives back WER/MOS versus `mixed_teacher_threshold_balanced`, so it is a promising coverage/novelty teacher but not yet the overall mixed-data reference.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion
