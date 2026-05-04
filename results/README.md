@@ -142,6 +142,7 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04:
   - `mixed_teacher_labeled_guarded`
   - `mixed_teacher_mapped015_balanced`
   - `mixed_teacher_prototype_balanced`
+  - `mixed_teacher_prototype_guarded`
 - The teacher summary reuses copied reference CSVs for:
   - `combined`
   - `commonvoice_cv500_init`
@@ -160,13 +161,15 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04:
   - `mixed_teacher_labeled_guarded`: recall `18.2%`, novelty `0.0760`, mean WER `0.1095`, MOS delta `-0.1173`
   - `mixed_teacher_mapped015_balanced`: recall `16.7%`, novelty `0.0818`, mean WER `0.1090`, MOS delta `-0.1115`
   - `mixed_teacher_prototype_balanced`: recall `18.2%`, novelty `0.0854`, mean WER `0.1009`, MOS delta `-0.1086`
+  - `mixed_teacher_prototype_guarded`: recall `18.2%`, novelty `0.0761`, mean WER `0.0920`, MOS delta `-0.1081`
 - Current conclusion:
   - the first teacher-family run does not improve mixed-data recall beyond `18.2%`
   - `mixed_teacher_threshold_balanced` is still a useful improvement because it matches `mixed_quality_labeled_guarded` on recall while improving novelty, WER, MOS, and identity collapse
   - the guarded teacher schedule is not the answer: it preserves the recall bump but gives back too much WER and identity stability
   - `mixed_teacher_mapped015_balanced` shows that a softer same-teacher agreement rule only buys a small novelty gain while losing recall and WER/MOS
   - `mixed_teacher_prototype_balanced` shows that a genuinely different latent-prototype teacher improves coverage, novelty, and collapse counts, but still gives back WER/MOS versus `mixed_teacher_threshold_balanced`
-  - the next mixed-data branch should focus on a guarded prototype-teacher variant or a prototype+emotion2vec multi-teacher rule, not more schedule variants on the same single-teacher family
+  - `mixed_teacher_prototype_guarded` shows that strong guardrails improve WER versus the unguarded prototype but erase the prototype novelty/collapse advantage
+  - the next mixed-data branch should focus on a prototype+emotion2vec multi-teacher rule or an intermediate prototype guard, not more schedule variants on the same single-teacher family
 
 Non-Trump style-strength sweep from 2026-05-03:
 

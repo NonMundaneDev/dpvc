@@ -79,7 +79,8 @@ Priority tags:
 - [ ] `[SOON]` Address rare-class supply limits inside the teacher branch after full rescoring, because the current balanced-target filter only selected `anger=6` / `fear=4` rows before speaker-first mixing and only `anger=5` / `fear=4` rows in the real mixed artifact, so we may need two-clips-per-speaker or relaxed rare-class thresholds
 - [x] `[DONE]` Test a softer mapped-score teacher-agreement rule inside the mixed-data teacher branch; `scripts/annotate_commonvoice_pseudolabels.py` now records a second center-crop teacher view plus score maps, `scripts/filter_commonvoice_pseudolabels.py` now supports `--secondary-agreement-mode mapped_score`, and the full `mixed_teacher_mapped015_balanced` checkpoint/eval bundle proved that the looser agreement rule raises novelty slightly (`0.0818`) but still loses to `mixed_teacher_threshold_balanced` on recall (`16.7%` vs `18.2%`), WER (`0.1090` vs `0.0829`), and MOS delta (`-0.1115` vs `-0.1012`)
 - [x] `[DONE]` Compare a genuinely different pseudo-label teacher inside the mixed-data teacher branch; `scripts/annotate_commonvoice_latent_prototypes.py` now uses combined-VAE latent style prototypes as an alternate teacher, and `mixed_teacher_prototype_balanced` improves novelty (`0.0854`) and identity/mixed collapse while tying the best mixed-data recall (`18.2%`) but giving back WER/MOS versus `mixed_teacher_threshold_balanced`
-- [ ] `[NOW]` Test a guarded prototype-teacher variant or prototype+emotion2vec multi-teacher rule, because the prototype teacher gives broader all-style coverage and the best mixed-teacher novelty so far, but needs pseudo-label weight/confidence guardrails before it can replace `mixed_teacher_threshold_balanced`
+- [x] `[DONE]` Test a guarded prototype-teacher variant with pseudo-confidence scaling, lower pseudo row weight, and stronger true-label protection; `mixed_teacher_prototype_guarded` ties the `18.2%` recall ceiling and improves WER versus the unguarded prototype (`0.0920` vs `0.1009`), but gives back the prototype novelty advantage (`0.0761` vs `0.0854`) and worsens identity/mixed collapse, so it does not replace `mixed_teacher_threshold_balanced`
+- [ ] `[NOW]` Compare a prototype+emotion2vec multi-teacher rule or an intermediate guard (`pseudo_row_weight=0.75`, `true_row_weight=1.25`) because the strong guarded prototype protected WER somewhat but erased the prototype teacher's novelty/coverage advantage
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after the guarded prototype or multi-teacher path lands, because the current single-teacher agreement path improved novelty slightly but still stayed in the same neutral / baseline-identity basin
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
 
@@ -1037,9 +1038,64 @@ Interpretation:
 - The next practical move is a guarded prototype variant or prototype+emotion2vec multi-teacher rule that keeps the prototype coverage/novelty but reduces pseudo-label weight or requires stronger teacher agreement
 
 Future upgrade to preserve:
-- `[NOW]` Build `mixed_teacher_prototype_guarded` with pseudo-confidence scaling, lower CommonVoice pseudo row weight, and stronger true-label protection so the prototype teacher's broad coverage does not over-steer WER/MOS
+- `[DONE]` Build `mixed_teacher_prototype_guarded` with pseudo-confidence scaling, lower CommonVoice pseudo row weight, and stronger true-label protection; result preserved WER somewhat but erased the prototype novelty advantage
 - `[SOON]` Compare prototype+emotion2vec union/intersection policies: emotion2vec may protect precision for canonical emotions, while prototypes may supply coverage for `confused`, `enunciated`, and `whisper`
 - `[SOON]` Audit low-confidence `whisper` prototype rows manually or with an acoustic whisper proxy before scaling, because prototype confidence for `whisper` is much weaker than the other styles
+
+### 0.22 Guarded Prototype Pseudo-Label Teacher Follow-Up (May 4, branch `research/controllable-vae`)
+
+What we changed:
+- Built `mixed_teacher_prototype_guarded` from the filtered prototype pseudo-label artifact using pseudo-confidence scaling, lower CommonVoice pseudo row weight, and stronger true-label protection
+- Added `mixed_teacher_prototype_guarded` to `scripts/run_ablation_inference.py` so it can be regenerated through the same ablation CLI as the other teacher conditions
+- Trained and evaluated the guarded prototype checkpoint:
+  - `embeddings/openvoice_mixed_teacher_prototype_guarded_base.pt`
+  - `embeddings/openvoice_vae_mixed_teacher_prototype_guarded.pt`
+  - `output/mixed_teacher_prototype_guarded_eval/`
+  - `results/eval_emotion_mixed_teacher_mixed_teacher_prototype_guarded.csv`
+  - `results/eval_novelty_mixed_teacher_mixed_teacher_prototype_guarded.csv`
+  - `results/eval_wer_mixed_teacher_mixed_teacher_prototype_guarded.csv`
+  - `results/eval_mos_mixed_teacher_mixed_teacher_prototype_guarded.csv`
+  - `results/eval_mixed_teacher_summary.csv`
+  - `results/eval_mixed_teacher_collapse.csv`
+
+Validation:
+- `Validation`: The guarded prototype condition has a named mixed artifact, checkpoint, evaluation corpus, and full metric bundle
+- `Validation`: The ablation inference CLI exposes the guarded condition with deterministic `style_strength=5.0`, `noise_level=0.0`, and `seed=42` reproduction settings
+- `Validation`: The comparison explicitly answers whether strong guardrails preserve the prototype teacher's novelty/coverage gain while improving WER/MOS
+- `Validation`: The branch isolates pseudo-label weighting and schedule guardrails rather than changing the VAE architecture or evaluation corpus
+
+Guarded prototype pseudo-label selection:
+- Selected CommonVoice pseudo-style counts inside the real mixed artifact:
+  - `anger=25`
+  - `confused=25`
+  - `disgust=33`
+  - `enunciated=29`
+  - `fear=21`
+  - `happy=27`
+  - `neutral=23`
+  - `sad=34`
+  - `whisper=10`
+- The selected style coverage stayed the same as the unguarded prototype artifact; the experiment changed row weighting and training schedule, not pseudo-label coverage
+
+Top-line comparison:
+
+| Condition | Recall | Novelty gain vs baseline | Mean WER | Mean MOS delta | Identity collapse | Mixed collapse | Takeaway |
+|-----------|--------|--------------------------|----------|----------------|-------------------|----------------|----------|
+| `mixed_teacher_threshold_balanced` | `18.2%` | `0.0785` | `0.0829` | `-0.1012` | `62` | `49` | Best overall mixed-data teacher reference |
+| `mixed_teacher_prototype_balanced` | `18.2%` | `0.0854` | `0.1009` | `-0.1086` | `60` | `48` | Best mixed-teacher novelty and slightly lower collapse, but worse WER/MOS |
+| `mixed_teacher_prototype_guarded` | `18.2%` | `0.0761` | `0.0920` | `-0.1081` | `71` | `51` | Strong guardrails improve WER versus the unguarded prototype but erase the prototype novelty/collapse advantage |
+
+Interpretation:
+- The strong guard did not break recall, but it also did not break the `18.2%` mixed-data recall ceiling
+- It partially repaired prototype WER (`0.0920` vs `0.1009`) while leaving MOS essentially unchanged
+- It gave back the prototype teacher's main benefit: novelty fell from `0.0854` to `0.0761`
+- Collapse behavior worsened, especially identity collapse (`71` vs `60` for the unguarded prototype and `62` for the threshold teacher)
+- The result argues against simply making prototype supervision weaker and more labeled-heavy; the next useful move should either use an intermediate guard or combine prototype coverage with emotion2vec precision through a multi-teacher rule
+
+Future upgrade to preserve:
+- `[NOW]` Compare a prototype+emotion2vec multi-teacher policy that keeps prototype labels for `confused`, `enunciated`, and `whisper` but requires emotion2vec support for canonical emotions when available
+- `[SOON]` Try an intermediate guard (`pseudo_row_weight=0.75`, `true_row_weight=1.25`) before discarding the prototype teacher, because the current guard may be too strong and may suppress the novelty signal we wanted to preserve
+- `[SOON]` Add per-style collapse diagnostics for the prototype family so we can see whether the guard mostly hurts rare styles, canonical emotion classes, or specific source speakers
 
 ---
 

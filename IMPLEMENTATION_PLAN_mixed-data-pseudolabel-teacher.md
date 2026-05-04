@@ -349,16 +349,38 @@ Real local validation completed so far:
     mixed collapse, but gives back WER/MOS versus
     `mixed_teacher_threshold_balanced`
 
+- `mixed_teacher_prototype_guarded`
+  - built the strong guarded prototype variant from
+    `embeddings/openvoice_commonvoice_cv500_pseudo_prototype_filtered.pt`
+    using pseudo-confidence scaling, lower CommonVoice pseudo row weight
+    (`0.50`), stronger true row weight (`1.50`), and a labeled-heavy finish
+    schedule
+  - real artifacts now on disk:
+    - `embeddings/openvoice_mixed_teacher_prototype_guarded_base.pt`
+    - `embeddings/openvoice_vae_mixed_teacher_prototype_guarded.pt`
+  - the guarded prototype condition now has a matched corpus and full metric
+    bundle:
+    - `output/mixed_teacher_prototype_guarded_eval/`
+    - `results/eval_emotion_mixed_teacher_mixed_teacher_prototype_guarded.csv`
+    - `results/eval_novelty_mixed_teacher_mixed_teacher_prototype_guarded.csv`
+    - `results/eval_wer_mixed_teacher_mixed_teacher_prototype_guarded.csv`
+    - `results/eval_mos_mixed_teacher_mixed_teacher_prototype_guarded.csv`
+  - result: `mixed_teacher_prototype_guarded` ties the `18.2%` recall ceiling
+    and improves WER versus the unguarded prototype (`0.0920` vs `0.1009`),
+    but erases the prototype novelty advantage (`0.0761` vs `0.0854`) and
+    worsens identity/mixed collapse
+
 Immediate next execution steps on this branch:
 
-1. Test `mixed_teacher_prototype_guarded` with pseudo-confidence scaling,
-   lower CommonVoice pseudo row weight, and stronger true-label protection,
-   because the prototype teacher improved coverage/novelty but over-steered
-   WER/MOS.
-2. Compare a prototype+emotion2vec multi-teacher rule if the guarded prototype
-   run still ties recall without improving WER/MOS; the goal is to combine
+1. Compare a prototype+emotion2vec multi-teacher rule because the guarded
+   prototype run still ties recall without improving the overall tradeoff; the
+   goal is to combine
    emotion2vec precision on canonical emotions with prototype coverage for
    `confused`, `enunciated`, and `whisper`.
+2. Test an intermediate prototype guard (`pseudo_row_weight=0.75`,
+   `true_row_weight=1.25`) if we want one more scalar guard check before
+   moving to a multi-teacher rule, because the strong guard may be suppressing
+   the very novelty signal the prototype teacher supplied.
 3. Keep `mixed_teacher_threshold_balanced` as the current best overall
    mixed-data teacher reference, while treating
    `mixed_teacher_prototype_balanced` as the best novelty/coverage candidate.
