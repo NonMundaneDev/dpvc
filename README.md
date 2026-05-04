@@ -21,8 +21,8 @@ Current experiment focus on that branch:
 
 Immediate next queue:
 
-1. train the first teacher-focused mixed-data checkpoint family from `embeddings/openvoice_mixed_teacher_base.pt`
-2. compare at least one alternative pseudo-label teacher or teacher-agreement rule
+1. generate teacher-family evaluation corpora and run the full metric stack for `mixed_teacher_threshold_balanced`, `mixed_teacher_labeled_finish`, and `mixed_teacher_labeled_guarded`
+2. compare at least one alternative pseudo-label teacher or teacher-agreement rule after the first teacher matrix is scored
 3. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:

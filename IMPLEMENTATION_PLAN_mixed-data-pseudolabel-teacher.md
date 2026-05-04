@@ -317,11 +317,28 @@ Real local validation completed so far:
       - `neutral=78`
       - `sad=80`
 
+- `examples/openvoice_train_vae_mixed.py`
+  - trained the first teacher-focused checkpoint family from
+    `embeddings/openvoice_mixed_teacher_base.pt`
+  - real checkpoints now on disk:
+    - `embeddings/openvoice_vae_mixed_teacher_threshold_balanced.pt`
+    - `embeddings/openvoice_vae_mixed_teacher_labeled_finish.pt`
+    - `embeddings/openvoice_vae_mixed_teacher_labeled_guarded.pt`
+  - training used the same schedule discipline as the earlier mixed-data line:
+    - `mixed_teacher_threshold_balanced` = `static_balanced`
+    - `mixed_teacher_labeled_finish` = `labeled_finish` with `--schedule-epochs 1000`
+    - `mixed_teacher_labeled_guarded` = `labeled_finish` with `--schedule-epochs 1000` and end masses `CommonVoice=0.10,CREMA-D=0.45,Expresso=0.45`
+
 Immediate next execution steps on this branch:
 
-1. Train the first teacher-focused mixed-data checkpoint family from the new
-   scored/filterable artifact path.
-2. Compare at least one alternate teacher choice or teacher-agreement rule,
+1. Generate the matched evaluation corpora for:
+   - `mixed_teacher_threshold_balanced`
+   - `mixed_teacher_labeled_finish`
+   - `mixed_teacher_labeled_guarded`
+2. Run the full metric stack and summarize it to:
+   - `results/eval_mixed_teacher_summary.csv`
+   - `results/eval_mixed_teacher_collapse.csv`
+3. Compare at least one alternate teacher choice or teacher-agreement rule,
    because the current `emotion2vec_plus_large` rescore reproduced the previous
    pseudo-style distribution almost exactly and therefore may not be strong
    enough by itself to move recall materially.
