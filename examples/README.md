@@ -927,7 +927,65 @@ Interpretation:
 - stricter pseudo-label filtering plus stronger labeled-data protection finally moves mixed-data recall above `16.7%`
 - the best new condition is `mixed_quality_labeled_guarded`, because it reaches `18.2%` recall
 - that gain is still narrow: it gives back WER versus `mixed_labeled_finish` and novelty versus `mixed_static_balanced`
-- `mixed_quality_labeled_guarded` is the current best mixed-data checkpoint to use for the pending non-Trump strength sweep, because it is the most control-capable mixed-data model so far
+- `mixed_quality_labeled_guarded` was the checkpoint carried into the first non-Trump strength sweep, because it was the most control-capable mixed-data model before the teacher-family follow-up
+
+Mixed-data pseudo-label teacher follow-up:
+
+```bash
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_threshold_balanced \
+    --out output/mixed_teacher_threshold_balanced_eval \
+    --style-strength 5.0 \
+    --noise-level 0.0 \
+    --seed 42
+
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_labeled_finish \
+    --out output/mixed_teacher_labeled_finish_eval \
+    --style-strength 5.0 \
+    --noise-level 0.0 \
+    --seed 42
+
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_labeled_guarded \
+    --out output/mixed_teacher_labeled_guarded_eval \
+    --style-strength 5.0 \
+    --noise-level 0.0 \
+    --seed 42
+
+python examples/eval_emotion.py --input output/mixed_teacher_threshold_balanced_eval --out results/eval_emotion_mixed_teacher_mixed_teacher_threshold_balanced.csv
+python examples/eval_novelty.py --manifest output/mixed_teacher_threshold_balanced_eval/generation_manifest.jsonl --out results/eval_novelty_mixed_teacher_mixed_teacher_threshold_balanced.csv
+python examples/eval_wer.py     --input output/mixed_teacher_threshold_balanced_eval --out results/eval_wer_mixed_teacher_mixed_teacher_threshold_balanced.csv
+python examples/eval_mos.py     --input output/mixed_teacher_threshold_balanced_eval --out results/eval_mos_mixed_teacher_mixed_teacher_threshold_balanced.csv
+
+python examples/eval_emotion.py --input output/mixed_teacher_labeled_finish_eval --out results/eval_emotion_mixed_teacher_mixed_teacher_labeled_finish.csv
+python examples/eval_novelty.py --manifest output/mixed_teacher_labeled_finish_eval/generation_manifest.jsonl --out results/eval_novelty_mixed_teacher_mixed_teacher_labeled_finish.csv
+python examples/eval_wer.py     --input output/mixed_teacher_labeled_finish_eval --out results/eval_wer_mixed_teacher_mixed_teacher_labeled_finish.csv
+python examples/eval_mos.py     --input output/mixed_teacher_labeled_finish_eval --out results/eval_mos_mixed_teacher_mixed_teacher_labeled_finish.csv
+
+python examples/eval_emotion.py --input output/mixed_teacher_labeled_guarded_eval --out results/eval_emotion_mixed_teacher_mixed_teacher_labeled_guarded.csv
+python examples/eval_novelty.py --manifest output/mixed_teacher_labeled_guarded_eval/generation_manifest.jsonl --out results/eval_novelty_mixed_teacher_mixed_teacher_labeled_guarded.csv
+python examples/eval_wer.py     --input output/mixed_teacher_labeled_guarded_eval --out results/eval_wer_mixed_teacher_mixed_teacher_labeled_guarded.csv
+python examples/eval_mos.py     --input output/mixed_teacher_labeled_guarded_eval --out results/eval_mos_mixed_teacher_mixed_teacher_labeled_guarded.csv
+
+python scripts/summarize_mixed_teacher_results.py
+```
+
+Current checked-in result summary for the first teacher-family run:
+
+- `mixed_teacher_threshold_balanced`: recall `18.2%`, novelty `0.0785`, mean WER `0.0829`, MOS delta `-0.1012`
+- `mixed_teacher_labeled_finish`: recall `16.7%`, novelty `0.0763`, mean WER `0.0727`, MOS delta `-0.1150`
+- `mixed_teacher_labeled_guarded`: recall `18.2%`, novelty `0.0760`, mean WER `0.1095`, MOS delta `-0.1173`
+
+Interpretation:
+
+- the first teacher-family run does **not** move mixed-data recall above `18.2%`
+- `mixed_teacher_threshold_balanced` is still the best result from this branch, because it matches `mixed_quality_labeled_guarded` on recall while improving novelty, WER, MOS, and identity collapse
+- `mixed_teacher_labeled_finish` keeps the cleaner WER profile, but falls back to the `16.7%` recall basin
+- the next mixed-data branch should compare an alternative pseudo-label teacher or a teacher-agreement rule rather than repeating more schedule variants on the same single-teacher family
 
 Non-Trump style-strength sweep:
 

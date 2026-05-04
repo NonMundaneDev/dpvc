@@ -21,8 +21,8 @@ Current experiment focus on that branch:
 
 Immediate next queue:
 
-1. generate teacher-family evaluation corpora and run the full metric stack for `mixed_teacher_threshold_balanced`, `mixed_teacher_labeled_finish`, and `mixed_teacher_labeled_guarded`
-2. compare at least one alternative pseudo-label teacher or teacher-agreement rule after the first teacher matrix is scored
+1. compare at least one alternative pseudo-label teacher or teacher-agreement rule after the first teacher matrix matched `18.2%` recall but still failed to break the mixed-data ceiling
+2. persist the best teacher-family checkpoint (`mixed_teacher_threshold_balanced`) as the new mixed-data reference for downstream follow-ups
 3. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
@@ -51,10 +51,15 @@ weak-label CommonVoice pretraining recover the combined model's tradeoff. The
 mixed-data schedule branch and mixed-data pseudo-label quality follow-up then
 showed that combined-data training can improve WER and move recall slightly,
 but still does not match the `combined` model's control/novelty balance. The
-new non-Trump strength sweep adds a narrower inference-side result: `5.0`
-remains the safest default, `7.5` is a useful stronger option for styles like
-`whisper` and `confused`, and `10.0-12.5` look more like high-novelty
-specialized settings than new defaults. The main summary artifacts are:
+first mixed-data pseudo-label teacher family narrows that story further:
+`mixed_teacher_threshold_balanced` matches the best mixed-data recall
+(`18.2%`) while improving WER, MOS, novelty, and identity collapse versus
+`mixed_quality_labeled_guarded`, but it still does not beat the `combined`
+model or break the mixed-data recall ceiling. The non-Trump strength sweep
+adds a narrower inference-side result: `5.0` remains the safest default,
+`7.5` is a useful stronger option for styles like `whisper` and `confused`,
+and `10.0-12.5` look more like high-novelty specialized settings than new
+defaults. The main summary artifacts are:
 
 - [`results/eval_ablation_summary_pass4.csv`](results/eval_ablation_summary_pass4.csv)
 - [`results/eval_commonvoice_finetune_summary_pass5.csv`](results/eval_commonvoice_finetune_summary_pass5.csv)
@@ -63,6 +68,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/eval_commonvoice_partial_label_summary_pass8.csv`](results/eval_commonvoice_partial_label_summary_pass8.csv)
 - [`results/eval_mixed_data_summary_pass9.csv`](results/eval_mixed_data_summary_pass9.csv)
 - [`results/eval_mixed_quality_summary.csv`](results/eval_mixed_quality_summary.csv)
+- [`results/eval_mixed_teacher_summary.csv`](results/eval_mixed_teacher_summary.csv)
 - [`results/eval_nontrump_strength_sweep.csv`](results/eval_nontrump_strength_sweep.csv)
 - [`results/eval_nontrump_strength_sweep_summary.md`](results/eval_nontrump_strength_sweep_summary.md)
 

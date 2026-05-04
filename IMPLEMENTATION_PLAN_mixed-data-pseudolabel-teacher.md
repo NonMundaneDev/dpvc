@@ -331,14 +331,12 @@ Real local validation completed so far:
 
 Immediate next execution steps on this branch:
 
-1. Generate the matched evaluation corpora for:
-   - `mixed_teacher_threshold_balanced`
-   - `mixed_teacher_labeled_finish`
-   - `mixed_teacher_labeled_guarded`
-2. Run the full metric stack and summarize it to:
-   - `results/eval_mixed_teacher_summary.csv`
-   - `results/eval_mixed_teacher_collapse.csv`
-3. Compare at least one alternate teacher choice or teacher-agreement rule,
-   because the current `emotion2vec_plus_large` rescore reproduced the previous
-   pseudo-style distribution almost exactly and therefore may not be strong
-   enough by itself to move recall materially.
+1. Compare at least one alternate teacher choice or teacher-agreement rule,
+   because the first full `mixed_teacher_*` evaluation family only matched the
+   `18.2%` recall bump while modestly improving the tradeoff.
+2. Keep `mixed_teacher_threshold_balanced` as the current teacher-family
+   reference checkpoint, because it improved novelty, WER, MOS, and identity
+   collapse versus `mixed_quality_labeled_guarded` at the same recall.
+3. Revisit rare-class supply only after the alternate-teacher experiment
+   stabilizes, because the current single-teacher family still leaves `anger`
+   and `fear` scarce inside the speaker-breadth-first CommonVoice slice.

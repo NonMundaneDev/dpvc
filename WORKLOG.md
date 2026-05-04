@@ -72,14 +72,14 @@ Priority tags:
 - [ ] `[SOON]` Add style-specific inference guidance or presets (`default`, `strong-whisper`, `strong-confused`), because the non-Trump sweep shows that a single global `style_strength` default hides meaningful style-dependent tradeoffs
 - [x] `[DONE]` Move the controllable-VAE line back out of upstream `main` and into the research fork `NonMundaneDev/dpvc`; upstream `main` now tracks the stable published-work state again, while the canonical research branch is `research/controllable-vae`
 - [x] `[DONE]` Train the first teacher-focused mixed-data checkpoint family on canonical branch `research/controllable-vae`; `examples/openvoice_train_vae_mixed.py` now produced `embeddings/openvoice_vae_mixed_teacher_threshold_balanced.pt`, `embeddings/openvoice_vae_mixed_teacher_labeled_finish.pt`, and `embeddings/openvoice_vae_mixed_teacher_labeled_guarded.pt` from `embeddings/openvoice_mixed_teacher_base.pt`, and `scripts/run_ablation_inference.py` now exposes the matching condition names for the evaluation step
-- [ ] `[NOW]` Score the first teacher-focused mixed-data checkpoint family on canonical branch `research/controllable-vae`, because the trained `mixed_teacher_*` checkpoints are now real artifacts but we still need matched corpora plus emotion/novelty/WER/MOS before updating `FINDINGS.md`
+- [x] `[DONE]` Score the first teacher-focused mixed-data checkpoint family on canonical branch `research/controllable-vae`; generated `output/mixed_teacher_*_eval/` corpora, wrote the full `eval_*_mixed_teacher_*` CSV bundle plus `results/eval_mixed_teacher_summary.csv`, and verified that `mixed_teacher_threshold_balanced` matches the `18.2%` mixed-data recall bump while improving WER/MOS/novelty versus `mixed_quality_labeled_guarded`
 - [x] `[DONE]` Add stronger teacher diagnostics to the mixed-data artifact flow; the teacher branch now records top-k teacher labels/scores, optional per-style score maps, row-level filter decisions, and preserves pseudo-label report/filter metadata inside the mixed artifact `mixture_report`
 - [x] `[DONE]` Preserve a reusable score -> filter -> build flow for CommonVoice pseudo labels; `scripts/annotate_commonvoice_pseudolabels.py`, `scripts/filter_commonvoice_pseudolabels.py`, and `scripts/build_mixed_training_set.py --acceptance-policy artifact_selected` now let future teacher comparisons reuse one scored artifact across multiple acceptance policies
 - [x] `[DONE]` Re-score the full `cv500` CommonVoice artifact with the updated annotate script before the first teacher matrix training run; `embeddings/openvoice_commonvoice_cv500_pseudo_scored.pt` now provides branch-native teacher metadata, top-k scores, and mapped style-score totals, and `embeddings/openvoice_mixed_teacher_base.pt` is rebuilt from the scored -> filtered artifact path
 - [ ] `[SOON]` Address rare-class supply limits inside the teacher branch after full rescoring, because the current balanced-target filter only selected `anger=6` / `fear=4` rows before speaker-first mixing and only `anger=5` / `fear=4` rows in the real mixed artifact, so we may need two-clips-per-speaker or relaxed rare-class thresholds
-- [ ] `[SOON]` Try an alternative pseudo-label teacher or teacher-agreement rule inside the mixed-data teacher branch, because the full rescore with the current `iic/emotion2vec_plus_large` teacher reproduced the previous pseudo-style distribution almost exactly (`anger=11`, `disgust=46`, `fear=5`, `happy=51`, `neutral=640`, `sad=336`), so rerunning the same teacher more cleanly is not likely to move recall by itself
+- [ ] `[NOW]` Try an alternative pseudo-label teacher or teacher-agreement rule inside the mixed-data teacher branch, because the full `mixed_teacher_*` evaluation family showed that cleaner use of the current `iic/emotion2vec_plus_large` teacher can match `18.2%` recall but still cannot break the mixed-data ceiling
 - [ ] `[SOON]` Test multi-teacher or agreement-based pseudo-label acceptance after the single-teacher branch stabilizes, because class-balanced filtering alone may not remove the conservative neutral/sad bias in the current pseudo-label teacher
-- [ ] `[SOON]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names, because the checkpoint family is now trained and the next branch handoff should not require reconstructing condition names or output directory conventions from shell history
+- [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
 
 ### Phase 2: Evaluation (Joe: emotion eval is #1 priority)
 - [x] **Research TTS controllability evaluation metrics** — settled on EmoVoice pipeline (arxiv 2504.12867, Joe's suggestion): emotion2vec Recall Rate + emo_sim (primary), UTMOS (naturalness), WER (intelligibility)
@@ -868,6 +868,50 @@ Interpretation:
 - Higher strengths are useful for **specific styles**, especially `whisper` and `confused`, when novelty is more important than overall quality
 - `7.5` is the best stronger-than-default compromise on this panel
 - `10.0-12.5` are better treated as style-specific or demo-specific settings, not as new global defaults
+
+---
+
+### 0.19 Mixed-Data Pseudo-Label Teacher Closeout (May 4, branch `research/controllable-vae`)
+
+What we changed:
+- Scored the first three teacher-family checkpoints with full matched corpora:
+  - `mixed_teacher_threshold_balanced`
+  - `mixed_teacher_labeled_finish`
+  - `mixed_teacher_labeled_guarded`
+- Extended `scripts/run_ablation_inference.py` with the new condition aliases
+- Added the checked-in result bundle:
+  - `results/eval_emotion_mixed_teacher_mixed_teacher_threshold_balanced.csv`
+  - `results/eval_novelty_mixed_teacher_mixed_teacher_threshold_balanced.csv`
+  - `results/eval_wer_mixed_teacher_mixed_teacher_threshold_balanced.csv`
+  - `results/eval_mos_mixed_teacher_mixed_teacher_threshold_balanced.csv`
+  - same four metric CSVs for `mixed_teacher_labeled_finish` and `mixed_teacher_labeled_guarded`
+  - `results/eval_mixed_teacher_summary.csv`
+  - `results/eval_mixed_teacher_collapse.csv`
+
+Validation:
+- `Validation`: Every teacher-family condition has a named checkpoint, matched evaluation corpus, and result bundle
+- `Validation`: The comparison explicitly answers whether a cleaner single-teacher path beats the current mixed-data quality baseline
+- `Validation`: The branch isolates pseudo-label teacher / acceptance changes rather than architecture changes
+
+New corpora:
+- `output/mixed_teacher_threshold_balanced_eval/`
+- `output/mixed_teacher_labeled_finish_eval/`
+- `output/mixed_teacher_labeled_guarded_eval/`
+
+Top-line comparison:
+
+| Condition | Recall | Novelty gain vs baseline | Mean WER | Mean MOS delta | Identity collapse | Takeaway |
+|-----------|--------|--------------------------|----------|----------------|-------------------|----------|
+| `mixed_quality_labeled_guarded` | `18.2%` | `0.0764` | `0.0978` | `-0.1234` | `69` | Previous best mixed-data recall condition |
+| `mixed_teacher_threshold_balanced` | `18.2%` | `0.0785` | `0.0829` | `-0.1012` | `62` | Matches best mixed-data recall while improving novelty, WER, MOS, and identity collapse |
+| `mixed_teacher_labeled_finish` | `16.7%` | `0.0763` | `0.0727` | `-0.1150` | `68` | Better WER, but recall falls back to the conservative basin |
+| `mixed_teacher_labeled_guarded` | `18.2%` | `0.0760` | `0.1095` | `-0.1173` | `70` | Preserves the recall bump, but gives back too much WER and identity stability |
+
+Interpretation:
+- The first teacher-family run does **not** move mixed-data recall above `18.2%`
+- `mixed_teacher_threshold_balanced` is still the best teacher-family result, because it matches the best mixed-data recall while improving WER, MOS, novelty, and identity collapse versus `mixed_quality_labeled_guarded`
+- The guarded teacher schedule is not the right next direction inside the current single-teacher family
+- The next branch should compare an alternative pseudo-label teacher or a multi-teacher / agreement rule rather than repeating more schedule variants on the same teacher
 
 ---
 
