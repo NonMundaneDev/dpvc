@@ -178,6 +178,12 @@ CONDITION_CONFIGS = {
         "style_to_index": {style: idx for idx, style in enumerate(FULL_STYLES)},
         "control_mode": "labeled",
     },
+    "mixed_teacher_mapped015_balanced": {
+        "checkpoint": "embeddings/openvoice_vae_mixed_teacher_mapped015_balanced.pt",
+        "styles": FULL_STYLES,
+        "style_to_index": {style: idx for idx, style in enumerate(FULL_STYLES)},
+        "control_mode": "labeled",
+    },
     "cv500_ft_freeze_decoder": {
         "checkpoint": "embeddings/openvoice_vae_combined_cv500_ft_freeze_decoder.pt",
         "styles": FULL_STYLES,

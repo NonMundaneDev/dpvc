@@ -21,7 +21,7 @@ Current experiment focus on that branch:
 
 Immediate next queue:
 
-1. compare at least one alternative pseudo-label teacher or teacher-agreement rule after the first teacher matrix matched `18.2%` recall but still failed to break the mixed-data ceiling
+1. compare a genuinely different pseudo-label teacher or multi-teacher agreement rule after the mapped-score agreement follow-up raised novelty slightly but still underperformed `mixed_teacher_threshold_balanced` on recall, WER, and MOS
 2. persist the best teacher-family checkpoint (`mixed_teacher_threshold_balanced`) as the new mixed-data reference for downstream follow-ups
 3. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
@@ -33,7 +33,7 @@ The dedicated next-step plans live in:
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
-- **[`FINDINGS.md`](FINDINGS.md)** — 19 paper-facing findings with methodology and per-row takeaways.
+- **[`FINDINGS.md`](FINDINGS.md)** — 21 paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 
@@ -55,7 +55,11 @@ first mixed-data pseudo-label teacher family narrows that story further:
 `mixed_teacher_threshold_balanced` matches the best mixed-data recall
 (`18.2%`) while improving WER, MOS, novelty, and identity collapse versus
 `mixed_quality_labeled_guarded`, but it still does not beat the `combined`
-model or break the mixed-data recall ceiling. The non-Trump strength sweep
+model or break the mixed-data recall ceiling. A softer mapped-score
+teacher-agreement follow-up (`mixed_teacher_mapped015_balanced`) nudges
+novelty a bit higher (`0.0818`), but drops back to `16.7%` recall and gives
+back WER/MOS, so `mixed_teacher_threshold_balanced` remains the mixed-data
+teacher reference. The non-Trump strength sweep
 adds a narrower inference-side result: `5.0` remains the safest default,
 `7.5` is a useful stronger option for styles like `whisper` and `confused`,
 and `10.0-12.5` look more like high-novelty specialized settings than new

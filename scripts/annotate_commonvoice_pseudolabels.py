@@ -19,7 +19,9 @@ confidence threshold without re-running the annotation pass.
 import argparse
 from collections import Counter, defaultdict
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
+import soundfile as sf
 import torch
 from funasr import AutoModel
 from tqdm import tqdm
@@ -93,6 +95,24 @@ def parse_args():
         action='store_true',
         help='Save mapped per-style score dictionaries for later class-aware filtering',
     )
+    ap.add_argument(
+        '--consistency-view',
+        default='none',
+        choices=['none', 'center_crop'],
+        help='Optional second view scored for teacher-consistency agreement (default: none)',
+    )
+    ap.add_argument(
+        '--consistency-crop-frac',
+        type=float,
+        default=0.8,
+        help='Fraction of the clip kept in the center-crop consistency view (default: 0.8)',
+    )
+    ap.add_argument(
+        '--consistency-min-seconds',
+        type=float,
+        default=1.0,
+        help='Minimum duration kept for the consistency crop view (default: 1.0)',
+    )
     return ap.parse_args()
 
 
@@ -101,6 +121,62 @@ def resolve_clip_path(corpus_path, clip_rel):
     if clip_rel_path.is_absolute():
         return clip_rel_path
     return Path(corpus_path) / clip_rel_path
+
+
+def score_clip(model, clip_path, top_k):
+    rec = model.generate(str(clip_path), granularity='utterance', extract_embedding=False)
+    row = rec[0]
+    labels = [canonical_label(label) for label in row['labels']]
+    scores = [float(score) for score in row['scores']]
+    top_idx = int(max(range(len(scores)), key=lambda i: scores[i]))
+    ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+    topk_indexes = ranked[: max(top_k, 1)]
+    score_map = defaultdict(float)
+    for label, score in zip(labels, scores):
+        mapped = E2V_TO_STYLE.get(label)
+        if mapped is not None:
+            score_map[mapped] += float(score)
+    return {
+        'labels': labels,
+        'scores': scores,
+        'raw_label': labels[top_idx],
+        'confidence': float(scores[top_idx]),
+        'mapped_style': E2V_TO_STYLE.get(labels[top_idx]),
+        'topk_labels': [labels[i] for i in topk_indexes],
+        'topk_scores': [float(scores[i]) for i in topk_indexes],
+        'style_score_map': {
+            style: float(score_map.get(style, 0.0))
+            for style in sorted(E2V_TO_STYLE.values())
+            if score_map.get(style, 0.0) > 0
+        },
+    }
+
+
+def build_consistency_view(clip_path, mode, crop_frac, min_seconds):
+    if mode == 'none':
+        return None
+    if mode != 'center_crop':
+        raise ValueError(f'Unsupported consistency view: {mode}')
+    audio, sample_rate = sf.read(str(clip_path))
+    if audio.ndim > 1:
+        audio = audio.mean(axis=1)
+    total = len(audio)
+    if total == 0:
+        return None
+    min_samples = max(int(min_seconds * sample_rate), 1)
+    crop_samples = max(int(total * crop_frac), min_samples)
+    crop_samples = min(crop_samples, total)
+    if crop_samples >= total:
+        return None
+    start = max((total - crop_samples) // 2, 0)
+    end = start + crop_samples
+    crop = audio[start:end]
+    if len(crop) < min_samples:
+        return None
+    with NamedTemporaryFile(suffix='.wav', delete=False) as handle:
+        temp_path = Path(handle.name)
+    sf.write(temp_path, crop, sample_rate)
+    return temp_path
 
 
 def main():
@@ -123,42 +199,67 @@ def main():
     pseudo_style_topk_labels = [None] * len(clip_paths)
     pseudo_style_topk_scores = [None] * len(clip_paths)
     pseudo_style_score_map = [None] * len(clip_paths)
+    pseudo_style_view2 = [None] * len(clip_paths)
+    pseudo_style_view2_confidence = [None] * len(clip_paths)
+    pseudo_style_view2_raw_label = [None] * len(clip_paths)
+    pseudo_style_view2_topk_labels = [None] * len(clip_paths)
+    pseudo_style_view2_topk_scores = [None] * len(clip_paths)
+    pseudo_style_view2_score_map = [None] * len(clip_paths)
+    pseudo_style_agrees = [None] * len(clip_paths)
 
     raw_counts = Counter()
     mapped_counts = Counter()
     accepted_counts = Counter()
     mapped_score_totals = defaultdict(float)
+    agreement_counts = Counter()
+    secondary_missing = 0
 
     for idx, clip_rel in enumerate(tqdm(clip_paths[:total_rows], desc='Pseudo labels')):
         clip_path = resolve_clip_path(corpus_path, clip_rel)
-        rec = model.generate(str(clip_path), granularity='utterance', extract_embedding=False)
-        row = rec[0]
-        labels = [canonical_label(label) for label in row['labels']]
-        scores = [float(score) for score in row['scores']]
-        top_idx = int(max(range(len(scores)), key=lambda i: scores[i]))
-        raw_label = labels[top_idx]
-        confidence = float(scores[top_idx])
-        mapped_style = E2V_TO_STYLE.get(raw_label)
-        ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
-        topk_indexes = ranked[: max(args.top_k, 1)]
-        score_map = defaultdict(float)
-        for label, score in zip(labels, scores):
-            mapped = E2V_TO_STYLE.get(label)
-            if mapped is not None:
-                score_map[mapped] += float(score)
-                mapped_score_totals[mapped] += float(score)
+        primary = score_clip(model, clip_path, args.top_k)
+        raw_label = primary['raw_label']
+        confidence = primary['confidence']
+        mapped_style = primary['mapped_style']
 
         pseudo_style[idx] = mapped_style
         pseudo_style_confidence[idx] = confidence
         pseudo_style_raw_label[idx] = raw_label
-        pseudo_style_topk_labels[idx] = [labels[i] for i in topk_indexes]
-        pseudo_style_topk_scores[idx] = [float(scores[i]) for i in topk_indexes]
+        pseudo_style_topk_labels[idx] = primary['topk_labels']
+        pseudo_style_topk_scores[idx] = primary['topk_scores']
         if args.save_style_score_map:
-            pseudo_style_score_map[idx] = {
-                style: float(score_map.get(style, 0.0))
-                for style in sorted(E2V_TO_STYLE.values())
-                if score_map.get(style, 0.0) > 0
-            }
+            pseudo_style_score_map[idx] = primary['style_score_map']
+
+        for style, score in primary['style_score_map'].items():
+            mapped_score_totals[style] += float(score)
+
+        consistency_path = build_consistency_view(
+            clip_path,
+            args.consistency_view,
+            args.consistency_crop_frac,
+            args.consistency_min_seconds,
+        )
+        if consistency_path is not None:
+            try:
+                secondary = score_clip(model, consistency_path, args.top_k)
+                pseudo_style_view2[idx] = secondary['mapped_style']
+                pseudo_style_view2_confidence[idx] = secondary['confidence']
+                pseudo_style_view2_raw_label[idx] = secondary['raw_label']
+                pseudo_style_view2_topk_labels[idx] = secondary['topk_labels']
+                pseudo_style_view2_topk_scores[idx] = secondary['topk_scores']
+                if args.save_style_score_map:
+                    pseudo_style_view2_score_map[idx] = secondary['style_score_map']
+                agrees = (
+                    mapped_style is not None
+                    and secondary['mapped_style'] is not None
+                    and mapped_style == secondary['mapped_style']
+                )
+                pseudo_style_agrees[idx] = bool(agrees)
+                agreement_counts['agree' if agrees else 'disagree'] += 1
+            finally:
+                consistency_path.unlink(missing_ok=True)
+        else:
+            pseudo_style_agrees[idx] = None
+            secondary_missing += 1
 
         raw_counts[raw_label] += 1
         if mapped_style:
@@ -181,6 +282,9 @@ def main():
         'report_threshold': args.report_threshold,
         'top_k': args.top_k,
         'save_style_score_map': bool(args.save_style_score_map),
+        'consistency_view': args.consistency_view,
+        'consistency_crop_frac': float(args.consistency_crop_frac),
+        'consistency_min_seconds': float(args.consistency_min_seconds),
         'rows_annotated': total_rows,
         'raw_label_counts': dict(raw_counts),
         'mapped_style_counts': dict(mapped_counts),
@@ -189,6 +293,8 @@ def main():
             style: float(score)
             for style, score in sorted(mapped_score_totals.items())
         },
+        'secondary_view_missing_rows': int(secondary_missing),
+        'agreement_counts': dict(agreement_counts),
     }
 
     enriched = dict(data)
@@ -199,6 +305,13 @@ def main():
     enriched['pseudo_style_topk_scores'] = pseudo_style_topk_scores
     if args.save_style_score_map:
         enriched['pseudo_style_score_map'] = pseudo_style_score_map
+        enriched['pseudo_style_view2_score_map'] = pseudo_style_view2_score_map
+    enriched['pseudo_style_view2'] = pseudo_style_view2
+    enriched['pseudo_style_view2_confidence'] = pseudo_style_view2_confidence
+    enriched['pseudo_style_view2_raw_label'] = pseudo_style_view2_raw_label
+    enriched['pseudo_style_view2_topk_labels'] = pseudo_style_view2_topk_labels
+    enriched['pseudo_style_view2_topk_scores'] = pseudo_style_view2_topk_scores
+    enriched['pseudo_style_agrees'] = pseudo_style_agrees
     enriched['pseudo_style_source'] = args.model
     enriched['pseudo_style_teacher'] = {
         'model': args.model,
@@ -206,6 +319,9 @@ def main():
         'teacher_config': args.teacher_config or None,
         'top_k': args.top_k,
         'save_style_score_map': bool(args.save_style_score_map),
+        'consistency_view': args.consistency_view,
+        'consistency_crop_frac': float(args.consistency_crop_frac),
+        'consistency_min_seconds': float(args.consistency_min_seconds),
     }
     enriched['pseudo_style_report'] = pseudo_style_report
     enriched['metadata_report'] = metadata_report

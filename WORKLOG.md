@@ -77,8 +77,9 @@ Priority tags:
 - [x] `[DONE]` Preserve a reusable score -> filter -> build flow for CommonVoice pseudo labels; `scripts/annotate_commonvoice_pseudolabels.py`, `scripts/filter_commonvoice_pseudolabels.py`, and `scripts/build_mixed_training_set.py --acceptance-policy artifact_selected` now let future teacher comparisons reuse one scored artifact across multiple acceptance policies
 - [x] `[DONE]` Re-score the full `cv500` CommonVoice artifact with the updated annotate script before the first teacher matrix training run; `embeddings/openvoice_commonvoice_cv500_pseudo_scored.pt` now provides branch-native teacher metadata, top-k scores, and mapped style-score totals, and `embeddings/openvoice_mixed_teacher_base.pt` is rebuilt from the scored -> filtered artifact path
 - [ ] `[SOON]` Address rare-class supply limits inside the teacher branch after full rescoring, because the current balanced-target filter only selected `anger=6` / `fear=4` rows before speaker-first mixing and only `anger=5` / `fear=4` rows in the real mixed artifact, so we may need two-clips-per-speaker or relaxed rare-class thresholds
-- [ ] `[NOW]` Try an alternative pseudo-label teacher or teacher-agreement rule inside the mixed-data teacher branch, because the full `mixed_teacher_*` evaluation family showed that cleaner use of the current `iic/emotion2vec_plus_large` teacher can match `18.2%` recall but still cannot break the mixed-data ceiling
-- [ ] `[SOON]` Test multi-teacher or agreement-based pseudo-label acceptance after the single-teacher branch stabilizes, because class-balanced filtering alone may not remove the conservative neutral/sad bias in the current pseudo-label teacher
+- [x] `[DONE]` Test a softer mapped-score teacher-agreement rule inside the mixed-data teacher branch; `scripts/annotate_commonvoice_pseudolabels.py` now records a second center-crop teacher view plus score maps, `scripts/filter_commonvoice_pseudolabels.py` now supports `--secondary-agreement-mode mapped_score`, and the full `mixed_teacher_mapped015_balanced` checkpoint/eval bundle proved that the looser agreement rule raises novelty slightly (`0.0818`) but still loses to `mixed_teacher_threshold_balanced` on recall (`16.7%` vs `18.2%`), WER (`0.1090` vs `0.0829`), and MOS delta (`-0.1115` vs `-0.1012`)
+- [ ] `[NOW]` Compare a genuinely different pseudo-label teacher or multi-teacher agreement rule inside the mixed-data teacher branch, because the softer same-teacher mapped-score agreement rule still failed to beat `mixed_teacher_threshold_balanced` on the overall tradeoff
+- [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only if a stronger teacher lands first, because the current single-teacher agreement path improved novelty slightly but still stayed in the same neutral / baseline-identity basin
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
 
 ### Phase 2: Evaluation (Joe: emotion eval is #1 priority)
@@ -912,6 +913,63 @@ Interpretation:
 - `mixed_teacher_threshold_balanced` is still the best teacher-family result, because it matches the best mixed-data recall while improving WER, MOS, novelty, and identity collapse versus `mixed_quality_labeled_guarded`
 - The guarded teacher schedule is not the right next direction inside the current single-teacher family
 - The next branch should compare an alternative pseudo-label teacher or a multi-teacher / agreement rule rather than repeating more schedule variants on the same teacher
+
+---
+
+### 0.20 Mapped-Score Teacher-Agreement Follow-Up (May 4, branch `research/controllable-vae`)
+
+What we changed:
+- Extended `scripts/annotate_commonvoice_pseudolabels.py` with an optional second teacher view (`--consistency-view center_crop`) so each CommonVoice row can preserve:
+  - top-k teacher predictions
+  - mapped per-style score maps
+  - row-level agreement metadata between the full clip and the center crop
+- Extended `scripts/filter_commonvoice_pseudolabels.py` with `--secondary-agreement-mode mapped_score`, so the secondary view can support the primary style by score rather than strict top-1 equality
+- Rebuilt the agreement-filtered CommonVoice artifact:
+  - `embeddings/openvoice_commonvoice_cv500_pseudo_agreement_mapped015_filtered.pt`
+- Rebuilt the mixed artifact:
+  - `embeddings/openvoice_mixed_teacher_mapped015_base.pt`
+- Trained and evaluated the new checkpoint:
+  - `embeddings/openvoice_vae_mixed_teacher_mapped015_balanced.pt`
+  - `output/mixed_teacher_mapped015_balanced_eval/`
+  - `results/eval_emotion_mixed_teacher_mixed_teacher_mapped015_balanced.csv`
+  - `results/eval_novelty_mixed_teacher_mixed_teacher_mapped015_balanced.csv`
+  - `results/eval_wer_mixed_teacher_mixed_teacher_mapped015_balanced.csv`
+  - `results/eval_mos_mixed_teacher_mixed_teacher_mapped015_balanced.csv`
+
+Validation:
+- `Validation`: The same-teacher agreement rule is now reproducible from checked-in score -> filter -> build -> train scripts
+- `Validation`: The new agreement condition has a named checkpoint, corpus, and full metric bundle
+- `Validation`: The comparison explicitly answers whether a softer same-teacher agreement rule beats `mixed_teacher_threshold_balanced`
+
+Agreement-filter selection summary:
+- Selected CommonVoice counts before speaker-first mixing:
+  - `anger=6`
+  - `disgust=26`
+  - `fear=4`
+  - `happy=37`
+  - `neutral=120`
+  - `sad=110`
+- Selected pseudo-style counts inside the real mixed artifact:
+  - `anger=5`
+  - `disgust=22`
+  - `fear=4`
+  - `happy=32`
+  - `neutral=79`
+  - `sad=82`
+
+Top-line comparison:
+
+| Condition | Recall | Novelty gain vs baseline | Mean WER | Mean MOS delta | Identity collapse | Takeaway |
+|-----------|--------|--------------------------|----------|----------------|-------------------|----------|
+| `mixed_teacher_threshold_balanced` | `18.2%` | `0.0785` | `0.0829` | `-0.1012` | `62` | Current best teacher-family result |
+| `mixed_teacher_mapped015_balanced` | `16.7%` | `0.0818` | `0.1090` | `-0.1115` | `63` | Slight novelty gain, but loses recall and gives back WER/MOS |
+
+Interpretation:
+- The softer mapped-score agreement rule does **not** beat `mixed_teacher_threshold_balanced`
+- Its only clear win is a small novelty bump (`0.0818` vs `0.0785`)
+- That novelty bump is not enough to justify the drop back to `16.7%` recall or the worse WER/MOS profile
+- The branch now has a stronger negative result: cleaner reuse of the same teacher, even with a softer second-view agreement rule, is still not enough
+- The next useful comparison should change the teacher itself or use a richer multi-teacher rule, not keep polishing agreement heuristics on the same model
 
 ---
 

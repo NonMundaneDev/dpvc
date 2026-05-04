@@ -331,9 +331,10 @@ Real local validation completed so far:
 
 Immediate next execution steps on this branch:
 
-1. Compare at least one alternate teacher choice or teacher-agreement rule,
-   because the first full `mixed_teacher_*` evaluation family only matched the
-   `18.2%` recall bump while modestly improving the tradeoff.
+1. Compare a genuinely different teacher or a richer multi-teacher agreement
+   rule, because the softer same-teacher mapped-score agreement follow-up only
+   raised novelty slightly and still underperformed
+   `mixed_teacher_threshold_balanced` on recall, WER, and MOS.
 2. Keep `mixed_teacher_threshold_balanced` as the current teacher-family
    reference checkpoint, because it improved novelty, WER, MOS, and identity
    collapse versus `mixed_quality_labeled_guarded` at the same recall.

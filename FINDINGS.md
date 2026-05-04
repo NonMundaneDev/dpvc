@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-04 (Finding 20 from the first mixed-data pseudo-label teacher checkpoint family added; descriptive experiment titles now replace internal pass numbering)
+**Last updated:** 2026-05-04 (Finding 21 from the mapped-score teacher-agreement follow-up added; descriptive experiment titles now replace internal pass numbering)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -1261,6 +1261,77 @@ instead of just another iteration of the same single-teacher filtering logic.
 
 ---
 
+## Finding 21: A Softer Same-Teacher Agreement Rule Raises Novelty Slightly, But Still Loses the Overall Tradeoff
+
+### Methodology
+
+After Finding 20, the narrow next question was whether a **softer agreement
+rule** could clean up CommonVoice pseudo-label acceptance without starving the
+rare classes.
+
+This follow-up kept the same teacher model:
+
+- `iic/emotion2vec_plus_large`
+
+But changed the scoring/filtering path:
+
+- `scripts/annotate_commonvoice_pseudolabels.py` now scores:
+  - the full clip
+  - a center-crop secondary view
+- it preserves:
+  - top-k teacher labels/scores
+  - mapped per-style score maps
+  - row-level agreement metadata
+- `scripts/filter_commonvoice_pseudolabels.py` now supports:
+  - `--secondary-agreement-mode exact`
+  - `--secondary-agreement-mode mapped_score`
+
+The tested agreement condition used:
+
+- `mapped_score` agreement mode
+- `0.15` per-style secondary support thresholds
+- the same balanced-target pseudo-style policy as the earlier teacher branch
+
+This produced:
+
+- `embeddings/openvoice_commonvoice_cv500_pseudo_agreement_mapped015_filtered.pt`
+- `embeddings/openvoice_mixed_teacher_mapped015_base.pt`
+- `embeddings/openvoice_vae_mixed_teacher_mapped015_balanced.pt`
+
+The final evaluation condition was:
+
+1. **`mixed_teacher_mapped015_balanced`** — mapped-score agreement, static balanced dataset masses
+
+### Results
+
+| Condition | Recall | Novelty gain vs baseline | Mean WER | Mean MOS delta | Identity collapse | Takeaway |
+|-----------|--------|--------------------------|----------|----------------|-------------------|----------|
+| `mixed_teacher_threshold_balanced` | 18.2% | 0.0785 | 0.0829 | -0.1012 | 62 | Current best teacher-family reference |
+| `mixed_teacher_mapped015_balanced` | 16.7% | 0.0818 | 0.1090 | -0.1115 | 63 | Slightly more novel, but loses the broader tradeoff |
+
+### Interpretation
+
+1. **The mapped-score agreement rule does not beat the teacher-family reference.** It falls back to `16.7%` recall, so it gives up the main thing the best teacher-family condition was preserving.
+2. **Its only clear win is novelty, and that win is small.** Novelty rises from `0.0785` to `0.0818`, but not enough to offset worse WER and MOS.
+3. **This makes the current bottleneck clearer.** Reusing the same teacher more carefully, even with a softer agreement rule, is still not enough.
+4. **The next useful branch should change the teacher, not just the agreement heuristic.** A genuinely different pseudo-label teacher or a richer multi-teacher rule is now more justified than more polishing on the same single-teacher path.
+
+### Implication
+
+Finding 21 strengthens the mixed-data teacher story:
+
+- the first cleaner teacher-family run improved the tradeoff a little (Finding 20)
+- a softer agreement rule on the same teacher does **not** carry that further
+
+So the next meaningful mixed-data teacher gain now likely requires:
+
+- a different pseudo-label teacher
+- a multi-teacher agreement rule
+- or stronger class-balanced supervision that is not tied to the same
+  neutral/sad-heavy teacher distribution
+
+---
+
 ## April 30 Meeting Alignment with Joe
 
 The April 30 call with Joe did **not** change the scientific findings above,
@@ -1378,6 +1449,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 18. Better mixed-data pseudo-label filtering plus stronger labeled-data protection can move recall a little: `mixed_quality_labeled_guarded` becomes the first mixed-data condition to improve recall above `16.7%`, reaching `18.2%`, but the gain comes with worse WER (`0.0978`) and weaker novelty (`0.0764`) than the best original mixed schedules.
 19. A small non-Trump style-strength sweep shows that `5.0` is still the safest global default, `7.5` is a useful stronger compromise for styles like `whisper` and `confused`, and `10.0-12.5` behave more like high-novelty style-specific settings than new global defaults.
 20. The first mixed-data pseudo-label teacher checkpoint family does not raise recall above `18.2%`, but `mixed_teacher_threshold_balanced` matches the best mixed-data recall while improving WER, MOS, novelty, and identity collapse versus `mixed_quality_labeled_guarded`. The next mixed-data gains likely require a stronger pseudo-label teacher or agreement rule rather than more tuning of the same single-teacher family.
+21. A softer mapped-score agreement rule on the same teacher (`mixed_teacher_mapped015_balanced`) nudges novelty slightly higher (`0.0818`) but drops back to `16.7%` recall and gives back WER/MOS versus `mixed_teacher_threshold_balanced`. That makes the next mixed-data teacher step narrower: change the teacher or move to a richer multi-teacher rule, not just a softer same-teacher agreement heuristic.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion
