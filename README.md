@@ -21,8 +21,8 @@ Current experiment focus on that branch:
 
 Immediate next queue:
 
-1. compare a prototype+emotion2vec multi-teacher rule or an intermediate prototype guard after the strong guarded prototype improved WER but erased the prototype novelty advantage
-2. keep `mixed_teacher_threshold_balanced` as the best overall mixed-data teacher reference, while treating `mixed_teacher_prototype_balanced` as the best novelty/coverage candidate and `mixed_teacher_prototype_guarded` as a useful negative guardrail result
+1. move from hard row-label teacher mixing toward richer style-space supervision, prototype distillation, or a per-style curriculum, because the hybrid prototype+emotion2vec teacher improved novelty but did not improve recall/naturalness
+2. keep `mixed_teacher_threshold_balanced` as the best overall mixed-data teacher reference, while treating `mixed_teacher_hybrid_extra_balanced` as the best novelty/coverage tradeoff and `mixed_teacher_prototype_guarded` as a useful negative guardrail result
 3. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
@@ -33,7 +33,7 @@ The dedicated next-step plans live in:
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
-- **[`FINDINGS.md`](FINDINGS.md)** — 23 paper-facing findings with methodology and per-row takeaways.
+- **[`FINDINGS.md`](FINDINGS.md)** — 24 paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 
@@ -67,12 +67,19 @@ reference and `mixed_teacher_prototype_balanced` the best novelty/coverage
 candidate. The guarded prototype follow-up (`mixed_teacher_prototype_guarded`)
 keeps the `18.2%` recall tie and repairs WER somewhat (`0.0920` vs `0.1009`),
 but it erases the prototype novelty advantage (`0.0761` vs `0.0854`) and
-worsens identity collapse, so the next teacher step should be multi-teacher or
-intermediate-guarded rather than simply weaker prototype supervision. The non-Trump strength sweep
-adds a narrower inference-side result: `5.0` remains the safest default,
-`7.5` is a useful stronger option for styles like `whisper` and `confused`,
-and `10.0-12.5` look more like high-novelty specialized settings than new
-defaults. The main summary artifacts are:
+worsens identity collapse, which set up the multi-teacher test rather than
+another simply weaker prototype-supervision run. The
+hybrid prototype+emotion2vec follow-up (`mixed_teacher_hybrid_extra_balanced`)
+then tests that multi-teacher hypothesis directly: it reaches the best
+mixed-teacher novelty so far (`0.0860`) and slightly lowers files with any
+collapse, but drops recall back to `16.7%` and worsens MOS delta (`-0.1190`).
+That keeps `mixed_teacher_threshold_balanced` as the best overall mixed-data
+teacher reference and suggests the next useful step is richer style-space
+supervision or curriculum, not more hard row-label teacher mixing. The
+non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
+the safest default, `7.5` is a useful stronger option for styles like
+`whisper` and `confused`, and `10.0-12.5` look more like high-novelty
+specialized settings than new defaults. The main summary artifacts are:
 
 - [`results/eval_ablation_summary_pass4.csv`](results/eval_ablation_summary_pass4.csv)
 - [`results/eval_commonvoice_finetune_summary_pass5.csv`](results/eval_commonvoice_finetune_summary_pass5.csv)
@@ -142,6 +149,7 @@ See also:
 - `scripts/prepare_commonvoice_subset.py` — helper for turning downloaded Common Voice shards into a filtered local `validated.tsv` + `clips/` subset.
 - `scripts/annotate_commonvoice_pseudolabels.py` — adds confidence-scored pseudo-style labels to a Common Voice embedding artifact.
 - `scripts/annotate_commonvoice_latent_prototypes.py` — scores Common Voice rows against combined-VAE latent style prototypes as an alternate pseudo-label teacher.
+- `scripts/combine_commonvoice_pseudolabel_teachers.py` — combines filtered emotion2vec and latent-prototype CommonVoice pseudo labels into a reusable hybrid teacher artifact.
 - `scripts/prepare_ablation_embeddings.py` — builds the `cremad_only` and `expresso_only` evaluation ablation datasets in the unified label format.
 - `scripts/run_ablation_inference.py` — generates the evaluation ablation matrix corpora, including the naive unlabeled-latent baseline.
 - `scripts/summarize_ablation_results.py` — builds the condition summary table and collapse taxonomy for the paper.
