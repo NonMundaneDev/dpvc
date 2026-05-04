@@ -257,8 +257,9 @@ That sweep confirmed that `5.0` is not a hard ceiling on non-Trump examples:
   `confused`
 - `10.0-12.5` buy more novelty, but with clearly worse overall WER/MOS
 
-### Current best next branch
-- `research/mixed-data-pseudolabel-teacher`
+### Current best next research focus
+- canonical branch: `research/controllable-vae`
+- current experiment slice: mixed-data pseudo-label teacher / acceptance logic
 
 ### Why this is the best current next move
 The latest checked-in evidence now suggests:

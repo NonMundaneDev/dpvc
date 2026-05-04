@@ -70,7 +70,8 @@ Priority tags:
 - [ ] `[SOON]` Add a concise "how to read the metrics" guide for Joe covering emotion recall / emo_sim, novelty, WER, and MOS, because he explicitly said the branch and metric layout is hard to interpret quickly
 - [ ] `[SOON]` Extend the non-Trump strength sweep to a larger panel and compare `combined` against `mixed_quality_labeled_guarded`, because the first 4-speaker sweep shows that higher strengths are usable for whisper/confused but not yet broad enough to freeze a universal style-strength policy
 - [ ] `[SOON]` Add style-specific inference guidance or presets (`default`, `strong-whisper`, `strong-confused`), because the non-Trump sweep shows that a single global `style_strength` default hides meaningful style-dependent tradeoffs
-- [ ] `[NOW]` Continue `research/mixed-data-pseudolabel-teacher`: improve the mixed-data pseudo-label teacher and class-balanced acceptance rules, because the mixed-data quality branch only recovered recall to `18.2%`; implementation now includes a reusable score -> filter -> build path, a full `1202`-row rescore + filter validation, and a real local teacher base artifact with `232` labeled CommonVoice rows built from `embeddings/openvoice_commonvoice_cv500_pseudo_scored.pt`
+- [x] `[DONE]` Move the controllable-VAE line back out of upstream `main` and into the research fork `NonMundaneDev/dpvc`; upstream `main` now tracks the stable published-work state again, while the canonical research branch is `research/controllable-vae`
+- [ ] `[NOW]` Continue the mixed-data pseudo-label teacher experiment on canonical branch `research/controllable-vae`, because the mixed-data quality branch only recovered recall to `18.2%`; implementation now includes a reusable score -> filter -> build path, a full `1202`-row rescore + filter validation, and a real local teacher base artifact with `232` labeled CommonVoice rows built from `embeddings/openvoice_commonvoice_cv500_pseudo_scored.pt`
 - [x] `[DONE]` Add stronger teacher diagnostics to the mixed-data artifact flow; the teacher branch now records top-k teacher labels/scores, optional per-style score maps, row-level filter decisions, and preserves pseudo-label report/filter metadata inside the mixed artifact `mixture_report`
 - [x] `[DONE]` Preserve a reusable score -> filter -> build flow for CommonVoice pseudo labels; `scripts/annotate_commonvoice_pseudolabels.py`, `scripts/filter_commonvoice_pseudolabels.py`, and `scripts/build_mixed_training_set.py --acceptance-policy artifact_selected` now let future teacher comparisons reuse one scored artifact across multiple acceptance policies
 - [x] `[DONE]` Re-score the full `cv500` CommonVoice artifact with the updated annotate script before the first teacher matrix training run; `embeddings/openvoice_commonvoice_cv500_pseudo_scored.pt` now provides branch-native teacher metadata, top-k scores, and mapped style-score totals, and `embeddings/openvoice_mixed_teacher_base.pt` is rebuilt from the scored -> filtered artifact path
@@ -623,7 +624,8 @@ The paper contribution is **controllable speaker profile synthesis with formal p
 - **Completed branch from Joe's April 30 recommendation:** `research/combined-data-pseudolabel-mix`
 - **Completed follow-up branch:** `research/mixed-data-pseudolabel-quality`
 - **Completed follow-up branch:** `research/nontrump-style-strength-sweep`
-- **Planned next branch:** `research/mixed-data-pseudolabel-teacher`
+- **Current canonical research branch:** `research/controllable-vae`
+- **Current experiment focus:** mixed-data pseudo-label teacher / acceptance logic
 
 ### 0.15 Mixed-Data Pseudolabel Mix Bootstrap Implementation (April 30, branch `research/combined-data-pseudolabel-mix`)
 
@@ -1530,14 +1532,15 @@ python examples/controlvc_infer_controllable.py \
 - Those branches remain historical / review-later branches rather than being
   silently folded into the accepted line.
 
-**Immediate post-rollup order**
-- Merge PR `#3`
-- Delete the merged sequential research branches from the remote
-- Refresh local `main`
-- Start `research/mixed-data-pseudolabel-teacher`
-- Add the short Joe-facing metric guide
-- Extend the non-Trump sweep to a larger panel
-- Finish the reproducibility checklist / dependency pinning work
+**Post-rollup outcome**
+- PR `#3` was merged and then reverted from upstream `main` at Joe's request so `main` could return to being a stable published-work branch
+- The controllable-VAE line now continues on the fork `NonMundaneDev/dpvc`
+- Canonical research branch: `research/controllable-vae`
+- Current experiment focus: mixed-data pseudo-label teacher / acceptance logic
+- Remaining near-term follow-ups:
+  - add the short Joe-facing metric guide
+  - extend the non-Trump sweep to a larger panel
+  - finish the reproducibility checklist / dependency pinning work
 
 **Checked-in plan files**
 - `IMPLEMENTATION_PLAN_post-consolidation-next-queue.md`

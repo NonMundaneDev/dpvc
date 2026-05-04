@@ -1,5 +1,13 @@
 # Implementation Plan: Post-Consolidation Next Queue
 
+Historical note:
+
+- PR `#3` from `integration/research-rollup` was merged and later reverted from
+  upstream `main` after Joe clarified that `main` should remain a stable
+  reflection of the published work.
+- Ongoing controllable-VAE research now continues on the fork
+  `NonMundaneDev/dpvc`, canonical branch `research/controllable-vae`.
+
 ## 1. Why this plan exists
 
 The repository now has a single consolidation PR:
@@ -74,9 +82,11 @@ Validation:
 - `WORKLOG.md` / `README.md` continue to point to `FINDINGS.md` instead of old
   branch-by-branch review patterns
 
-### Step 3. Start the next research branch
+### Step 3. Resume the next research experiment
 
-**Branch:** `research/mixed-data-pseudolabel-teacher`
+**Canonical research branch:** `research/controllable-vae`
+
+**Current experiment focus:** mixed-data pseudo-label teacher / acceptance logic
 
 **Goal:** improve the mixed-data pseudo-label teacher and class-balanced
 acceptance logic, because the best current mixed-data condition only reached

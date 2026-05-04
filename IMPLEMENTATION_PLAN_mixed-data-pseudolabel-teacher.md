@@ -1,4 +1,8 @@
-# Implementation Plan: `research/mixed-data-pseudolabel-teacher`
+# Implementation Plan: Mixed-Data Pseudolabel Teacher
+
+This is the current experiment slice running on the canonical research branch:
+
+- `research/controllable-vae`
 
 ## 1. Why this branch exists
 
@@ -23,9 +27,10 @@ So the next highest-value branch is to improve the **teacher that produces the
 pseudo labels**, and the **class-balanced acceptance policy** that decides which
 pseudo-labeled CommonVoice rows enter the mixed-data artifact.
 
-## 2. Branch name
+## 2. Branch context
 
-- `research/mixed-data-pseudolabel-teacher`
+- canonical research branch: `research/controllable-vae`
+- historical experiment branch name: `research/mixed-data-pseudolabel-teacher`
 
 ## 3. Core question
 

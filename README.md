@@ -6,17 +6,29 @@ This repository provides a library for defining differentially private speaker a
 
 ## Current work — controllable DP voice conversion
 
-Current active research branch: **`research/mixed-data-pseudolabel-teacher`**. The consolidation work already landed through `integration/research-rollup`, so collaborators can now review the accepted project history on `main` while this branch focuses narrowly on improving the mixed-data pseudo-label teacher and class-balanced acceptance logic. The immediate next queue is:
+Upstream `main` is now back to Joe's intended role: a stable reflection of the
+published work. Ongoing controllable-VAE research has moved to the fork:
 
-1. merge PR `#3` from `integration/research-rollup` into `main`
-2. prune the merged sequential research branches from remote
-3. start **`research/mixed-data-pseudolabel-teacher`** from post-rollup `main`
-4. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
+- [NonMundaneDev/dpvc](https://github.com/NonMundaneDev/dpvc)
+
+Canonical research branch:
+
+- **`research/controllable-vae`**
+
+Current experiment focus on that branch:
+
+- **mixed-data pseudo-label teacher / acceptance logic**
+
+Immediate next queue:
+
+1. train the first teacher-focused mixed-data checkpoint family from `embeddings/openvoice_mixed_teacher_base.pt`
+2. compare at least one alternative pseudo-label teacher or teacher-agreement rule
+3. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
 
-- **[`IMPLEMENTATION_PLAN_post-consolidation-next-queue.md`](IMPLEMENTATION_PLAN_post-consolidation-next-queue.md)** — overall order of work after the consolidation PR
-- **[`IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md`](IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md)** — the technical plan for the next research branch
+- **[`IMPLEMENTATION_PLAN_post-consolidation-next-queue.md`](IMPLEMENTATION_PLAN_post-consolidation-next-queue.md)** — historical record of the consolidation / rollback sequence
+- **[`IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md`](IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md)** — the technical plan for the current experiment slice on `research/controllable-vae`
 
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
