@@ -18,6 +18,7 @@ expanded rare-supply checkpoint.
 | `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` | `47.0%` | `0.2995` | `0.2751` | `-0.2640` | `7` | `18` | `1` | `1` | `25` |
 | `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `2` | `18` | `1` | `1` | `20` |
 | `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `42.4%` | `0.3008` | `0.2863` | `-0.2148` | `4` | `22` | `1` | `0` | `27` |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard` | `42.4%` | `0.2718` | `0.2592` | `-0.1787` | `4` | `23` | `2` | `1` | `28` |
 
 ## Decoder-Prototype Command
 
@@ -48,6 +49,7 @@ expanded rare-supply checkpoint.
 Open the checked-in listening report:
 
 - `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`
+- `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html`
 
 For comparison, the current quality-balanced reference remains:
 
@@ -55,9 +57,10 @@ For comparison, the current quality-balanced reference remains:
 
 ## Readout
 
-The decoder-prototype objective is implemented and reproducible, but the first
-pilot is not a new best model. It preserves high novelty and improves recall
-over the original `combined` baseline, but it loses recall and worsens WER /
-collapse versus the current `sad/enunciated` guard. The next training-side
-objective should be safer and more directly calibrated against generated audio,
-not only decoded embedding prototypes.
+The decoder-prototype objective is implemented and reproducible, but this
+checkpoint is not a new best model. The unguarded pilot preserves high novelty
+and improves recall over the original `combined` baseline, while the guarded
+readout improves WER/MOS. Neither readout beats the current expanded
+rare-supply `sad/enunciated` guard on the recall/WER/collapse Pareto point. The
+next training-side objective should be safer and more directly calibrated
+against generated audio, not only decoded embedding prototypes.

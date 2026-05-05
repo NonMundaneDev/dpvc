@@ -566,10 +566,11 @@ Real local validation completed so far:
 
 Immediate next execution steps on this branch:
 
-1. Treat the first decoder-prototype pilot as the implemented cautionary
-   baseline for decoder-aware training: it reaches `42.4%` recall and `0.3008`
-   novelty gain, but loses to the `sad/enunciated` guard on WER, MOS, and
-   collapse.
+1. Treat the first decoder-prototype pilot and its guarded readout as
+   implemented cautionary baselines for decoder-aware training: the unguarded
+   run reaches `42.4%` recall and `0.3008` novelty gain, and the guarded run
+   improves WER/MOS to `0.2592` / `-0.1787`, but neither beats the expanded
+   rare-supply `sad/enunciated` guard on recall, WER, and collapse.
 2. Design the safer follow-up objective: lower decoder-prototype weights,
    style-specific prototype subsets, or offline generated-audio calibration
    from emotion2vec / WER / MOS feedback.
@@ -623,3 +624,7 @@ Expanded rare-supply gate status:
   `27` files with any collapse. It is a reproducible negative/cautionary
   result: decoded-embedding prototype matching alone did not learn the
   inference-side guard's quality-balanced repair.
+- Applying the same `cvrare_sad_enunc_guard` profile to the decoder-prototype
+  checkpoint improves WER/MOS (`0.2592`, `-0.1787`) but leaves recall at
+  `42.4%` and increases files with any collapse to `28`, so inference
+  calibration repairs only part of the decoder-prototype failure.

@@ -1358,6 +1358,7 @@ Interpretation:
 - `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` is the first expanded rare-supply generated-audio result: `47.0%` emotion recall, `0.2995` novelty gain, `0.2751` mean styled WER, and `-0.2640` MOS delta
 - `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` is the recommended quality-balanced inference profile for that checkpoint: it preserves `47.0%` recall while improving mean styled WER to `0.2348`, MOS delta to `-0.2081`, and files with any collapse to `20`
 - `mixed_teacher_cvrare_decoder_proto_labeled_warmup` is the first decoder-aware training pilot: it preserves high novelty (`0.3008`) but drops recall to `42.4%` and worsens mean styled WER to `0.2863`, so it is a cautionary baseline rather than the new reference
+- applying `cvrare_sad_enunc_guard` to the decoder-prototype checkpoint improves WER/MOS (`0.2592`, `-0.1787`) but leaves recall at `42.4%` and raises files with any collapse to `28`
 - the next mixed-data branch should move to safer generated-audio-calibrated objectives, because naive decoded-embedding prototype matching did not learn the manual `sad/enunciated` guard's quality-balanced repair
 
 Expanded rare-supply mixed artifact and first model run:
@@ -1496,6 +1497,20 @@ python scripts/run_ablation_inference.py \
 python scripts/run_generated_audio_eval_suite.py \
     --input output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_eval \
     --result-tag mixed_teacher_cvrare_decoder_proto_labeled_warmup \
+    --input-tag mixed_teacher
+
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_cvrare_decoder_proto_labeled_warmup \
+    --out output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard_eval \
+    --style-strength 5.0 \
+    --style-strength-map configs/style_strength_profiles/cvrare_sad_enunc_guard.json \
+    --noise-level 0.0 \
+    --seed 42
+
+python scripts/run_generated_audio_eval_suite.py \
+    --input output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard_eval \
+    --result-tag mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard \
     --input-tag mixed_teacher
 ```
 

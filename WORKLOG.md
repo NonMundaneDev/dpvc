@@ -90,8 +90,8 @@ Priority tags:
 - [x] `[DONE]` Evaluate the expanded rare-supply checkpoint and make a listening report; `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reached `46.97%` emotion recall and `0.2995` novelty gain, but exposed a content/naturalness tradeoff (`0.2751` mean styled WER, `-0.2640` MOS delta)
 - [x] `[DONE]` Add inference-side per-style strength profiles and a one-command generated-audio eval runner; the narrow `sad/enunciated` guard keeps the expanded checkpoint at `47.0%` recall while improving WER to `0.2348`, MOS delta to `-0.2081`, and files with any collapse to `20`
 - [x] `[DONE]` Add a decoder-prototype training objective and first pilot; `mixed_teacher_cvrare_decoder_proto_labeled_warmup` reaches `42.4%` recall and `0.3008` novelty gain, but does not beat the `sad/enunciated` guard on WER, MOS, or collapse
+- [x] `[DONE]` Evaluate the decoder-prototype checkpoint with the existing `cvrare_sad_enunc_guard` style-strength map; the guard improves WER/MOS (`0.2592`, `-0.1787`) but does not recover recall (`42.4%`) or collapse (`28` files), so the decoder-prototype checkpoint remains diagnostic rather than a reference
 - [ ] `[NOW]` Try a safer generated-audio / decoder-aware objective family after the naive decoder-prototype result: lower decoder-prototype weights (`0.005-0.01`), true-labeled-only target rows, or offline emotion2vec calibration of generated outputs before more full 1000-epoch runs
-- [ ] `[SOON]` Evaluate the decoder-prototype checkpoint with the existing `cvrare_sad_enunc_guard` style-strength map; the first global-strength run is negative, but this isolates whether the training objective itself is worse or whether it still needs the same inference guard
 - [ ] `[SOON]` Add a small generated-output calibration artifact that scores pilot generations with emotion2vec and feeds target-style failures back into the next objective, because decoded embedding prototypes alone did not reliably improve generated-audio recall/quality
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [ ] `[SOON]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths, because the `sad/enunciated` guard is promising but should not become a hidden manual tuning step
@@ -2281,9 +2281,86 @@ Future upgrade to preserve:
   score it with emotion2vec/WER/MOS, and use those failures to calibrate target
   rows or style strengths rather than matching only decoded embedding
   prototypes.
-- `[SOON]` Evaluate the decoder-prototype checkpoint with
-  `configs/style_strength_profiles/cvrare_sad_enunc_guard.json` to separate
-  training-objective quality from inference-strength quality.
+- `[DONE]` Evaluate the decoder-prototype checkpoint with
+  `configs/style_strength_profiles/cvrare_sad_enunc_guard.json`; the guard
+  repairs WER/MOS but not recall/collapse, so the next work should change the
+  training objective rather than add more inference variants on this checkpoint.
+
+---
+
+### 0.36 Guarded Decoder-Prototype Readout (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Reused the first decoder-prototype checkpoint and applied the existing
+  `configs/style_strength_profiles/cvrare_sad_enunc_guard.json` inference
+  profile.
+- Generated:
+  `output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard_eval/`
+  with `110` manifest rows.
+- Evaluated the full generated-audio metric stack and built:
+  - `results/eval_emotion_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.csv`
+  - `results/eval_novelty_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.csv`
+  - `results/eval_wer_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.csv`
+  - `results/eval_mos_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.csv`
+  - `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html`
+
+Commands:
+
+```bash
+.venv/bin/python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_cvrare_decoder_proto_labeled_warmup \
+    --out output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard_eval \
+    --style-strength 5.0 \
+    --style-strength-map configs/style_strength_profiles/cvrare_sad_enunc_guard.json \
+    --noise-level 0.0 \
+    --seed 42
+
+.venv/bin/python scripts/run_generated_audio_eval_suite.py \
+    --input output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard_eval \
+    --result-tag mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard \
+    --input-tag mixed_teacher
+```
+
+Validation:
+
+- `Validation`: deterministic generation completed with `110` manifest rows.
+- `Validation`: the generated-audio eval suite wrote emotion, novelty, WER,
+  MOS, summary/collapse, listening HTML, and subjective-rating CSV artifacts.
+- `Validation`: the guarded decoder-prototype summary row is present in
+  `results/eval_mixed_teacher_summary.csv`.
+
+Result matrix:
+
+| Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Content collapse | Style-to-neutral collapse | Identity collapse | Mixed collapse | Files with any collapse |
+|-----------|--------|--------------|-----------------|-----------|------------------|---------------------------|-------------------|----------------|-------------------------|
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `2` | `18` | `1` | `1` | `20` |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `42.4%` | `0.3008` | `0.2863` | `-0.2148` | `4` | `22` | `1` | `0` | `27` |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard` | `42.4%` | `0.2718` | `0.2592` | `-0.1787` | `4` | `23` | `2` | `1` | `28` |
+
+Readout:
+
+- The inference guard improves the decoder-prototype checkpoint's WER
+  (`0.2863 -> 0.2592`) and MOS delta (`-0.2148 -> -0.1787`).
+- The same guard does not recover emotion recall (`42.4%`) and slightly
+  worsens collapse files (`27 -> 28`).
+- Compared with the current reference
+  `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`,
+  the guarded decoder-prototype checkpoint has lower recall, lower novelty,
+  worse WER, and more collapse files, though it has a better predicted-MOS
+  delta.
+- This separates the failure modes cleanly: inference calibration can repair
+  some naturalness/content damage, but the decoder-prototype training objective
+  still does not learn the recall/quality Pareto point.
+
+Future upgrade to preserve:
+
+- `[NOW]` Move to a safer generated-audio-calibrated objective rather than
+  more inference variants on this checkpoint.
+- `[SOON]` Keep the guarded decoder-prototype listening report for perceptual
+  review, because predicted MOS improves even though aggregate recall/WER do
+  not beat the current reference.
 
 ---
 

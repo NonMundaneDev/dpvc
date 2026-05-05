@@ -22,8 +22,8 @@ Current experiment focus on that branch:
 Immediate next queue:
 
 1. use `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` as the current quality-balanced profile, `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest high-novelty result, and `combined` as the cleanest original quality baseline
-2. treat the first decoder-prototype training pilot (`mixed_teacher_cvrare_decoder_proto_labeled_warmup`) as a verified cautionary baseline, not as the new reference
-3. run perceptual review from `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`, with `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html` as the decoder-prototype comparison
+2. treat the first decoder-prototype training pilot (`mixed_teacher_cvrare_decoder_proto_labeled_warmup`) and its guarded readout as verified cautionary baselines, not as the new reference
+3. run perceptual review from `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`, with `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html` as the decoder-prototype comparison
 4. move the next training work toward safer generated-audio / teacher-calibrated objectives, then add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
@@ -140,8 +140,11 @@ reference. The first decoder-prototype training pilot
 decoder-aware objective, but the initial global-strength result does not beat
 the inference-side guard: recall falls to `42.4%`, WER rises to `0.2863`, MOS
 delta is `-0.2148`, and files with any collapse rise to `27`, even though
-novelty remains high at `0.3008`. This makes it a useful negative/cautionary
-result and keeps the `sad/enunciated` guard as the current quality-balanced
+novelty remains high at `0.3008`. Applying the same `sad/enunciated` inference
+guard to the decoder-prototype checkpoint improves WER to `0.2592` and MOS
+delta to `-0.1787`, but recall remains `42.4%` and collapse rises to `28`
+files. This makes it a useful negative/cautionary result and keeps the
+expanded rare-supply `sad/enunciated` guard as the current quality-balanced
 reference. The
 non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
 the safest default, `7.5` is a useful stronger option for styles like
@@ -164,6 +167,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html)
 - [`results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html)
+- [`results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html`](results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html)
 - [`configs/style_strength_profiles/cvrare_sad_enunc_guard.json`](configs/style_strength_profiles/cvrare_sad_enunc_guard.json)
 - [`results/commonvoice_pseudolabel_supply_audit_rare_supply.md`](results/commonvoice_pseudolabel_supply_audit_rare_supply.md)
 - [`results/commonvoice_rare_supply_expansion_preflight.md`](results/commonvoice_rare_supply_expansion_preflight.md)

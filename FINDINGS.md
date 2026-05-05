@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-05 (Finding 32 adds the first decoder-prototype training pilot)
+**Last updated:** 2026-05-05 (Finding 32 adds the first decoder-prototype training pilot and guarded readout)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -2302,6 +2302,7 @@ The pilot trained from the expanded rare-supply checkpoint:
 | `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` | `47.0%` | `0.2995` | `0.2751` | `-0.2640` | `7` | `18` | `1` | `1` | `25` | Strongest high-novelty expanded run |
 | `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `2` | `18` | `1` | `1` | `20` | Current quality-balanced reference |
 | `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `42.4%` | `0.3008` | `0.2863` | `-0.2148` | `4` | `22` | `1` | `0` | `27` | High novelty, but worse recall/WER/collapse than the guard |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard` | `42.4%` | `0.2718` | `0.2592` | `-0.1787` | `4` | `23` | `2` | `1` | `28` | Improves decoder-prototype WER/MOS, but not recall/collapse |
 
 Per-style canonical recall for the decoder-prototype pilot:
 
@@ -2331,21 +2332,28 @@ Per-style canonical recall for the decoder-prototype pilot:
 5. **Manual inference calibration still wins the current Pareto comparison.**
    The `sad/enunciated` guard keeps `47.0%` recall with better WER, better MOS,
    and fewer collapse files than the decoder-prototype pilot.
+6. **Applying the same guard to the decoder-prototype checkpoint repairs only
+   part of the problem.** WER improves from `0.2863` to `0.2592`, and MOS delta
+   improves from `-0.2148` to `-0.1787`, but recall remains `42.4%` and files
+   with any collapse increase from `27` to `28`.
 
 ### Implication
 
 Finding 32 is a cautionary result, not a dead end. It confirms that decoded
-embedding supervision can be added cleanly, but also shows that naive
-prototype matching is not enough to learn the quality-balanced repair that the
-manual strength guard discovered. The next training-side work should be safer
-and more directly tied to generated-audio behavior: lower prototype weights,
-style-specific target subsets, or an offline generated-audio calibration loop
-using emotion2vec / WER / MOS feedback.
+embedding supervision can be added cleanly, and the guarded readout confirms
+that inference calibration can still repair some decoder-prototype
+naturalness/content damage. But naive prototype matching is not enough to learn
+the quality-balanced repair that the manual strength guard discovered. The
+next training-side work should be safer and more directly tied to
+generated-audio behavior: lower prototype weights, style-specific target
+subsets, or an offline generated-audio calibration loop using emotion2vec /
+WER / MOS feedback.
 
 Recommended listening artifacts:
 
 - `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
 - `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`
+- `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html`
 
 ---
 
@@ -2362,7 +2370,7 @@ Recommended listening artifacts:
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Finding 32 shows that the first naive decoder-prototype objective does not learn that repair (`42.4%` recall, `0.2863` WER, `27` collapse files), so the remaining mixed-data question is now narrower: can generated-audio-calibrated or lower-risk decoder-aware objectives improve on the manual guard?
+12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Finding 32 shows that the first naive decoder-prototype objective does not learn that repair (`42.4%` recall, `0.2863` WER, `27` collapse files), and the same guard repairs only WER/MOS (`0.2592`, `-0.1787`) while recall stays `42.4%`. The remaining mixed-data question is now narrower: can generated-audio-calibrated or lower-risk decoder-aware objectives improve on the manual guard?
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---
