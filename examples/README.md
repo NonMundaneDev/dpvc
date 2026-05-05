@@ -1285,6 +1285,12 @@ python scripts/audit_commonvoice_pseudolabel_supply.py \
         embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt \
     --out-csv results/commonvoice_pseudolabel_supply_audit.csv \
     --out-md results/commonvoice_pseudolabel_supply_audit.md
+
+python scripts/plan_commonvoice_rare_supply_expansion.py \
+    --corpus-path /data/cv-corpus-21.0-2025-03-14/en \
+    --corpus-path /Users/steve/datasets/cv-corpus-21.0-2025-03-14-subset/en \
+    --out-json results/commonvoice_rare_supply_expansion_preflight.json \
+    --out-md results/commonvoice_rare_supply_expansion_preflight.md
 ```
 
 Current checked-in result summary for the first teacher-family run:
@@ -1318,7 +1324,8 @@ Interpretation:
 - `mixed_teacher_hybrid_style_distill_labeled_warmup` shows that protecting labeled CREMA-D/Expresso axes before introducing CommonVoice teacher geometry improves novelty/collapse, but still does not recover emotion recall
 - `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup.html` is the browser-playable listening report for perceptual review of the latest condition, with a companion subjective scoring template at `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup_ratings.csv`
 - `results/commonvoice_pseudolabel_supply_audit.md` confirms the current local CommonVoice subset is the rare-class bottleneck: even before mixed-data speaker-first selection, the hybrid artifact only has `anger=5` and `fear=4` selected rows
-- the next mixed-data branch should move to decoder-aware style objectives or rare-class supply rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, schedule-only curricula, or latent-only mask/weight variants
+- `results/commonvoice_rare_supply_expansion_preflight.md` turns that bottleneck into a reproducible `NO-GO` gate: the stable full-corpus path is not mounted, and the current `1202`-row / `500`-speaker subset is far below the estimated `22538` usable-row target for credible `anger` / `fear` expansion
+- the next mixed-data branch should move to decoder-aware style objectives or mount a fuller CommonVoice corpus for rare-class supply, rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, schedule-only curricula, or latent-only mask/weight variants
 
 Non-Trump style-strength sweep:
 
@@ -1554,6 +1561,7 @@ scores more interpretable.
 | 10d | `../scripts/summarize_commonvoice_rich_objectives.py` | CommonVoice rich-objective ablation eval CSVs | `eval_commonvoice_rich_objectives_summary_pass7.csv` + `eval_commonvoice_rich_objectives_collapse_pass7.csv` |
 | 10e | `../scripts/annotate_commonvoice_pseudolabels.py` | CommonVoice embedding artifact | enriched artifact with `pseudo_style`, `pseudo_style_confidence`, `pseudo_style_topk_*`, `pseudo_style_teacher`, and `pseudo_style_report` |
 | 10ea | `../scripts/filter_commonvoice_pseudolabels.py` | scored CommonVoice artifact | filtered artifact with `pseudo_style_selected*` fields and `pseudo_style_filter_report` |
+| 10eb | `../scripts/plan_commonvoice_rare_supply_expansion.py` | local CommonVoice `validated.tsv` + `clips/` plus reference pseudo-label artifacts | `commonvoice_rare_supply_expansion_preflight.json` + `commonvoice_rare_supply_expansion_preflight.md` |
 | 10f | `../scripts/summarize_commonvoice_partial_label.py` | CommonVoice partial-label pretraining eval CSVs | `eval_commonvoice_partial_label_summary_pass8.csv` + `eval_commonvoice_partial_label_collapse_pass8.csv` |
 | 10g | `../scripts/summarize_mixed_data_results.py` | mixed-data pseudolabel mix eval CSVs | `eval_mixed_data_summary_pass9.csv` + `eval_mixed_data_collapse_pass9.csv` |
 | 10h | `../scripts/summarize_mixed_teacher_results.py` | mixed-data pseudo-label teacher eval CSVs | `eval_mixed_teacher_summary.csv` + `eval_mixed_teacher_collapse.csv` |
@@ -1568,6 +1576,7 @@ scores more interpretable.
 - `../scripts/prepare_commonvoice_subset.py` — Filters a full Common Voice `validated.tsv` down to the locally available clip subset.
 - `../scripts/build_mixed_training_set.py` — Builds the first mixed-data bootstrap artifact with CommonVoice speaker-first sampling, pseudo-label filtering, style caps, and a saved mixture report.
 - `../scripts/filter_commonvoice_pseudolabels.py` — Applies reusable row-level pseudo-label acceptance rules so CommonVoice scoring and class-balanced selection can be iterated separately.
+- `../scripts/plan_commonvoice_rare_supply_expansion.py` — Checks whether a local CommonVoice corpus has enough usable rows and speakers to justify rebuilding rare-class pseudo labels before another model run.
 - `../scripts/prepare_ablation_embeddings.py` — Builds the evaluation ablation matrix `cremad_only` / `expresso_only` embedding sets.
 - `../scripts/run_ablation_inference.py` — Generates the evaluation ablation matrix corpora, the CommonVoice finetune ablation corpora, the CommonVoice objective ablation corpora, the CommonVoice rich-objective ablation corpora, the CommonVoice partial-label pretraining corpora, and the mixed-data pseudolabel mix corpora.
 - `../scripts/annotate_commonvoice_pseudolabels.py` — Adds confidence-scored pseudo-style labels to a CommonVoice embedding artifact so weak-label pretraining can be reproduced without rerunning the teacher every time.

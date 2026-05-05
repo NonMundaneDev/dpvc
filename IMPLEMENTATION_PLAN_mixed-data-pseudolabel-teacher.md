@@ -500,16 +500,35 @@ Real local validation completed so far:
     speaker-first sampling, so the rare-class bottleneck is data supply rather
     than just loss weighting
 
+- CommonVoice rare-class supply preflight
+  - added `scripts/plan_commonvoice_rare_supply_expansion.py` so the data-first
+    rare-supply path has a reproducible go/no-go gate before extraction,
+    scoring, filtering, hybrid combining, mixed-artifact construction, or
+    training
+  - generated:
+    - `results/commonvoice_rare_supply_expansion_preflight.json`
+    - `results/commonvoice_rare_supply_expansion_preflight.md`
+  - result: the stable full-corpus path
+    `/data/cv-corpus-21.0-2025-03-14/en` is not mounted, and the current local
+    subset has only `1202` usable rows / `500` speakers
+  - based on checked-in selected rare-label rates, a credible rare-supply
+    extraction should target at least `22538` usable CommonVoice rows before
+    another model run
+
 Immediate next execution steps on this branch:
 
-1. Design a decoder-aware or generated-audio style objective for canonical
+1. Mount or download the fuller English CommonVoice corpus at
+   `/data/cv-corpus-21.0-2025-03-14/en`, rerun
+   `scripts/plan_commonvoice_rare_supply_expansion.py`, and only proceed past
+   the pseudo-label supply audit if selected `anger` and `fear` rows reach the
+   target.
+2. Design a decoder-aware or generated-audio style objective for canonical
    emotions, because the labeled-first curriculum improved novelty/collapse but
    still decoded to emotion2vec-neutral outputs.
-2. Rebuild or rebalance rare canonical CommonVoice pseudo-label supply before
-   more weighting experiments; `anger=4` and `fear=4` are not enough.
 3. Compare one-clip-per-speaker versus two-clips-per-speaker CommonVoice
    sampling under the same teacher, because rare-class supply may be
-   constrained by the current speaker-first artifact.
+   constrained by the current speaker-first artifact; do this only after the
+   fuller corpus passes the preflight.
 4. Compare prototype-only versus hybrid teacher targets inside the same
    continuous style-space objective only after diagnostics confirm which
    teacher geometry is failing.

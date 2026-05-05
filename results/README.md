@@ -192,6 +192,18 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04/2026-05-05:
   - `results/commonvoice_pseudolabel_supply_audit.md` confirms the current local CommonVoice subset is rare-class limited: the hybrid artifact has only `anger=5` and `fear=4` selected rows before mixed-data sampling
   - the next mixed-data branch should focus on rare-class supply or decoder-aware/generated-audio style objectives, not more schedule variants, hard pseudo-label arbitration, scalar teacher-weight sweeps, schedule-only curricula, or another latent-only mask/weight variant
 
+CommonVoice rare-class supply preflight from 2026-05-05:
+
+| File | Rows / decision | Script | Backs |
+|------|-----------------|--------|-------|
+| `commonvoice_rare_supply_expansion_preflight.json` | `NO-GO` | [`scripts/plan_commonvoice_rare_supply_expansion.py`](../scripts/plan_commonvoice_rare_supply_expansion.py) | WORKLOG section 0.30 |
+| `commonvoice_rare_supply_expansion_preflight.md` | `NO-GO` | [`scripts/plan_commonvoice_rare_supply_expansion.py`](../scripts/plan_commonvoice_rare_supply_expansion.py) | WORKLOG section 0.30 |
+
+- The stable full-corpus path `/data/cv-corpus-21.0-2025-03-14/en` was not mounted.
+- The only scanned local subset had `1202` usable rows and `500` usable speakers.
+- Based on checked-in selected `anger` / `fear` rates, the next rare-supply extraction should target at least `22538` usable rows before another model run.
+- This is an engineering/reproducibility gate, not a new paper-facing finding by itself.
+
 Non-Trump style-strength sweep from 2026-05-03:
 
 - The full strength-sweep result bundle is now checked in for:
