@@ -21,7 +21,7 @@ Current experiment focus on that branch:
 
 Immediate next queue:
 
-1. mount or download the fuller English CommonVoice corpus at `/data/cv-corpus-21.0-2025-03-14/en`, rerun the rare-supply preflight, and only continue to extraction/scoring/training if the preflight and supply audit both pass
+1. extract OpenVoice embeddings from the expanded local CommonVoice corpus at `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`, then score/filter/audit pseudo labels before any training
 2. build a decoder-aware or generated-audio style objective, because the labeled-first curriculum improved novelty/collapse but still decoded to emotion2vec-neutral outputs
 3. keep `mixed_teacher_threshold_balanced` as the best overall mixed-data teacher reference, while treating `mixed_teacher_hybrid_style_distill_labeled_warmup` as the strongest current style-distillation novelty/collapse variant
 4. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
@@ -104,15 +104,17 @@ CREMA-D / Expresso style axes first, then ramps CommonVoice teacher geometry
 from `0.0` to `0.25`; it improves secondary axes (`0.0930` novelty gain, `54`
 identity-collapse files, `61` files with any collapse), but recall remains
 `16.7%`. The rare-class supply preflight then made the data-side constraint
-explicit: the stable full CommonVoice path
-`/data/cv-corpus-21.0-2025-03-14/en` is not currently mounted, and the only
-local subset has `1202` usable validated rows / `500` speakers. Based on the
-observed selected `anger` / `fear` rates, the next credible rare-supply run
-needs about `22538` usable rows before extraction. The current next move is
-therefore to mount/download the fuller CommonVoice corpus and pass the
-preflight/supply audit before any rare-supply training, or move to
-decoder-aware/generated-audio style supervision if that corpus is not available
-soon. The
+explicit and was rerun after expanding the local CommonVoice corpus. Literal
+`/data/cv-corpus-21.0-2025-03-14/en` is not creatable in this macOS session
+because the root filesystem is read-only, so the usable stable local corpus is
+`/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`. It preserves the full
+English metadata as `validated_full.tsv`, uses an active `validated.tsv`
+filtered to the locally extracted `40000` MP3 clips from the first validated
+audio shard, and yields `40000` usable rows / `20537` speakers. That clears the
+current `22538` usable-row rare-supply preflight target. The current next move
+is therefore to extract OpenVoice embeddings from this expanded corpus, then
+stop at the pseudo-label supply audit unless selected `anger` and `fear` rows
+reach the target. The
 non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
 the safest default, `7.5` is a useful stronger option for styles like
 `whisper` and `confused`, and `10.0-12.5` look more like high-novelty

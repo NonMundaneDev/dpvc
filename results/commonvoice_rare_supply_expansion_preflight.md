@@ -4,7 +4,7 @@ This report checks whether a local CommonVoice English corpus is large enough to
 
 ## Decision
 
-- `NO-GO`: no scanned corpus meets the current row and speaker gate.
+- `GO`: at least one candidate corpus meets the current row and speaker gate.
 - rare styles: `anger, fear`
 - target selected rare rows per style: `50`
 - recommended minimum usable rows: `22538`
@@ -15,6 +15,7 @@ This report checks whether a local CommonVoice English corpus is large enough to
 | path | usable rows | usable speakers | missing clips | decision |
 | --- | ---: | ---: | ---: | --- |
 | `/data/cv-corpus-21.0-2025-03-14/en` | 0 | 0 | 0 | NO-GO |
+| `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` | 40000 | 20537 | 0 | GO |
 | `/Users/steve/datasets/cv-corpus-21.0-2025-03-14-subset/en` | 1202 | 500 | 0 | NO-GO |
 
 ### Why `/data/cv-corpus-21.0-2025-03-14/en` is blocked
@@ -44,27 +45,18 @@ The row target is derived from the checked-in pseudo-labeled CommonVoice artifac
 
 ## Next Commands
 
-Do not run a new rare-supply model condition from the current local subset. First mount or download a fuller English CommonVoice corpus at the stable path, then rerun the preflight:
+Run these in order. Stop after the supply audit if `anger` and `fear` still fail to reach the target selected-row count.
+
+### preflight
 
 ```bash
-python scripts/plan_commonvoice_rare_supply_expansion.py --corpus-path /data/cv-corpus-21.0-2025-03-14/en
+python scripts/plan_commonvoice_rare_supply_expansion.py --corpus-path /Users/steve/datasets/cv-corpus-21.0-2025-03-14/en
 ```
-
-Expected stable path:
-
-- `/data/cv-corpus-21.0-2025-03-14/en`
-
-Required layout:
-
-- `/data/cv-corpus-21.0-2025-03-14/en/validated.tsv`
-- `/data/cv-corpus-21.0-2025-03-14/en/clips/`
-
-After that preflight returns `GO`, use this gated command family. Keep the stop point after `supply_audit`: only build/train the mixed artifact if `anger` and `fear` reach the target selected-row count.
 
 ### extract
 
 ```bash
-python examples/openvoice_extract_commonvoice.py --corpus-path /data/cv-corpus-21.0-2025-03-14/en --output embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt --seed 42 --max-speakers 7513 --max-clips-per-speaker 3
+python examples/openvoice_extract_commonvoice.py --corpus-path /Users/steve/datasets/cv-corpus-21.0-2025-03-14/en --output embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt --seed 42 --max-speakers 13308 --max-clips-per-speaker 3
 ```
 
 ### emotion2vec_score

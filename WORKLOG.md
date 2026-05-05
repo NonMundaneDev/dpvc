@@ -85,8 +85,8 @@ Priority tags:
 - [x] `[DONE]` Calibrate the style-space distillation objective with a first teacher-loss weight sweep; global weights `0.10`, `0.25`, and `0.50` all stayed at `16.7%` recall, so the next move is class-specific masks/curriculum rather than another scalar weight tweak
 - [x] `[DONE]` Add per-style teacher masks, confidence weighting, and a first labeled-first curriculum for the style-space loss; target masking and labeled warmup both stayed at `16.7%` recall, so curriculum timing with the current teacher is not enough to recover target emotion recall
 - [ ] `[NOW]` Design a decoder-aware or generated-audio style objective for canonical emotions, because the labeled-first curriculum improved novelty/collapse but still decoded to emotion2vec-neutral outputs
-- [x] `[DONE]` Add a CommonVoice rare-supply preflight gate before more weighting experiments; it scans local `validated.tsv` + `clips/`, estimates the needed row count from the checked-in pseudo-label artifacts, and currently returns `NO-GO` because only the small `1202`-row / `500`-speaker subset is mounted
-- [ ] `[NOW]` Mount or download a fuller English CommonVoice corpus at `/data/cv-corpus-21.0-2025-03-14/en`, rerun `scripts/plan_commonvoice_rare_supply_expansion.py`, and only proceed to extraction/scoring/training after the preflight and supply audit both pass
+- [x] `[DONE]` Add a CommonVoice rare-supply preflight gate before more weighting experiments; it scans local `validated.tsv` + `clips/`, estimates the needed row count from the checked-in pseudo-label artifacts, and now returns `GO` on the expanded local corpus at `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` (`40000` usable rows / `20537` speakers)
+- [ ] `[NOW]` Extract OpenVoice embeddings from the expanded local CommonVoice corpus, then score/filter/audit pseudo labels and only train after selected `anger` / `fear` supply passes the audit
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
 
@@ -1639,19 +1639,18 @@ Future upgrade to preserve:
 
 - `[NOW]` Make every future generated corpus produce a listening HTML report and
   subjective-rating CSV before closeout.
-- `[DONE]` Add a local CommonVoice rare-supply preflight before training another
-  rare-class schedule; current `1202` validated rows cannot supply enough
-  `anger` / `fear`.
-- `[NOW]` Mount or download the fuller English CommonVoice corpus at
-  `/data/cv-corpus-21.0-2025-03-14/en`, then rerun the preflight and stop at
-  the supply audit if selected `anger` / `fear` rows remain below target.
+- `[DONE]` Download/build an expanded local English CommonVoice corpus at
+  `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`; `/data` is not
+  creatable in this macOS session because the root filesystem is read-only.
+- `[NOW]` Extract and score the expanded corpus, then stop at the supply audit
+  if selected `anger` / `fear` rows remain below target.
 - `[SOON]` Add optional sampled listening panels to compare multiple conditions
   side-by-side for the same speaker/style, so Joe can evaluate differences
   without opening several output folders.
 
 ---
 
-### 0.30 CommonVoice Rare-Class Supply Preflight (2026-05-05, branch `research/controllable-vae`)
+### 0.30 CommonVoice Rare-Class Supply Preflight and Corpus Expansion (2026-05-05, branch `research/controllable-vae`)
 
 What changed:
 
@@ -1660,6 +1659,12 @@ What changed:
 - Generated the current preflight reports:
   - `results/commonvoice_rare_supply_expansion_preflight.json`
   - `results/commonvoice_rare_supply_expansion_preflight.md`
+- Downloaded/build an expanded local English CommonVoice corpus from
+  Hugging Face `mteb/common_voice_21_0` validated assets:
+  - `transcript/en/validated.tsv`
+  - `audio/en/validated/en_validated_0.tar`
+  - local corpus path:
+    `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`
 - The script checks candidate local CommonVoice language directories for:
   - `validated.tsv`
   - `clips/`
@@ -1673,48 +1678,59 @@ Validation:
 
 - `Validation`: `.venv/bin/python -m py_compile scripts/plan_commonvoice_rare_supply_expansion.py`
 - `Validation`: `.venv/bin/python scripts/plan_commonvoice_rare_supply_expansion.py`
-- `Validation`: the generated report scanned the intended stable path
-  `/data/cv-corpus-21.0-2025-03-14/en` and the currently mounted local subset
+- `Validation`: the generated report scanned the intended `/data` path, the
+  expanded local corpus path
+  `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`, and the older local
+  subset
   `/Users/steve/datasets/cv-corpus-21.0-2025-03-14-subset/en`.
 - `Validation`: the generated report loaded the checked-in pseudo-label
   artifacts and estimated the rare-row need from actual selected counts rather
   than a hand-waved target.
+- `Validation`: the expanded corpus contains `40000` extracted MP3 clips and
+  the preflight counts `40000` usable validated rows / `20537` usable speakers.
 
 Readout:
 
-- Stable full-corpus path `/data/cv-corpus-21.0-2025-03-14/en` is not mounted.
-- Current local subset has `1202` usable validated rows, `500` usable speakers,
-  and `0` missing clip files.
+- Literal `/data/cv-corpus-21.0-2025-03-14/en` is not creatable in this live
+  macOS session because `/` is read-only.
+- Stable usable corpus for this machine is now:
+  `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`.
+- The expanded corpus preserves the full English metadata as
+  `validated_full.tsv` (`1845370` lines including header), and its active
+  `validated.tsv` is filtered to the first validated audio shard (`40000` MP3
+  clips / `40001` TSV lines including header).
+- The preflight counts `40000` usable validated rows and `20537` usable
+  speakers, clearing the current row and speaker gate.
+- The older local subset remains available with `1202` usable validated rows,
+  `500` usable speakers, and `0` missing clip files.
 - Based on selected rare-label rates in the current artifacts:
   - `anger` needs about `12020` rows before safety to reach `50` selected rows
   - `fear` needs about `15025` rows before safety to reach `50` selected rows
   - with the `1.5x` safety multiplier, the preflight recommends at least
     `22538` usable rows before extracting the next rare-supply artifact
-- Current decision is `NO-GO`:
-  - `/data/cv-corpus-21.0-2025-03-14/en` is missing
-  - the local subset is too small (`1202` rows / `500` speakers)
+- Current decision is `GO` for
+  `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`.
 
 Interpretation:
 
-- The next data-first model run should not use the current subset. That would
-  only repeat the same rare-class starvation under a new name.
-- The correct data-first path is to mount or download the fuller English
-  CommonVoice corpus, rerun the preflight, then stop after the pseudo-label
-  supply audit unless `anger` and `fear` reach the target selected-row count.
-- If the full corpus cannot be mounted soon, the better parallel research move
-  is decoder-aware/generated-audio style supervision, because it does not
-  depend as directly on the current tiny `anger` / `fear` pseudo-label pool.
+- The next data-first model run can now start with OpenVoice extraction from
+  the expanded local corpus.
+- This is still not a license to train blindly: after extraction, stop at the
+  pseudo-label supply audit unless selected `anger` and `fear` rows reach the
+  target selected-row count.
+- The older `1202`-row subset should no longer be used for rare-class
+  expansion experiments.
 
 Future upgrade to preserve:
 
-- `[NOW]` Mount or download the fuller English CommonVoice corpus at
-  `/data/cv-corpus-21.0-2025-03-14/en` with `validated.tsv` and `clips/`, then
-  rerun the preflight.
-- `[NOW]` If the preflight returns `GO`, run the gated extraction -> scoring ->
-  filtering -> hybrid-combine -> supply-audit commands from
+- `[NOW]` Run the gated extraction -> scoring -> filtering -> hybrid-combine ->
+  supply-audit commands from
   `results/commonvoice_rare_supply_expansion_preflight.md`; only build/train
   the mixed artifact after the audit confirms enough selected `anger` and
   `fear` rows.
+- `[SOON]` If collaborators need a literal `/data/...` path on macOS, create a
+  synthetic mount/symlink outside this live session; the current research-safe
+  path is the user-space corpus above.
 - `[SOON]` Add an optional `--min-selected-rare-rows` check to
   `scripts/audit_commonvoice_pseudolabel_supply.py` so the audit itself can
   fail CI/automation when rare labels remain undersupplied.

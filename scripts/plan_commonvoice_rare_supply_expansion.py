@@ -25,6 +25,7 @@ except ImportError:  # pragma: no cover - report still works without artifacts.
 
 
 DEFAULT_CANONICAL_CORPUS = "/data/cv-corpus-21.0-2025-03-14/en"
+DEFAULT_USER_CORPUS = "/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en"
 DEFAULT_LOCAL_SUBSET = "/Users/steve/datasets/cv-corpus-21.0-2025-03-14-subset/en"
 DEFAULT_REFERENCE_ARTIFACTS = [
     "embeddings/openvoice_commonvoice_cv500_pseudo_filtered.pt",
@@ -371,9 +372,25 @@ def recommended_commands(
     required_rows: Dict[str, Any],
     max_clips_per_speaker: int,
     min_usable_speakers: int,
+    selected_candidate: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, str]:
     target_rows = required_rows["recommended_min_usable_rows"]
-    speaker_cap = max(min_usable_speakers, math.ceil(target_rows / max_clips_per_speaker))
+    if selected_candidate:
+        usable_rows = selected_candidate.get("usable_rows", 0)
+        usable_speakers = selected_candidate.get("usable_speaker_count", 0)
+        observed_clips_per_speaker = (
+            usable_rows / usable_speakers if usable_rows and usable_speakers else 0.0
+        )
+        effective_clips_per_speaker = min(
+            max_clips_per_speaker,
+            observed_clips_per_speaker or max_clips_per_speaker,
+        )
+        speaker_cap = math.ceil((target_rows / effective_clips_per_speaker) * 1.15)
+        if usable_speakers:
+            speaker_cap = min(speaker_cap, usable_speakers)
+    else:
+        speaker_cap = math.ceil(target_rows / max_clips_per_speaker)
+    speaker_cap = max(min_usable_speakers, speaker_cap)
     emb = f"embeddings/{artifact_prefix}_emb.pt"
     scored = f"embeddings/{artifact_prefix}_pseudo_scored.pt"
     filtered = f"embeddings/{artifact_prefix}_pseudo_filtered.pt"
@@ -587,7 +604,11 @@ def write_markdown(path: str, report: Dict[str, Any]) -> None:
 def main() -> None:
     args = parse_args()
     rare_styles = parse_list(args.rare_styles)
-    corpus_paths = args.corpus_path or [DEFAULT_CANONICAL_CORPUS, DEFAULT_LOCAL_SUBSET]
+    corpus_paths = args.corpus_path or [
+        DEFAULT_CANONICAL_CORPUS,
+        DEFAULT_USER_CORPUS,
+        DEFAULT_LOCAL_SUBSET,
+    ]
     candidates = [scan_corpus(path) for path in corpus_paths]
     reference_summary = summarize_reference_artifacts(args.reference_artifacts, rare_styles)
     required_rows = compute_required_rows(
@@ -610,6 +631,7 @@ def main() -> None:
         required_rows=required_rows,
         max_clips_per_speaker=args.extraction_max_clips_per_speaker,
         min_usable_speakers=args.min_usable_speakers,
+        selected_candidate=selected,
     )
     report = {
         "go": selected is not None,

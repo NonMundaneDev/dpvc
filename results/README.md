@@ -196,11 +196,11 @@ CommonVoice rare-class supply preflight from 2026-05-05:
 
 | File | Rows / decision | Script | Backs |
 |------|-----------------|--------|-------|
-| `commonvoice_rare_supply_expansion_preflight.json` | `NO-GO` | [`scripts/plan_commonvoice_rare_supply_expansion.py`](../scripts/plan_commonvoice_rare_supply_expansion.py) | WORKLOG section 0.30 |
-| `commonvoice_rare_supply_expansion_preflight.md` | `NO-GO` | [`scripts/plan_commonvoice_rare_supply_expansion.py`](../scripts/plan_commonvoice_rare_supply_expansion.py) | WORKLOG section 0.30 |
+| `commonvoice_rare_supply_expansion_preflight.json` | `GO` | [`scripts/plan_commonvoice_rare_supply_expansion.py`](../scripts/plan_commonvoice_rare_supply_expansion.py) | WORKLOG section 0.30 |
+| `commonvoice_rare_supply_expansion_preflight.md` | `GO` | [`scripts/plan_commonvoice_rare_supply_expansion.py`](../scripts/plan_commonvoice_rare_supply_expansion.py) | WORKLOG section 0.30 |
 
-- The stable full-corpus path `/data/cv-corpus-21.0-2025-03-14/en` was not mounted.
-- The only scanned local subset had `1202` usable rows and `500` usable speakers.
+- Literal `/data/cv-corpus-21.0-2025-03-14/en` was not creatable in this macOS session because `/` is read-only.
+- The expanded local corpus at `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` has `40000` usable rows and `20537` usable speakers.
 - Based on checked-in selected `anger` / `fear` rates, the next rare-supply extraction should target at least `22538` usable rows before another model run.
 - This is an engineering/reproducibility gate, not a new paper-facing finding by itself.
 

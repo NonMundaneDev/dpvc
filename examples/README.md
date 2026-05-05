@@ -1288,6 +1288,7 @@ python scripts/audit_commonvoice_pseudolabel_supply.py \
 
 python scripts/plan_commonvoice_rare_supply_expansion.py \
     --corpus-path /data/cv-corpus-21.0-2025-03-14/en \
+    --corpus-path /Users/steve/datasets/cv-corpus-21.0-2025-03-14/en \
     --corpus-path /Users/steve/datasets/cv-corpus-21.0-2025-03-14-subset/en \
     --out-json results/commonvoice_rare_supply_expansion_preflight.json \
     --out-md results/commonvoice_rare_supply_expansion_preflight.md
@@ -1324,8 +1325,8 @@ Interpretation:
 - `mixed_teacher_hybrid_style_distill_labeled_warmup` shows that protecting labeled CREMA-D/Expresso axes before introducing CommonVoice teacher geometry improves novelty/collapse, but still does not recover emotion recall
 - `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup.html` is the browser-playable listening report for perceptual review of the latest condition, with a companion subjective scoring template at `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup_ratings.csv`
 - `results/commonvoice_pseudolabel_supply_audit.md` confirms the current local CommonVoice subset is the rare-class bottleneck: even before mixed-data speaker-first selection, the hybrid artifact only has `anger=5` and `fear=4` selected rows
-- `results/commonvoice_rare_supply_expansion_preflight.md` turns that bottleneck into a reproducible `NO-GO` gate: the stable full-corpus path is not mounted, and the current `1202`-row / `500`-speaker subset is far below the estimated `22538` usable-row target for credible `anger` / `fear` expansion
-- the next mixed-data branch should move to decoder-aware style objectives or mount a fuller CommonVoice corpus for rare-class supply, rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, schedule-only curricula, or latent-only mask/weight variants
+- `results/commonvoice_rare_supply_expansion_preflight.md` turns that bottleneck into a reproducible gate; after downloading the expanded local corpus at `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`, the gate now returns `GO` with `40000` usable rows and `20537` usable speakers
+- the next mixed-data branch should extract/score/audit the expanded CommonVoice corpus or move to decoder-aware style objectives, rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, schedule-only curricula, or latent-only mask/weight variants
 
 Non-Trump style-strength sweep:
 

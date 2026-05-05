@@ -505,23 +505,27 @@ Real local validation completed so far:
     rare-supply path has a reproducible go/no-go gate before extraction,
     scoring, filtering, hybrid combining, mixed-artifact construction, or
     training
+  - downloaded/build an expanded local CommonVoice corpus at
+    `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` from the validated TSV
+    plus first English validated audio shard; `validated_full.tsv` preserves
+    full metadata and active `validated.tsv` is filtered to locally available
+    clips
   - generated:
     - `results/commonvoice_rare_supply_expansion_preflight.json`
     - `results/commonvoice_rare_supply_expansion_preflight.md`
-  - result: the stable full-corpus path
-    `/data/cv-corpus-21.0-2025-03-14/en` is not mounted, and the current local
-    subset has only `1202` usable rows / `500` speakers
+  - result: literal `/data/cv-corpus-21.0-2025-03-14/en` is not creatable in
+    this macOS session because `/` is read-only, but the expanded user-space
+    corpus now passes the gate with `40000` usable rows / `20537` speakers
   - based on checked-in selected rare-label rates, a credible rare-supply
     extraction should target at least `22538` usable CommonVoice rows before
     another model run
 
 Immediate next execution steps on this branch:
 
-1. Mount or download the fuller English CommonVoice corpus at
-   `/data/cv-corpus-21.0-2025-03-14/en`, rerun
-   `scripts/plan_commonvoice_rare_supply_expansion.py`, and only proceed past
-   the pseudo-label supply audit if selected `anger` and `fear` rows reach the
-   target.
+1. Extract OpenVoice embeddings from
+   `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`, then score/filter the
+   expanded pseudo-label pool and only proceed past the pseudo-label supply
+   audit if selected `anger` and `fear` rows reach the target.
 2. Design a decoder-aware or generated-audio style objective for canonical
    emotions, because the labeled-first curriculum improved novelty/collapse but
    still decoded to emotion2vec-neutral outputs.
