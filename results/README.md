@@ -188,6 +188,8 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04/2026-05-05:
   - `results/eval_mixed_teacher_style_diagnostics_targetmask.md` localizes the target-mask failure: canonical emotion pseudo-labels often lack teacher target-dim dominance, `anger` and `fear` have only `4` active rows each, and `sad` can align latently while still decoding to neutral-classified audio
   - `mixed_teacher_hybrid_style_distill_labeled_warmup` shows that a labeled-first curriculum improves novelty and collapse counts but remains fixed at `16.7%` recall
   - `results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md` confirms the curriculum still leaves canonical emotions in the neutral recall basin while `confused` and `whisper` carry most of the novelty signal
+  - `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup.html` provides a browser-playable listening report for the newest corpus, and `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup_ratings.csv` provides the subjective-rating template
+  - `results/commonvoice_pseudolabel_supply_audit.md` confirms the current local CommonVoice subset is rare-class limited: the hybrid artifact has only `anger=5` and `fear=4` selected rows before mixed-data sampling
   - the next mixed-data branch should focus on rare-class supply or decoder-aware/generated-audio style objectives, not more schedule variants, hard pseudo-label arbitration, scalar teacher-weight sweeps, schedule-only curricula, or another latent-only mask/weight variant
 
 Non-Trump style-strength sweep from 2026-05-03:

@@ -1579,6 +1579,74 @@ Future upgrade to preserve:
 
 ---
 
+### 0.29 Listening Report and Rare-Class Supply Audit (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Added `scripts/build_listening_report.py`, a reusable local HTML report
+  builder for generated corpora:
+  - groups audio by source speaker
+  - embeds source, baseline, and styled output audio controls
+  - joins emotion, novelty, WER, and MOS metric rows when available
+  - emits a companion subjective-rating CSV template
+- Generated the first listening bundle for the labeled-warmup condition:
+  - `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup.html`
+  - `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup_ratings.csv`
+- Added `scripts/audit_commonvoice_pseudolabel_supply.py`, a reusable audit for
+  CommonVoice pseudo-label supply across scored, filtered, and mixed artifacts.
+- Generated the current supply audit:
+  - `results/commonvoice_pseudolabel_supply_audit.csv`
+  - `results/commonvoice_pseudolabel_supply_audit.md`
+
+Validation:
+
+- `Validation`: The listening report builds from the latest
+  `generation_manifest.jsonl` and detects the matching `mixed_teacher` metric
+  CSVs.
+- `Validation`: The listening report includes `110` generated rows across `11`
+  source speakers and the rating template includes `99` styled rows plus a
+  header.
+- `Validation`: The CommonVoice supply audit reads the raw scored,
+  emotion-filtered, hybrid-filtered, and mixed artifacts without rerunning any
+  teacher model.
+- `Validation`: Python compile checks passed for both new scripts.
+
+Readout:
+
+- Local CommonVoice data currently found at
+  `/Users/steve/datasets/cv-corpus-21.0-2025-03-14-subset/en`.
+- That subset has `1202` rows in `validated.tsv`, matching the current
+  extracted/scored CommonVoice artifacts.
+- The raw emotion2vec-scored artifact has only `anger=15` and `fear=9` top
+  pseudo labels.
+- The filtered emotion artifact selects only `anger=6` and `fear=4`.
+- The hybrid extra-style artifact selects only `anger=5` and `fear=4`.
+- The final mixed teacher artifact includes only `anger=4` and `fear=4`
+  CommonVoice pseudo rows after speaker-first sampling.
+
+Interpretation:
+
+- The current local CommonVoice subset is too rare-class limited to justify
+  another loss-weight or schedule-only experiment as the next main move.
+- The best next model-side move is either:
+  - extract/score a larger local CommonVoice subset to get real rare canonical
+    emotion supply, or
+  - move to decoder-aware/generated-audio style supervision that does not rely
+    on the current tiny `anger` / `fear` pseudo-label pool.
+
+Future upgrade to preserve:
+
+- `[NOW]` Make every future generated corpus produce a listening HTML report and
+  subjective-rating CSV before closeout.
+- `[NOW]` If staying data-first, extract and score a larger local CommonVoice
+  subset before training another rare-class schedule; current `1202` validated
+  rows cannot supply enough `anger` / `fear`.
+- `[SOON]` Add optional sampled listening panels to compare multiple conditions
+  side-by-side for the same speaker/style, so Joe can evaluate differences
+  without opening several output folders.
+
+---
+
 ## 1. Project Overview
 
 **dpvc** is a Python library for **differentially private voice conversion** — it anonymizes a speaker's identity by passing their voice embedding through a VAE with calibrated DP noise, then reconstructs audio with a modified (anonymized) speaker embedding.

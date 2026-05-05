@@ -1271,6 +1271,20 @@ python scripts/analyze_mixed_teacher_style_diagnostics.py \
     --condition mixed_teacher_hybrid_style_distill_labeled_warmup \
     --out-csv results/eval_mixed_teacher_style_diagnostics_labeled_warmup.csv \
     --out-md results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md
+
+python scripts/build_listening_report.py \
+    --manifest output/mixed_teacher_hybrid_style_distill_labeled_warmup_eval/generation_manifest.jsonl \
+    --input-tag mixed_teacher \
+    --out results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup.html
+
+python scripts/audit_commonvoice_pseudolabel_supply.py \
+    --artifacts \
+        embeddings/openvoice_commonvoice_cv500_pseudo_scored.pt \
+        embeddings/openvoice_commonvoice_cv500_pseudo_filtered.pt \
+        embeddings/openvoice_commonvoice_cv500_pseudo_hybrid_extra_priority.pt \
+        embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt \
+    --out-csv results/commonvoice_pseudolabel_supply_audit.csv \
+    --out-md results/commonvoice_pseudolabel_supply_audit.md
 ```
 
 Current checked-in result summary for the first teacher-family run:
@@ -1302,6 +1316,8 @@ Interpretation:
 - `mixed_teacher_hybrid_style_distill_targetmask_balanced` shows that per-style target masks, row weights, and confidence scaling also do not recover recall and slightly worsen WER/MOS versus global `0.25` style distillation
 - `eval_mixed_teacher_style_diagnostics_targetmask.md` shows why: canonical pseudo labels often do not have teacher target-dim dominance, `anger` and `fear` have only `4` active teacher rows each, and `sad` can align latently while still decoding to neutral-classified audio
 - `mixed_teacher_hybrid_style_distill_labeled_warmup` shows that protecting labeled CREMA-D/Expresso axes before introducing CommonVoice teacher geometry improves novelty/collapse, but still does not recover emotion recall
+- `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup.html` is the browser-playable listening report for perceptual review of the latest condition, with a companion subjective scoring template at `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup_ratings.csv`
+- `results/commonvoice_pseudolabel_supply_audit.md` confirms the current local CommonVoice subset is the rare-class bottleneck: even before mixed-data speaker-first selection, the hybrid artifact only has `anger=5` and `fear=4` selected rows
 - the next mixed-data branch should move to decoder-aware style objectives or rare-class supply rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, schedule-only curricula, or latent-only mask/weight variants
 
 Non-Trump style-strength sweep:

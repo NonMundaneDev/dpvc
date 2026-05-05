@@ -182,7 +182,9 @@ See also:
 - `scripts/annotate_commonvoice_pseudolabels.py` — adds confidence-scored pseudo-style labels to a Common Voice embedding artifact.
 - `scripts/annotate_commonvoice_latent_prototypes.py` — scores Common Voice rows against combined-VAE latent style prototypes as an alternate pseudo-label teacher.
 - `scripts/combine_commonvoice_pseudolabel_teachers.py` — combines filtered emotion2vec and latent-prototype CommonVoice pseudo labels into a reusable hybrid teacher artifact.
+- `scripts/audit_commonvoice_pseudolabel_supply.py` — audits rare-style pseudo-label supply before more CommonVoice weighting/curriculum experiments.
 - `scripts/analyze_mixed_teacher_style_diagnostics.py` — joins label supply, teacher/student latent geometry, generated metrics, and collapse rows for mixed-teacher conditions.
+- `scripts/build_listening_report.py` — creates an HTML listening report plus subjective-rating CSV from any generation manifest.
 - `scripts/prepare_ablation_embeddings.py` — builds the `cremad_only` and `expresso_only` evaluation ablation datasets in the unified label format.
 - `scripts/run_ablation_inference.py` — generates the evaluation ablation matrix corpora, including the naive unlabeled-latent baseline.
 - `scripts/summarize_ablation_results.py` — builds the condition summary table and collapse taxonomy for the paper.
@@ -204,6 +206,19 @@ plus our speaker-novelty proof:
 - `examples/eval_mos.py` — torchaudio SQUIM_SUBJECTIVE predicted MOS (naturalness)
 
 CSV outputs from our runs live in [`results/`](results/). Schemas and reproduction steps are in [`results/README.md`](results/README.md).
+
+For perceptual review, generate a browser-playable listening report from any
+`generation_manifest.jsonl`:
+
+```bash
+python scripts/build_listening_report.py \
+  --manifest output/mixed_teacher_hybrid_style_distill_labeled_warmup_eval/generation_manifest.jsonl \
+  --input-tag mixed_teacher \
+  --out results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup.html
+```
+
+Open the generated HTML in a browser and score the companion `_ratings.csv`
+template for target emotion, naturalness, intelligibility, and identity shift.
 
 For the current paper matrix, start with:
 

@@ -486,6 +486,20 @@ Real local validation completed so far:
     but recall remains `16.7%`, so schedule-only curriculum with the current
     teacher is not enough
 
+- listening and rare-supply audit follow-up
+  - added `scripts/build_listening_report.py` so every generated corpus can
+    produce an HTML listening report plus subjective-rating CSV
+  - generated:
+    - `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup.html`
+    - `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup_ratings.csv`
+  - added `scripts/audit_commonvoice_pseudolabel_supply.py` and generated:
+    - `results/commonvoice_pseudolabel_supply_audit.csv`
+    - `results/commonvoice_pseudolabel_supply_audit.md`
+  - result: the current local CommonVoice subset has only `1202` validated rows,
+    and the hybrid artifact selects only `anger=5` and `fear=4` before mixed
+    speaker-first sampling, so the rare-class bottleneck is data supply rather
+    than just loss weighting
+
 Immediate next execution steps on this branch:
 
 1. Design a decoder-aware or generated-audio style objective for canonical
