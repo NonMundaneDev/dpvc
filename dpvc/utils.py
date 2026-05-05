@@ -237,6 +237,9 @@ def _dataset_epoch_masses(schedule, epoch, schedule_epochs, present_datasets,
     if schedule == "cv_warmup":
         start = {"CommonVoice": 0.70, "CREMA-D": 0.15, "Expresso": 0.15}
         end = {"CommonVoice": 1.0, "CREMA-D": 1.0, "Expresso": 1.0}
+    elif schedule == "labeled_warmup":
+        start = {"CommonVoice": 0.0, "CREMA-D": 1.0, "Expresso": 1.0}
+        end = {"CommonVoice": 1.0, "CREMA-D": 1.0, "Expresso": 1.0}
     elif schedule == "labeled_finish":
         start = {"CommonVoice": 1.0, "CREMA-D": 1.0, "Expresso": 1.0}
         end = {"CommonVoice": 0.20, "CREMA-D": 0.40, "Expresso": 0.40}
@@ -263,6 +266,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                             schedule_end_masses=None,
                             style_teacher_model=None,
                             style_teacher_weight=0.0,
+                            style_teacher_weight_final=None,
                             style_teacher_dims=None,
                             style_teacher_mask=None,
                             style_teacher_row_weights=None,
@@ -273,7 +277,9 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
         raise ValueError("No trainable parameters remain in the model")
     optimizer = torch.optim.Adam(trainable_params, lr=lr)
 
-    if schedule_epochs <= 0 and schedule != "static_balanced":
+    if schedule_epochs <= 0 and (
+        schedule != "static_balanced" or style_teacher_weight_final is not None
+    ):
         schedule_epochs = epochs
 
     source_datasets = [str(dataset) for dataset in source_datasets]
@@ -286,7 +292,8 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
     print(f"  recon weight : {recon_weight}")
     print(f"  kl weight    : {kl_weight}")
     print(f"  label weight : {label_weight}")
-    print(f"  teacher-style weight: {style_teacher_weight}")
+    print(f"  teacher-style weight: {style_teacher_weight}"
+          + (f" -> {style_teacher_weight_final}" if style_teacher_weight_final is not None else ""))
     print(f"  schedule     : {schedule}")
     if schedule != "static_balanced":
         print(f"  schedule epochs: {schedule_epochs}")
@@ -301,7 +308,14 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
         print(f"  dataset rows {dataset:11s}: {dataset_counts[dataset]}")
     labeled_rows = int((style_label_mask.view(-1) > 0).sum().item())
     print(f"  labeled rows : {labeled_rows}/{len(embeddings)}")
-    if style_teacher_model is not None and style_teacher_weight > 0:
+    teacher_enabled = (
+        style_teacher_model is not None
+        and (
+            style_teacher_weight > 0
+            or (style_teacher_weight_final is not None and style_teacher_weight_final > 0)
+        )
+    )
+    if teacher_enabled:
         teacher_active = torch.ones(len(embeddings), dtype=torch.bool, device=embeddings.device)
         if style_teacher_mask is not None:
             teacher_active = teacher_active & (style_teacher_mask.view(-1) > 0)
@@ -323,6 +337,12 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
 
     print(f"Training mixed-data autoencoder for {epochs} epochs...")
     for epoch in tqdm(range(epochs)):
+        current_style_teacher_weight = _interpolate_weight(
+            style_teacher_weight,
+            style_teacher_weight_final,
+            epoch,
+            schedule_epochs,
+        )
         dataset_masses = _dataset_epoch_masses(
             schedule,
             epoch,
@@ -369,7 +389,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
 
             if (
                 style_teacher_model is not None
-                and style_teacher_weight > 0
+                and current_style_teacher_weight > 0
                 and style_teacher_dims
             ):
                 if style_teacher_mask is not None:
@@ -410,7 +430,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                 recon_weight * recon_loss
                 + kl_weight * kl_loss
                 + label_weight * label_loss
-                + style_teacher_weight * teacher_style_loss
+                + current_style_teacher_weight * teacher_style_loss
             )
             loss.backward()
             optimizer.step()
@@ -424,7 +444,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                 f"recon: {recon_loss.item():.2f} (w={recon_weight:.2f})  "
                 f"kl: {kl_loss.item():.2f} (w={kl_weight:.2f})  "
                 f"label: {label_loss.item():.2f} (w={label_weight:.2f})  "
-                f"teacher: {teacher_style_loss.item():.2f} (w={style_teacher_weight:.2f})  "
+                f"teacher: {teacher_style_loss.item():.2f} (w={current_style_teacher_weight:.2f})  "
                 f"mix: {masses_str}"
             )
 

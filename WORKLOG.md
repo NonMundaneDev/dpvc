@@ -83,7 +83,9 @@ Priority tags:
 - [x] `[DONE]` Compare a prototype+emotion2vec multi-teacher rule; `mixed_teacher_hybrid_extra_balanced` produced the best mixed-teacher novelty so far (`0.0860`) and slightly reduced files with any collapse, but dropped recall to `16.7%` and worsened MOS delta, so it is a tradeoff result rather than the new reference
 - [x] `[DONE]` Move from hard row-label teacher mixing to richer style-space supervision, prototype distillation, or a per-style curriculum; the first continuous style-space distillation run preserved the hybrid novelty gain and improved MOS/collapse modestly, but recall stayed fixed at `16.7%`
 - [x] `[DONE]` Calibrate the style-space distillation objective with a first teacher-loss weight sweep; global weights `0.10`, `0.25`, and `0.50` all stayed at `16.7%` recall, so the next move is class-specific masks/curriculum rather than another scalar weight tweak
-- [ ] `[NOW]` Add per-style teacher masks, confidence weighting, or curricula for the style-space loss, because the global teacher-weight sweep changed WER/collapse slightly but did not recover target emotion recall
+- [x] `[DONE]` Add per-style teacher masks, confidence weighting, and a first labeled-first curriculum for the style-space loss; target masking and labeled warmup both stayed at `16.7%` recall, so curriculum timing with the current teacher is not enough to recover target emotion recall
+- [ ] `[NOW]` Design a decoder-aware or generated-audio style objective for canonical emotions, because the labeled-first curriculum improved novelty/collapse but still decoded to emotion2vec-neutral outputs
+- [ ] `[NOW]` Rebuild rare canonical CommonVoice pseudo-label supply before more weighting experiments, because both diagnostics show `anger=4` and `fear=4` active teacher rows in the current hybrid artifact
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
 
@@ -1465,6 +1467,115 @@ Future upgrade to preserve:
   before more weighting experiments; `anger=4` and `fear=4` are not enough.
 - `[SOON]` Add this diagnostic to future mixed-teacher reports so every new
   condition reports both latent target dominance and generated metric behavior.
+
+---
+
+### 0.28 Labeled-First Style-Teacher Curriculum (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Added a `labeled_warmup` mixed-data schedule to `dpvc/utils.py`:
+  - start masses normalize to `CommonVoice=0.00`, `CREMA-D=0.50`,
+    `Expresso=0.50`
+  - end masses normalize to `CommonVoice=0.33`, `CREMA-D=0.33`,
+    `Expresso=0.33`
+- Added `--style-teacher-weight-final` to
+  `examples/openvoice_train_vae_mixed.py` so teacher-style pressure can ramp
+  over the schedule instead of being static from epoch 1.
+- Added deterministic inference support for
+  `mixed_teacher_hybrid_style_distill_labeled_warmup`.
+- Trained the curriculum checkpoint from the fixed hybrid teacher artifact:
+  - `embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt`
+  - `embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_labeled_warmup.pt`
+- Evaluated the matched 110-row, 11-speaker corpus:
+  - `output/mixed_teacher_hybrid_style_distill_labeled_warmup_eval/`
+  - `results/eval_emotion_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv`
+  - `results/eval_novelty_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv`
+  - `results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv`
+  - `results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv`
+  - regenerated `results/eval_mixed_teacher_summary.csv`
+  - regenerated `results/eval_mixed_teacher_collapse.csv`
+- Ran the per-style diagnostic on the new curriculum condition:
+  - `results/eval_mixed_teacher_style_diagnostics_labeled_warmup.csv`
+  - `results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md`
+
+Training command:
+
+```bash
+python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_labeled_warmup.pt \
+    --schedule labeled_warmup \
+    --schedule-epochs 1000 \
+    --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --style-teacher-weight 0.0 \
+    --style-teacher-weight-final 0.25 \
+    --style-teacher-datasets CommonVoice \
+    --style-teacher-dims 0-8
+```
+
+Validation:
+
+- `Validation`: Python compile checks passed for the changed training,
+  utility, inference, summary, and diagnostic scripts.
+- `Validation`: `examples/openvoice_train_vae_mixed.py --help` exposes
+  `labeled_warmup` and `--style-teacher-weight-final`.
+- `Validation`: `scripts/run_ablation_inference.py --help` exposes
+  `mixed_teacher_hybrid_style_distill_labeled_warmup`.
+- `Validation`: A two-epoch smoke run verified the curriculum starts with no
+  CommonVoice mass and no teacher loss, then ramps toward balanced data and
+  teacher weight `0.25`.
+- `Validation`: The full checkpoint trained from
+  `embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt` with
+  `schedule_epochs=1000`; by the end, the run used balanced
+  CommonVoice / CREMA-D / Expresso masses and teacher weight `0.25`.
+- `Validation`: Deterministic inference wrote the expected 110-row manifest;
+  the only warning was the known short-audio watermark warning for
+  `male_2_cremad_1051`.
+- `Validation`: Emotion, novelty, WER, and MOS CSVs were regenerated and
+  summarized into the mixed-teacher summary/collapse tables.
+- `Validation`: The diagnostic report joins label supply, teacher/student
+  latent geometry, generated metrics, and collapse rows for the curriculum
+  condition.
+
+Top-line comparison:
+
+| Condition | Recall | Novelty gain vs baseline | Mean WER | Mean MOS delta | Identity collapse | Style collapse | Mixed collapse | Files with any collapse | Takeaway |
+|-----------|--------|--------------------------|----------|----------------|-------------------|----------------|----------------|-------------------------|----------|
+| `mixed_teacher_threshold_balanced` | `18.2%` | `0.0785` | `0.0829` | `-0.1012` | `62` | `53` | `49` | `66` | Best overall mixed-data teacher reference |
+| `mixed_teacher_hybrid_style_distill_balanced` | `16.7%` | `0.0861` | `0.0938` | `-0.1072` | `58` | `55` | `50` | `63` | Best previous style-distillation novelty/MOS tradeoff |
+| `mixed_teacher_hybrid_style_distill_labeled_warmup` | `16.7%` | `0.0930` | `0.0924` | `-0.1093` | `54` | `55` | `48` | `61` | Labeled-first curriculum improves novelty/collapse but not emotion recall |
+| `mixed_teacher_hybrid_style_distill_targetmask_balanced` | `16.7%` | `0.0852` | `0.1062` | `-0.1181` | `60` | `54` | `51` | `63` | Target masks and confidence weighting do not recover recall |
+
+Interpretation:
+
+- The labeled-first curriculum does **not** break the neutral recall basin;
+  recall remains `16.7%`, again coming only from neutral.
+- It does improve some secondary axes: novelty rises from `0.0861` to
+  `0.0930` versus global `0.25` style distillation, identity collapse falls
+  from `58` to `54`, mixed collapse falls from `50` to `48`, and files with
+  any collapse fall from `63` to `61`.
+- That means protecting labeled CREMA-D/Expresso axes before adding
+  CommonVoice teacher geometry can help the latent/identity tradeoff, but it
+  still does not make generated audio classifier-visible as target emotion.
+- The next useful move is no longer another schedule-only curriculum with the
+  same teacher. The next move should be decoder-aware / generated-audio style
+  supervision or better rare-class CommonVoice supply.
+
+Future upgrade to preserve:
+
+- `[NOW]` Build a decoder-aware generated-audio style objective for canonical
+  emotions, likely by scoring generated samples or decoder outputs with an
+  emotion proxy instead of relying only on frozen latent teacher agreement.
+- `[NOW]` Rebuild rare canonical pseudo-label supply before more weighting:
+  `anger=4` and `fear=4` active teacher rows are too small for a stable class
+  manifold.
+- `[SOON]` Compare one-clip-per-speaker versus two-clips-per-speaker
+  CommonVoice sampling under the same teacher, because rare-class supply may be
+  constrained by the current speaker-first artifact.
+- `[SOON]` Add per-condition diagnostic generation to the summary workflow so
+  every future mixed-teacher condition automatically reports target top1,
+  generated recall, novelty, WER, MOS, and collapse by style.
 
 ---
 

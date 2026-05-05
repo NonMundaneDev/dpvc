@@ -146,6 +146,7 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04/2026-05-05:
   - `mixed_teacher_hybrid_extra_balanced`
   - `mixed_teacher_hybrid_style_distill_balanced`
   - `mixed_teacher_hybrid_style_distill_targetmask_balanced`
+  - `mixed_teacher_hybrid_style_distill_labeled_warmup`
   - `mixed_teacher_hybrid_style_distill_w010_balanced`
   - `mixed_teacher_hybrid_style_distill_w050_balanced`
 - The teacher summary reuses copied reference CSVs for:
@@ -170,6 +171,7 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04/2026-05-05:
   - `mixed_teacher_hybrid_extra_balanced`: recall `16.7%`, novelty `0.0860`, mean WER `0.0931`, MOS delta `-0.1190`
   - `mixed_teacher_hybrid_style_distill_balanced`: recall `16.7%`, novelty `0.0861`, mean WER `0.0938`, MOS delta `-0.1072`
   - `mixed_teacher_hybrid_style_distill_targetmask_balanced`: recall `16.7%`, novelty `0.0852`, mean WER `0.1062`, MOS delta `-0.1181`
+  - `mixed_teacher_hybrid_style_distill_labeled_warmup`: recall `16.7%`, novelty `0.0930`, mean WER `0.0924`, MOS delta `-0.1093`
   - `mixed_teacher_hybrid_style_distill_w010_balanced`: recall `16.7%`, novelty `0.0854`, mean WER `0.0924`, MOS delta `-0.1161`
   - `mixed_teacher_hybrid_style_distill_w050_balanced`: recall `16.7%`, novelty `0.0840`, mean WER `0.0821`, MOS delta `-0.1196`
 - Current conclusion:
@@ -184,7 +186,9 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04/2026-05-05:
   - the global style-teacher weight sweep shows that weights `0.10`, `0.25`, and `0.50` all remain fixed at `16.7%` recall; `0.50` improves WER and identity/mixed collapse, while `0.25` remains the better novelty/MOS tradeoff
   - `mixed_teacher_hybrid_style_distill_targetmask_balanced` shows that target-dimension masks, per-style row weights, and confidence scaling also remain fixed at `16.7%` recall while slightly worsening WER/MOS versus global `0.25` style distillation
   - `results/eval_mixed_teacher_style_diagnostics_targetmask.md` localizes the target-mask failure: canonical emotion pseudo-labels often lack teacher target-dim dominance, `anger` and `fear` have only `4` active rows each, and `sad` can align latently while still decoding to neutral-classified audio
-  - the next mixed-data branch should focus on labeled-first curriculum, rare-class supply, or decoder-aware style objectives, not more schedule variants, hard pseudo-label arbitration, scalar teacher-weight sweeps, or another latent-only mask/weight variant
+  - `mixed_teacher_hybrid_style_distill_labeled_warmup` shows that a labeled-first curriculum improves novelty and collapse counts but remains fixed at `16.7%` recall
+  - `results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md` confirms the curriculum still leaves canonical emotions in the neutral recall basin while `confused` and `whisper` carry most of the novelty signal
+  - the next mixed-data branch should focus on rare-class supply or decoder-aware/generated-audio style objectives, not more schedule variants, hard pseudo-label arbitration, scalar teacher-weight sweeps, schedule-only curricula, or another latent-only mask/weight variant
 
 Non-Trump style-strength sweep from 2026-05-03:
 

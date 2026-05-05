@@ -1230,6 +1230,30 @@ python examples/eval_novelty.py --manifest output/mixed_teacher_hybrid_style_dis
 python examples/eval_wer.py     --input output/mixed_teacher_hybrid_style_distill_targetmask_balanced_eval --out results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv
 python examples/eval_mos.py     --input output/mixed_teacher_hybrid_style_distill_targetmask_balanced_eval --out results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv
 
+python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_labeled_warmup.pt \
+    --schedule labeled_warmup \
+    --schedule-epochs 1000 \
+    --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --style-teacher-weight 0.0 \
+    --style-teacher-weight-final 0.25 \
+    --style-teacher-datasets CommonVoice \
+    --style-teacher-dims 0-8
+
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_hybrid_style_distill_labeled_warmup \
+    --out output/mixed_teacher_hybrid_style_distill_labeled_warmup_eval \
+    --style-strength 5.0 \
+    --noise-level 0.0 \
+    --seed 42
+
+python examples/eval_emotion.py --input output/mixed_teacher_hybrid_style_distill_labeled_warmup_eval --out results/eval_emotion_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv
+python examples/eval_novelty.py --manifest output/mixed_teacher_hybrid_style_distill_labeled_warmup_eval/generation_manifest.jsonl --out results/eval_novelty_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv
+python examples/eval_wer.py     --input output/mixed_teacher_hybrid_style_distill_labeled_warmup_eval --out results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv
+python examples/eval_mos.py     --input output/mixed_teacher_hybrid_style_distill_labeled_warmup_eval --out results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv
+
 python scripts/summarize_mixed_teacher_results.py
 
 python scripts/analyze_mixed_teacher_style_diagnostics.py \
@@ -1239,6 +1263,14 @@ python scripts/analyze_mixed_teacher_style_diagnostics.py \
     --condition mixed_teacher_hybrid_style_distill_targetmask_balanced \
     --out-csv results/eval_mixed_teacher_style_diagnostics_targetmask.csv \
     --out-md results/eval_mixed_teacher_style_diagnostics_targetmask.md
+
+python scripts/analyze_mixed_teacher_style_diagnostics.py \
+    --mixed-artifact embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt \
+    --teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --student-checkpoint embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_labeled_warmup.pt \
+    --condition mixed_teacher_hybrid_style_distill_labeled_warmup \
+    --out-csv results/eval_mixed_teacher_style_diagnostics_labeled_warmup.csv \
+    --out-md results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md
 ```
 
 Current checked-in result summary for the first teacher-family run:
@@ -1254,6 +1286,7 @@ Current checked-in result summary for the first teacher-family run:
 - `mixed_teacher_hybrid_style_distill_w010_balanced`: recall `16.7%`, novelty `0.0854`, mean WER `0.0924`, MOS delta `-0.1161`
 - `mixed_teacher_hybrid_style_distill_w050_balanced`: recall `16.7%`, novelty `0.0840`, mean WER `0.0821`, MOS delta `-0.1196`
 - `mixed_teacher_hybrid_style_distill_targetmask_balanced`: recall `16.7%`, novelty `0.0852`, mean WER `0.1062`, MOS delta `-0.1181`
+- `mixed_teacher_hybrid_style_distill_labeled_warmup`: recall `16.7%`, novelty `0.0930`, mean WER `0.0924`, MOS delta `-0.1093`
 
 Interpretation:
 
@@ -1268,7 +1301,8 @@ Interpretation:
 - the style-teacher weight sweep shows that global scalar calibration is not enough: weights `0.10`, `0.25`, and `0.50` all stay at `16.7%` recall
 - `mixed_teacher_hybrid_style_distill_targetmask_balanced` shows that per-style target masks, row weights, and confidence scaling also do not recover recall and slightly worsen WER/MOS versus global `0.25` style distillation
 - `eval_mixed_teacher_style_diagnostics_targetmask.md` shows why: canonical pseudo labels often do not have teacher target-dim dominance, `anger` and `fear` have only `4` active teacher rows each, and `sad` can align latently while still decoding to neutral-classified audio
-- the next mixed-data branch should move to labeled-first curriculum, rare-class supply, or decoder-aware style objectives rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, or latent-only mask/weight variants
+- `mixed_teacher_hybrid_style_distill_labeled_warmup` shows that protecting labeled CREMA-D/Expresso axes before introducing CommonVoice teacher geometry improves novelty/collapse, but still does not recover emotion recall
+- the next mixed-data branch should move to decoder-aware style objectives or rare-class supply rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, schedule-only curricula, or latent-only mask/weight variants
 
 Non-Trump style-strength sweep:
 

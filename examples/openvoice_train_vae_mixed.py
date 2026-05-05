@@ -32,7 +32,7 @@ import torch
 import dpvc
 
 
-DEFAULT_SCHEDULES = ["static_balanced", "cv_warmup", "labeled_finish"]
+DEFAULT_SCHEDULES = ["static_balanced", "cv_warmup", "labeled_warmup", "labeled_finish"]
 DATASET_NAMES = ["CommonVoice", "CREMA-D", "Expresso"]
 
 
@@ -246,6 +246,15 @@ def main():
         help="Continuous style-teacher loss weight (default: 0.0)",
     )
     ap.add_argument(
+        "--style-teacher-weight-final",
+        type=float,
+        default=None,
+        help=(
+            "Optional final teacher weight for schedule-epoch interpolation "
+            "(default: disabled)"
+        ),
+    )
+    ap.add_argument(
         "--style-teacher-dims",
         default="0-8",
         help="Comma-separated or ranged style dims for teacher loss (default: 0-8)",
@@ -320,8 +329,11 @@ def main():
 
     if args.freeze_encoder and args.freeze_decoder:
         ap.error("Refusing to freeze both encoder and decoder; nothing would remain trainable")
-    if args.style_teacher_weight > 0 and not args.style_teacher_checkpoint:
-        ap.error("--style-teacher-weight > 0 requires --style-teacher-checkpoint")
+    if (
+        (args.style_teacher_weight > 0 or (args.style_teacher_weight_final or 0.0) > 0)
+        and not args.style_teacher_checkpoint
+    ):
+        ap.error("--style-teacher-weight > 0 or --style-teacher-weight-final > 0 requires --style-teacher-checkpoint")
 
     dpvc.utils.set_seed(args.seed)
     device = resolve_device()
@@ -370,8 +382,12 @@ def main():
     source_datasets = data.get('source_dataset')
     if source_datasets is None:
         raise ValueError("Mixed artifact is missing source_dataset")
+    teacher_requested = (
+        args.style_teacher_checkpoint
+        and (args.style_teacher_weight > 0 or (args.style_teacher_weight_final or 0.0) > 0)
+    )
     style_teacher_mask = None
-    if args.style_teacher_checkpoint and args.style_teacher_weight > 0:
+    if teacher_requested:
         style_teacher_mask = build_dataset_mask(
             source_datasets,
             args.style_teacher_datasets,
@@ -379,7 +395,7 @@ def main():
         )
     style_teacher_row_weights = None
     style_teacher_style_weights = None
-    if args.style_teacher_checkpoint and args.style_teacher_weight > 0:
+    if teacher_requested:
         if args.style_teacher_target_mode == "target_dim":
             max_dim = max(style_teacher_dims) if style_teacher_dims else -1
             if max_dim >= style_targets.shape[1]:
@@ -426,7 +442,7 @@ def main():
         set_module_requires_grad(model.decoder, trainable=False)
 
     style_teacher_model = None
-    if args.style_teacher_checkpoint and args.style_teacher_weight > 0:
+    if teacher_requested:
         print(f"Loading style teacher checkpoint from {args.style_teacher_checkpoint}")
         style_teacher_model = dpvc.VariationalAutoencoder(
             latent_dims=args.latent_dims,
@@ -439,6 +455,8 @@ def main():
         set_module_requires_grad(style_teacher_model, trainable=False)
         print(f"Style teacher dims: {style_teacher_dims}")
         print(f"Style teacher datasets: {args.style_teacher_datasets}")
+        if args.style_teacher_weight_final is not None:
+            print(f"Style teacher weight final: {args.style_teacher_weight_final}")
         print(f"Style teacher target mode: {args.style_teacher_target_mode}")
         print(f"Style teacher require label: {args.style_teacher_require_label}")
         if args.style_teacher_style_weights:
@@ -481,6 +499,7 @@ def main():
         schedule_end_masses=schedule_end_masses,
         style_teacher_model=style_teacher_model,
         style_teacher_weight=args.style_teacher_weight,
+        style_teacher_weight_final=args.style_teacher_weight_final,
         style_teacher_dims=style_teacher_dims,
         style_teacher_mask=style_teacher_mask,
         style_teacher_row_weights=style_teacher_row_weights,

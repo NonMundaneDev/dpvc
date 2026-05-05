@@ -467,19 +467,39 @@ Real local validation completed so far:
     and `sad` can align latently while still decoding to neutral-classified
     audio
 
+- labeled-first curriculum follow-up
+  - added a `labeled_warmup` mixed-data schedule that starts with CREMA-D and
+    Expresso only, then ramps CommonVoice back to a balanced mix
+  - added `--style-teacher-weight-final` so teacher-style loss can ramp from
+    `0.0` to `0.25` instead of being active from the first epoch
+  - real artifacts now on disk:
+    - `embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_labeled_warmup.pt`
+    - `output/mixed_teacher_hybrid_style_distill_labeled_warmup_eval/`
+    - `results/eval_emotion_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv`
+    - `results/eval_novelty_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv`
+    - `results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv`
+    - `results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_labeled_warmup.csv`
+    - `results/eval_mixed_teacher_style_diagnostics_labeled_warmup.csv`
+    - `results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md`
+  - result: `mixed_teacher_hybrid_style_distill_labeled_warmup` improves
+    novelty (`0.0930`) and reduces identity/any-collapse counts (`54` / `61`),
+    but recall remains `16.7%`, so schedule-only curriculum with the current
+    teacher is not enough
+
 Immediate next execution steps on this branch:
 
-1. Test a curriculum that protects labeled CREMA-D/Expresso style axes before
-   introducing CommonVoice teacher geometry, because latent target masking by
-   itself moves novelty without moving emotion2vec recall.
-2. Consider a decoder-aware or generated-audio style objective if diagnostics
-   show latent alignment is not visible to the emotion classifier.
-3. Rebuild or rebalance rare canonical CommonVoice pseudo-label supply before
+1. Design a decoder-aware or generated-audio style objective for canonical
+   emotions, because the labeled-first curriculum improved novelty/collapse but
+   still decoded to emotion2vec-neutral outputs.
+2. Rebuild or rebalance rare canonical CommonVoice pseudo-label supply before
    more weighting experiments; `anger=4` and `fear=4` are not enough.
+3. Compare one-clip-per-speaker versus two-clips-per-speaker CommonVoice
+   sampling under the same teacher, because rare-class supply may be
+   constrained by the current speaker-first artifact.
 4. Compare prototype-only versus hybrid teacher targets inside the same
    continuous style-space objective only after diagnostics confirm which
    teacher geometry is failing.
 5. Keep `mixed_teacher_threshold_balanced` as the current best overall
    mixed-data teacher reference, while treating
-   `mixed_teacher_hybrid_style_distill_balanced` as the best hybrid
-   novelty/naturalness tradeoff.
+   `mixed_teacher_hybrid_style_distill_labeled_warmup` as the strongest
+   checked-in style-distillation novelty/collapse variant.

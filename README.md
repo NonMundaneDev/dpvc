@@ -17,13 +17,13 @@ Canonical research branch:
 
 Current experiment focus on that branch:
 
-- **mixed-data style-supervision diagnostics and curriculum**
+- **mixed-data decoder-aware style supervision and rare-class pseudo-label supply**
 
 Immediate next queue:
 
-1. test a labeled-first curriculum or decoder-aware style objective, because the per-style diagnostic shows canonical teacher geometry and decoded emotion are misaligned
+1. build a decoder-aware or generated-audio style objective, because the labeled-first curriculum improved novelty/collapse but still decoded to emotion2vec-neutral outputs
 2. rebuild or rebalance rare canonical CommonVoice pseudo-label supply before more weighting experiments, especially `anger` and `fear`
-3. keep `mixed_teacher_threshold_balanced` as the best overall mixed-data teacher reference, while treating `mixed_teacher_hybrid_style_distill_balanced` as the strongest novelty/naturalness tradeoff result from the hybrid teacher line
+3. keep `mixed_teacher_threshold_balanced` as the best overall mixed-data teacher reference, while treating `mixed_teacher_hybrid_style_distill_labeled_warmup` as the strongest current style-distillation novelty/collapse variant
 4. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
@@ -34,7 +34,7 @@ The dedicated next-step plans live in:
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
-- **[`FINDINGS.md`](FINDINGS.md)** — 28 paper-facing findings with methodology and per-row takeaways.
+- **[`FINDINGS.md`](FINDINGS.md)** — 29 paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 
@@ -98,8 +98,14 @@ CommonVoice pseudo labels often do not make the intended frozen-teacher style
 dimension dominant (`anger=0.0000`, `fear=0.0000`, `happy=0.1000` teacher
 target-top1 rates), `anger` and `fear` have only `4` active teacher rows each,
 and `sad` can align latently while still decoding to neutral-classified audio.
-That makes the next training move a labeled-first curriculum or decoder-aware
-style objective, not another latent-only calibration variant. The
+That made the next training move a labeled-first curriculum. The curriculum
+condition (`mixed_teacher_hybrid_style_distill_labeled_warmup`) protects
+CREMA-D / Expresso style axes first, then ramps CommonVoice teacher geometry
+from `0.0` to `0.25`; it improves secondary axes (`0.0930` novelty gain, `54`
+identity-collapse files, `61` files with any collapse), but recall remains
+`16.7%`. The current next move is therefore decoder-aware or generated-audio
+style supervision, plus better rare-class supply, not another schedule-only
+curriculum with the same teacher. The
 non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
 the safest default, `7.5` is a useful stronger option for styles like
 `whisper` and `confused`, and `10.0-12.5` look more like high-novelty
@@ -114,6 +120,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/eval_mixed_quality_summary.csv`](results/eval_mixed_quality_summary.csv)
 - [`results/eval_mixed_teacher_summary.csv`](results/eval_mixed_teacher_summary.csv)
 - [`results/eval_mixed_teacher_style_diagnostics_targetmask.md`](results/eval_mixed_teacher_style_diagnostics_targetmask.md)
+- [`results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md`](results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md)
 - [`results/eval_nontrump_strength_sweep.csv`](results/eval_nontrump_strength_sweep.csv)
 - [`results/eval_nontrump_strength_sweep_summary.md`](results/eval_nontrump_strength_sweep_summary.md)
 
@@ -170,11 +177,12 @@ See also:
 - `examples/openvoice_train_vae.py` — train a custom DP-VAE for the anonymizer.
 - `examples/openvoice_infer_controllable.py` — **controllable** style-aware inference (the current headline flow; see [`examples/README.md`](examples/README.md) for the full pipeline).
 - `examples/openvoice_extract_commonvoice.py` + `examples/openvoice_pretrain_vae_commonvoice.py` — Common Voice pretraining path, including validation-scale weak supervision from metadata and pseudo labels.
-- `scripts/build_mixed_training_set.py` + `examples/openvoice_train_vae_mixed.py` — mixed-data bootstrap path that combines pseudo-labeled CommonVoice with labeled CREMA-D and Expresso under schedule-controlled sampling, including optional style-space teacher distillation via `--style-teacher-checkpoint`, `--style-teacher-weight`, `--style-teacher-dims`, `--style-teacher-datasets`, `--style-teacher-target-mode`, `--style-teacher-require-label`, `--style-teacher-style-weights`, and `--style-teacher-confidence-power`.
+- `scripts/build_mixed_training_set.py` + `examples/openvoice_train_vae_mixed.py` — mixed-data bootstrap path that combines pseudo-labeled CommonVoice with labeled CREMA-D and Expresso under schedule-controlled sampling, including optional style-space teacher distillation via `--style-teacher-checkpoint`, `--style-teacher-weight`, `--style-teacher-weight-final`, `--style-teacher-dims`, `--style-teacher-datasets`, `--style-teacher-target-mode`, `--style-teacher-require-label`, `--style-teacher-style-weights`, and `--style-teacher-confidence-power`.
 - `scripts/prepare_commonvoice_subset.py` — helper for turning downloaded Common Voice shards into a filtered local `validated.tsv` + `clips/` subset.
 - `scripts/annotate_commonvoice_pseudolabels.py` — adds confidence-scored pseudo-style labels to a Common Voice embedding artifact.
 - `scripts/annotate_commonvoice_latent_prototypes.py` — scores Common Voice rows against combined-VAE latent style prototypes as an alternate pseudo-label teacher.
 - `scripts/combine_commonvoice_pseudolabel_teachers.py` — combines filtered emotion2vec and latent-prototype CommonVoice pseudo labels into a reusable hybrid teacher artifact.
+- `scripts/analyze_mixed_teacher_style_diagnostics.py` — joins label supply, teacher/student latent geometry, generated metrics, and collapse rows for mixed-teacher conditions.
 - `scripts/prepare_ablation_embeddings.py` — builds the `cremad_only` and `expresso_only` evaluation ablation datasets in the unified label format.
 - `scripts/run_ablation_inference.py` — generates the evaluation ablation matrix corpora, including the naive unlabeled-latent baseline.
 - `scripts/summarize_ablation_results.py` — builds the condition summary table and collapse taxonomy for the paper.

@@ -424,12 +424,23 @@ def write_markdown(path, condition, rows):
     else:
         lines.append("- Student target-dim alignment is not dramatically below teacher alignment by this coarse top1 diagnostic.")
 
+    if "labeled_warmup" in condition:
+        recommendation = (
+            "- Labeled-first curriculum has already been tested for this condition; "
+            "prefer decoder-aware/generated-audio style supervision or stronger rare-class supply next."
+        )
+    else:
+        recommendation = (
+            "- Prefer a labeled-first curriculum if student latent alignment trails the teacher, "
+            "or a decoder-aware/generated-audio style objective if latent alignment exists but emotion recall remains neutral."
+        )
+
     lines.extend([
         "",
         "## Recommendation",
         "",
         "- Do not spend the next turn on another latent-only scalar/mask variant without first addressing the diagnostic failure mode above.",
-        "- Prefer a labeled-first curriculum if student latent alignment trails the teacher, or a decoder-aware/generated-audio style objective if latent alignment exists but emotion recall remains neutral.",
+        recommendation,
         "- Treat rare canonical classes as a data-supply issue, not merely a weighting issue.",
         "",
     ])
