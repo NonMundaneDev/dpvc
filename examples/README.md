@@ -1357,7 +1357,8 @@ Interpretation:
 - `results/commonvoice_pseudolabel_supply_audit_rare_supply.md` confirms the expanded rare-supply artifact now clears the training gate: the final mixed artifact keeps `anger=50` and `fear=50` CommonVoice pseudo rows while preserving `13308` CommonVoice speakers
 - `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` is the first expanded rare-supply generated-audio result: `47.0%` emotion recall, `0.2995` novelty gain, `0.2751` mean styled WER, and `-0.2640` MOS delta
 - `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` is the recommended quality-balanced inference profile for that checkpoint: it preserves `47.0%` recall while improving mean styled WER to `0.2348`, MOS delta to `-0.2081`, and files with any collapse to `20`
-- the next mixed-data branch should move to decoder-aware or generated-audio style objectives, because expanded rare supply recovered recall/novelty but introduced a real content/naturalness tradeoff
+- `mixed_teacher_cvrare_decoder_proto_labeled_warmup` is the first decoder-aware training pilot: it preserves high novelty (`0.3008`) but drops recall to `42.4%` and worsens mean styled WER to `0.2863`, so it is a cautionary baseline rather than the new reference
+- the next mixed-data branch should move to safer generated-audio-calibrated objectives, because naive decoded-embedding prototype matching did not learn the manual `sad/enunciated` guard's quality-balanced repair
 
 Expanded rare-supply mixed artifact and first model run:
 
@@ -1461,7 +1462,44 @@ python scripts/run_generated_audio_eval_suite.py \
 `anger=5.0,sad=3.5,enunciated=2.5`. Styles omitted from the profile fall back
 to the global `--style-strength` value.
 
-Per-style canonical recall:
+Decoder-prototype training pilot:
+
+```bash
+python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_cvrare_decoder_proto_labeled_warmup.pt \
+    --init-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt \
+    --epochs 1000 \
+    --schedule labeled_warmup \
+    --schedule-epochs 1000 \
+    --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --style-teacher-weight 0.0 \
+    --style-teacher-weight-final 0.25 \
+    --style-teacher-datasets CommonVoice \
+    --style-teacher-dims 0-8 \
+    --decoder-prototype-weight 0.0 \
+    --decoder-prototype-weight-final 0.02 \
+    --decoder-prototype-datasets CommonVoice \
+    --decoder-prototype-source true \
+    --decoder-prototype-strength 5.0 \
+    --decoder-prototype-style-strengths sad=3.5,enunciated=2.5,confused=4.0 \
+    --decoder-prototype-control-mode target_only
+
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_cvrare_decoder_proto_labeled_warmup \
+    --out output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_eval \
+    --style-strength 5.0 \
+    --noise-level 0.0 \
+    --seed 42
+
+python scripts/run_generated_audio_eval_suite.py \
+    --input output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_eval \
+    --result-tag mixed_teacher_cvrare_decoder_proto_labeled_warmup \
+    --input-tag mixed_teacher
+```
+
+Per-style canonical recall for the `sad/enunciated` guard:
 
 | Style | Recall |
 |-------|--------|

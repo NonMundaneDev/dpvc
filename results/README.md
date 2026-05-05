@@ -275,15 +275,24 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `eval_mos_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.csv` | `-0.2081` MOS delta | [`examples/eval_mos.py`](../examples/eval_mos.py) | FINDINGS Finding 31 |
 | `listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html` | browser listening review | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 31 |
 | `eval_mixed_teacher_cvrare_strength_profiles_summary.md` | profile comparison summary | manual summary from checked-in CSVs | FINDINGS Finding 31 |
+| `eval_emotion_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup.csv` | `42.4%` recall | [`examples/eval_emotion.py`](../examples/eval_emotion.py) | FINDINGS Finding 32 |
+| `eval_novelty_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup.csv` | `0.3008` novelty gain | [`examples/eval_novelty.py`](../examples/eval_novelty.py) | FINDINGS Finding 32 |
+| `eval_wer_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup.csv` | `0.2863` mean styled WER | [`examples/eval_wer.py`](../examples/eval_wer.py) | FINDINGS Finding 32 |
+| `eval_mos_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup.csv` | `-0.2148` MOS delta | [`examples/eval_mos.py`](../examples/eval_mos.py) | FINDINGS Finding 32 |
+| `listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html` | browser listening review | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 32 |
+| `eval_mixed_teacher_cvrare_decoder_proto_summary.md` | decoder-prototype pilot comparison | manual summary from checked-in CSVs | FINDINGS Finding 32 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.
 - Collapse improves sharply versus earlier mixed-teacher rows: content collapse
   `7`, style-to-neutral collapse `18`, identity collapse `1`, mixed collapse
   `1`, files with any collapse `25`.
-- The result should be read as a paper-facing positive finding plus a clear next
-  objective: preserve the recall/novelty gain while reducing WER/MOS damage
-  with decoder-aware or generated-audio style supervision.
+- The result should be read as a paper-facing positive finding plus a clear
+  objective: preserve the recall/novelty gain while reducing WER/MOS damage.
+  The first decoder-prototype training pilot implements that direction but does
+  not beat the `sad/enunciated` inference guard, so it is a cautionary baseline
+  for safer generated-audio-calibrated objectives rather than the new
+  reference.
 
 Non-Trump style-strength sweep from 2026-05-03:
 

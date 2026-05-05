@@ -84,11 +84,15 @@ Priority tags:
 - [x] `[DONE]` Move from hard row-label teacher mixing to richer style-space supervision, prototype distillation, or a per-style curriculum; the first continuous style-space distillation run preserved the hybrid novelty gain and improved MOS/collapse modestly, but recall stayed fixed at `16.7%`
 - [x] `[DONE]` Calibrate the style-space distillation objective with a first teacher-loss weight sweep; global weights `0.10`, `0.25`, and `0.50` all stayed at `16.7%` recall, so the next move is class-specific masks/curriculum rather than another scalar weight tweak
 - [x] `[DONE]` Add per-style teacher masks, confidence weighting, and a first labeled-first curriculum for the style-space loss; target masking and labeled warmup both stayed at `16.7%` recall, so curriculum timing with the current teacher is not enough to recover target emotion recall
-- [ ] `[NOW]` Design a decoder-aware or generated-audio style objective for canonical emotions, because the labeled-first curriculum improved novelty/collapse but still decoded to emotion2vec-neutral outputs
+- [x] `[DONE]` Design and test a first decoder-aware style objective for canonical emotions; the decoder-prototype pilot is implemented and evaluated, but it is a cautionary baseline rather than the new reference because it preserves novelty while lowering recall and worsening WER/collapse versus the `sad/enunciated` inference guard
 - [x] `[DONE]` Add a CommonVoice rare-supply preflight gate before more weighting experiments; it scans local `validated.tsv` + `clips/`, estimates the needed row count from the checked-in pseudo-label artifacts, and now returns `GO` on the expanded local corpus at `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` (`40000` usable rows / `20537` speakers)
 - [x] `[DONE]` Extract OpenVoice embeddings from the expanded local CommonVoice corpus, then score/filter/audit pseudo labels before training; `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt` now passes the rare-label supply gate with `anger=50` / `fear=50`
 - [x] `[DONE]` Evaluate the expanded rare-supply checkpoint and make a listening report; `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reached `46.97%` emotion recall and `0.2995` novelty gain, but exposed a content/naturalness tradeoff (`0.2751` mean styled WER, `-0.2640` MOS delta)
 - [x] `[DONE]` Add inference-side per-style strength profiles and a one-command generated-audio eval runner; the narrow `sad/enunciated` guard keeps the expanded checkpoint at `47.0%` recall while improving WER to `0.2348`, MOS delta to `-0.2081`, and files with any collapse to `20`
+- [x] `[DONE]` Add a decoder-prototype training objective and first pilot; `mixed_teacher_cvrare_decoder_proto_labeled_warmup` reaches `42.4%` recall and `0.3008` novelty gain, but does not beat the `sad/enunciated` guard on WER, MOS, or collapse
+- [ ] `[NOW]` Try a safer generated-audio / decoder-aware objective family after the naive decoder-prototype result: lower decoder-prototype weights (`0.005-0.01`), true-labeled-only target rows, or offline emotion2vec calibration of generated outputs before more full 1000-epoch runs
+- [ ] `[SOON]` Evaluate the decoder-prototype checkpoint with the existing `cvrare_sad_enunc_guard` style-strength map; the first global-strength run is negative, but this isolates whether the training objective itself is worse or whether it still needs the same inference guard
+- [ ] `[SOON]` Add a small generated-output calibration artifact that scores pilot generations with emotion2vec and feeds target-style failures back into the next objective, because decoded embedding prototypes alone did not reliably improve generated-audio recall/quality
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [ ] `[SOON]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths, because the `sad/enunciated` guard is promising but should not become a hidden manual tuning step
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
@@ -2154,6 +2158,132 @@ Future upgrade to preserve:
 - `[SOON]` Run subjective listening review on the unguarded and
   `sad/enunciated` guard reports before freezing which profile appears in the
   paper demo table.
+
+---
+
+### 0.35 Decoder-Prototype Training Pilot for Expanded Rare-Supply Checkpoint (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Added a decoder-prototype loss to `dpvc.utils.train_mixed_autoencoder`.
+  During training, the model encodes a row, applies an inference-like style
+  control in latent space, decodes that controlled latent, and matches the
+  decoded embedding to the real labeled style prototype for the target style.
+- Extended `examples/openvoice_train_vae_mixed.py` with decoder-prototype CLI
+  flags:
+  - `--decoder-prototype-weight`
+  - `--decoder-prototype-weight-final`
+  - `--decoder-prototype-datasets`
+  - `--decoder-prototype-source`
+  - `--decoder-prototype-min-count`
+  - `--decoder-prototype-strength`
+  - `--decoder-prototype-style-strengths`
+  - `--decoder-prototype-control-mode`
+- Added the deterministic inference condition
+  `mixed_teacher_cvrare_decoder_proto_labeled_warmup` to
+  `scripts/run_ablation_inference.py`.
+- Trained the first pilot from the current best expanded checkpoint:
+  `embeddings/openvoice_vae_mixed_teacher_cvrare_decoder_proto_labeled_warmup.pt`.
+- Generated and evaluated:
+  - `output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_eval/`
+  - `results/eval_emotion_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup.csv`
+  - `results/eval_novelty_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup.csv`
+  - `results/eval_wer_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup.csv`
+  - `results/eval_mos_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup.csv`
+  - `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`
+
+Training command:
+
+```bash
+.venv/bin/python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_cvrare_decoder_proto_labeled_warmup.pt \
+    --init-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt \
+    --epochs 1000 \
+    --schedule labeled_warmup \
+    --schedule-epochs 1000 \
+    --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --style-teacher-weight 0.0 \
+    --style-teacher-weight-final 0.25 \
+    --style-teacher-datasets CommonVoice \
+    --style-teacher-dims 0-8 \
+    --decoder-prototype-weight 0.0 \
+    --decoder-prototype-weight-final 0.02 \
+    --decoder-prototype-datasets CommonVoice \
+    --decoder-prototype-source true \
+    --decoder-prototype-strength 5.0 \
+    --decoder-prototype-style-strengths sad=3.5,enunciated=2.5,confused=4.0 \
+    --decoder-prototype-control-mode target_only
+```
+
+Evaluation command:
+
+```bash
+.venv/bin/python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_cvrare_decoder_proto_labeled_warmup \
+    --out output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_eval \
+    --style-strength 5.0 \
+    --noise-level 0.0 \
+    --seed 42
+
+.venv/bin/python scripts/run_generated_audio_eval_suite.py \
+    --input output/mixed_teacher_cvrare_decoder_proto_labeled_warmup_eval \
+    --result-tag mixed_teacher_cvrare_decoder_proto_labeled_warmup \
+    --input-tag mixed_teacher
+```
+
+Validation:
+
+- `Validation`: `.venv/bin/python -m py_compile examples/openvoice_train_vae_mixed.py dpvc/utils.py scripts/run_ablation_inference.py scripts/run_generated_audio_eval_suite.py`
+- `Validation`: `examples/openvoice_train_vae_mixed.py --help` exposes the
+  decoder-prototype flags.
+- `Validation`: a 2-epoch smoke run built true-label prototypes for all nine
+  styles and applied decoder-prototype loss to CommonVoice rows.
+- `Validation`: a 12-epoch scale smoke from the expanded checkpoint showed the
+  ramped teacher and decoder-prototype loss terms active without dominating the
+  training loss.
+- `Validation`: the 1000-epoch pilot completed, saved the checkpoint, produced
+  a 110-row generated-audio manifest, and the generated-audio eval suite wrote
+  emotion, novelty, WER, MOS, summary/collapse, listening HTML, and
+  subjective-rating CSV artifacts.
+
+Result matrix:
+
+| Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Content collapse | Style-to-neutral collapse | Identity collapse | Mixed collapse | Files with any collapse |
+|-----------|--------|--------------|-----------------|-----------|------------------|---------------------------|-------------------|----------------|-------------------------|
+| `combined` | `25.8%` | `0.2599` | `0.2353` | `-0.0792` | `6` | `37` | `7` | `4` | `46` |
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` | `47.0%` | `0.2995` | `0.2751` | `-0.2640` | `7` | `18` | `1` | `1` | `25` |
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `2` | `18` | `1` | `1` | `20` |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `42.4%` | `0.3008` | `0.2863` | `-0.2148` | `4` | `22` | `1` | `0` | `27` |
+
+Readout:
+
+- The decoder-prototype path is implemented and reproducible, so the training
+  side of the decoder-aware hypothesis is no longer just a plan.
+- The first naive version is not a new reference. It keeps novelty high
+  (`0.3008`) and improves recall over `combined` (`42.4%` vs `25.8%`), but it
+  loses recall versus the expanded rare-supply checkpoint and gives back WER /
+  collapse versus the `sad/enunciated` guard.
+- Per-style recall suggests the objective helps `happy` (`6/11`) and keeps
+  `sad` strong (`10/11`), but hurts `fear` (`1/11`) and `disgust` (`0/11`).
+- Paper interpretation: decoded-embedding prototype matching is a useful
+  cautionary baseline. It is not enough by itself to learn the manual
+  quality/recall repair found by the inference-side guard.
+
+Future upgrade to preserve:
+
+- `[NOW]` Try safer decoder-prototype variants before abandoning the family:
+  lower final weights (`0.005-0.01`), true-labeled-only application, or a
+  canonical-emotion subset that avoids pushing already fragile `fear` /
+  `disgust` too hard.
+- `[SOON]` Add an offline generated-audio teacher loop: generate a small corpus,
+  score it with emotion2vec/WER/MOS, and use those failures to calibrate target
+  rows or style strengths rather than matching only decoded embedding
+  prototypes.
+- `[SOON]` Evaluate the decoder-prototype checkpoint with
+  `configs/style_strength_profiles/cvrare_sad_enunc_guard.json` to separate
+  training-objective quality from inference-strength quality.
 
 ---
 

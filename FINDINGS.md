@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-05 (Finding 31 adds per-style strength calibration for the expanded rare-supply mixed teacher)
+**Last updated:** 2026-05-05 (Finding 32 adds the first decoder-prototype training pilot)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -2262,12 +2262,99 @@ Recommended listening artifacts:
 
 ---
 
+## Finding 32: The First Decoder-Prototype Objective Preserves Novelty, But Does Not Learn the Quality-Balanced Repair
+
+### Methodology
+
+Finding 31 showed that the expanded rare-supply checkpoint can be made more
+usable with a hand-authored per-style inference guard. The next question was
+whether training could learn a similar repair directly.
+
+This follow-up added a decoder-prototype objective to mixed-data VAE training:
+
+- build one real embedding prototype per style from true-labeled
+  CREMA-D/Expresso rows
+- encode a training row and take `model.last_mu`
+- apply an inference-like style control to the latent (`target_only` mode)
+- decode the controlled latent back into OpenVoice embedding space
+- match that decoded embedding to the corresponding real style prototype
+
+The pilot trained from the expanded rare-supply checkpoint:
+
+- base artifact:
+  `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt`
+- init checkpoint:
+  `embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt`
+- output checkpoint:
+  `embeddings/openvoice_vae_mixed_teacher_cvrare_decoder_proto_labeled_warmup.pt`
+- style-teacher ramp: `0.0 -> 0.25`
+- decoder-prototype ramp: `0.0 -> 0.02`
+- decoder-prototype rows: selected CommonVoice rows with labels
+- prototype source: true-labeled rows only
+- generation: same deterministic 110-row source panel, `style_strength=5.0`,
+  `noise_level=0.0`, seed `42`
+
+### Results
+
+| Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Content collapse | Style-to-neutral collapse | Identity collapse | Mixed collapse | Files with any collapse | Takeaway |
+|-----------|--------|--------------|-----------------|-----------|------------------|---------------------------|-------------------|----------------|-------------------------|----------|
+| `combined` | `25.8%` | `0.2599` | `0.2353` | `-0.0792` | `6` | `37` | `7` | `4` | `46` | Cleanest original quality baseline |
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` | `47.0%` | `0.2995` | `0.2751` | `-0.2640` | `7` | `18` | `1` | `1` | `25` | Strongest high-novelty expanded run |
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `2` | `18` | `1` | `1` | `20` | Current quality-balanced reference |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `42.4%` | `0.3008` | `0.2863` | `-0.2148` | `4` | `22` | `1` | `0` | `27` | High novelty, but worse recall/WER/collapse than the guard |
+
+Per-style canonical recall for the decoder-prototype pilot:
+
+| Style | Recall |
+|-------|--------|
+| `anger` | `2/11` |
+| `disgust` | `0/11` |
+| `fear` | `1/11` |
+| `happy` | `6/11` |
+| `neutral` | `9/11` |
+| `sad` | `10/11` |
+
+### Interpretation
+
+1. **The decoder-aware training path is real and reproducible.** The repo now
+   has a training objective that supervises decoded, style-controlled
+   embeddings rather than only latent style geometry.
+2. **The first version is not the new best checkpoint.** It improves recall
+   over the original `combined` baseline, but falls below both expanded
+   rare-supply readouts (`42.4%` vs `47.0%`).
+3. **Novelty remains strong, but quality does not.** Novelty is slightly higher
+   than the unguarded expanded run (`0.3008` vs `0.2995`), but WER is worse
+   (`0.2863`) and files with any collapse increase to `27`.
+4. **The objective changes which styles fail.** `happy` improves to `6/11`,
+   but `fear` and `disgust` weaken, so the prototype target is not uniformly
+   repairing canonical emotion control.
+5. **Manual inference calibration still wins the current Pareto comparison.**
+   The `sad/enunciated` guard keeps `47.0%` recall with better WER, better MOS,
+   and fewer collapse files than the decoder-prototype pilot.
+
+### Implication
+
+Finding 32 is a cautionary result, not a dead end. It confirms that decoded
+embedding supervision can be added cleanly, but also shows that naive
+prototype matching is not enough to learn the quality-balanced repair that the
+manual strength guard discovered. The next training-side work should be safer
+and more directly tied to generated-audio behavior: lower prototype weights,
+style-specific target subsets, or an offline generated-audio calibration loop
+using emotion2vec / WER / MOS feedback.
+
+Recommended listening artifacts:
+
+- `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
+- `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`
+
+---
+
 ## Open Questions
 
 1. **What are the formal privacy guarantees?** We need to compute epsilon for each noise level and report privacy-utility curves.
 2. ~~**Does style control generalize across source speakers?**~~ → **Answered in Finding 6.** Brightness generalizes (7/9 styles); F0 does not. Some speaker-style combinations collapse.
 3. ~~**How do we evaluate emotion controllability?**~~ → **Answered in Finding 7.** emotion2vec Recall Rate + emo_sim (per EmoVoice) is the primary metric. Recall is 20% — training gap identified.
-4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Findings 30-31: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain, and the `sad/enunciated` strength guard keeps `47.0%` recall while improving WER/MOS. The remaining open question is whether decoder-aware / generated-audio style supervision can learn that tradeoff directly rather than relying on manual inference calibration.
+4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Findings 30-32: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain, and the `sad/enunciated` strength guard keeps `47.0%` recall while improving WER/MOS. The first decoder-prototype training pilot preserves novelty but does not beat that guard, so the remaining open question is whether safer generated-audio / teacher-calibrated objectives can learn the tradeoff directly.
 5. **Can we train age/gender and emotion knobs simultaneously?** CommonVoice has age/gender, CREMA-D has emotion. Can a single VAE learn all at once when each training stage only labels a subset? Unknown — Joe flagged this as an open research question.
 6. **Can an independent speaker verifier confirm the novelty signal?** Finding 11 uses OpenVoice's native embedding space. The next step is an external speaker encoder / EER-style check.
 7. **Can an adversary re-identify speakers from F0 alone?** If so, embedding-only DP is insufficient — motivates joint protection.
@@ -2275,7 +2362,7 @@ Recommended listening artifacts:
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). The remaining mixed-data question is narrower and harder: can decoder-aware or generated-audio style objectives learn this repair rather than depending on hand-authored inference profiles?
+12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Finding 32 shows that the first naive decoder-prototype objective does not learn that repair (`42.4%` recall, `0.2863` WER, `27` collapse files), so the remaining mixed-data question is now narrower: can generated-audio-calibrated or lower-risk decoder-aware objectives improve on the manual guard?
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---

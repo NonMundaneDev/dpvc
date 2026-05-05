@@ -566,28 +566,33 @@ Real local validation completed so far:
 
 Immediate next execution steps on this branch:
 
-1. Design a decoder-aware or generated-audio style objective for canonical
-   emotions, because expanded rare-class supply recovered recall/novelty but
-   introduced a content/naturalness tradeoff.
-2. Use
+1. Treat the first decoder-prototype pilot as the implemented cautionary
+   baseline for decoder-aware training: it reaches `42.4%` recall and `0.3008`
+   novelty gain, but loses to the `sad/enunciated` guard on WER, MOS, and
+   collapse.
+2. Design the safer follow-up objective: lower decoder-prototype weights,
+   style-specific prototype subsets, or offline generated-audio calibration
+   from emotion2vec / WER / MOS feedback.
+3. Use
    `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest
    checked-in controllability/novelty reference (`47.0%` recall, `0.2995`
    novelty gain), while keeping `combined` as the cleanest original quality
    baseline.
-3. Prioritize perceptual review from
-   `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`,
-   especially for `sad`, `happy`, `fear`, and `enunciated`.
-4. Compare one-clip-per-speaker versus two-clips-per-speaker CommonVoice
+4. Prioritize perceptual review from
+   `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`,
+   with `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`
+   as the decoder-prototype comparison.
+5. Compare one-clip-per-speaker versus two-clips-per-speaker CommonVoice
    sampling only after the decoder-aware objective is tested; the current
    selected-pseudo preservation mode already keeps rare selected rows without
    bloating all speakers to three clips.
-5. Compare prototype-only versus hybrid teacher targets inside the same
+6. Compare prototype-only versus hybrid teacher targets inside the same
    decoder-aware objective only after diagnostics confirm whether the failure is
    teacher calibration or decoder/output alignment.
-6. Use `scripts/run_generated_audio_eval_suite.py` as the default closeout path
+7. Use `scripts/run_generated_audio_eval_suite.py` as the default closeout path
    for generated-audio corpora so emotion, novelty, WER, MOS, summary/collapse,
    and listening artifacts are regenerated consistently.
-7. Convert the hand-authored `cvrare_sad_enunc_guard` profile into a small
+8. Convert the hand-authored `cvrare_sad_enunc_guard` profile into a small
    reproducible grid/optimizer only after the decoder-aware objective baseline
    is defined.
 
@@ -612,3 +617,9 @@ Expanded rare-supply gate status:
   `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`
   preserves `47.0%` recall while improving mean styled WER to `0.2348`, MOS
   delta to `-0.2081`, and files with any collapse to `20`.
+- The first decoder-prototype pilot is implemented and evaluated:
+  `mixed_teacher_cvrare_decoder_proto_labeled_warmup` reaches `42.4%` recall,
+  `0.3008` novelty gain, `0.2863` mean styled WER, `-0.2148` MOS delta, and
+  `27` files with any collapse. It is a reproducible negative/cautionary
+  result: decoded-embedding prototype matching alone did not learn the
+  inference-side guard's quality-balanced repair.

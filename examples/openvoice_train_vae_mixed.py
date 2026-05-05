@@ -95,6 +95,43 @@ def parse_style_weights(raw, supported_styles):
     return weights
 
 
+def parse_style_strengths(raw, supported_styles, default_strength):
+    strengths = {style: float(default_strength) for style in supported_styles}
+    raw = (raw or "").strip()
+    if not raw:
+        return strengths
+    for item in raw.split(','):
+        item = item.strip()
+        if not item:
+            continue
+        if '=' not in item:
+            raise ValueError(f"Expected style strength in name=value form, got: {item}")
+        name, value = item.split('=', 1)
+        style = name.strip()
+        if style not in strengths:
+            raise ValueError(f"Unknown style in decoder prototype strength config: {style}")
+        strength = float(value.strip())
+        if strength < 0:
+            raise ValueError(f"Decoder prototype strength must be non-negative: {item}")
+        strengths[style] = strength
+    return strengths
+
+
+def parse_label_sources(raw):
+    raw = (raw or "true").strip()
+    if raw.lower() in {"all", "all_labeled", "true,pseudo", "pseudo,true"}:
+        return {"true", "pseudo"}
+    selected = {item.strip() for item in raw.split(',') if item.strip()}
+    valid = {"true", "pseudo"}
+    unknown = selected - valid
+    if unknown:
+        raise ValueError(
+            f"Unknown decoder prototype source(s): {sorted(unknown)}; "
+            "expected true, pseudo, or all_labeled"
+        )
+    return selected
+
+
 def parse_dim_list(raw):
     dims = []
     for item in raw.split(','):
@@ -122,6 +159,44 @@ def build_dataset_mask(source_datasets, raw, device):
         dtype=torch.float32,
         device=device,
     )
+
+
+def build_decoder_prototypes(
+    embeddings,
+    style_targets,
+    style_label_mask,
+    style_label_sources,
+    supported_styles,
+    source_filter,
+    min_count,
+):
+    label_sources = list(style_label_sources or [])
+    if len(label_sources) != embeddings.shape[0]:
+        raise ValueError(
+            "Mixed artifact is missing style_label_source entries needed for "
+            "decoder prototype construction"
+        )
+
+    source_mask = torch.tensor(
+        [str(source) in source_filter for source in label_sources],
+        dtype=torch.bool,
+        device=embeddings.device,
+    )
+    label_mask = style_label_mask.view(-1) > 0
+    prototypes = []
+    counts = {}
+    for idx, style in enumerate(supported_styles):
+        style_mask = style_targets[:, idx].view(-1) > 0
+        active = label_mask & source_mask & style_mask
+        count = int(active.sum().item())
+        if count < min_count:
+            raise ValueError(
+                f"Decoder prototype source {sorted(source_filter)} has only "
+                f"{count} rows for style {style!r}; require at least {min_count}"
+            )
+        prototypes.append(embeddings[active].mean(dim=0))
+        counts[style] = count
+    return torch.stack(prototypes, dim=0), counts
 
 
 def build_style_teacher_row_weights(
@@ -299,6 +374,68 @@ def main():
         ),
     )
     ap.add_argument(
+        "--decoder-prototype-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "Decoder-space style-prototype loss weight. This decodes a "
+            "style-controlled latent and matches it to real labeled style "
+            "embedding prototypes (default: 0.0, disabled)"
+        ),
+    )
+    ap.add_argument(
+        "--decoder-prototype-weight-final",
+        type=float,
+        default=None,
+        help="Optional final decoder-prototype loss weight for schedule interpolation",
+    )
+    ap.add_argument(
+        "--decoder-prototype-datasets",
+        default="CommonVoice",
+        help=(
+            "Datasets receiving decoder-prototype loss, comma-separated or 'all' "
+            "(default: CommonVoice)"
+        ),
+    )
+    ap.add_argument(
+        "--decoder-prototype-source",
+        default="true",
+        help=(
+            "Rows used to build style prototypes: true, pseudo, or all_labeled "
+            "(default: true)"
+        ),
+    )
+    ap.add_argument(
+        "--decoder-prototype-min-count",
+        type=int,
+        default=5,
+        help="Minimum rows required per style when building prototypes (default: 5)",
+    )
+    ap.add_argument(
+        "--decoder-prototype-strength",
+        type=float,
+        default=5.0,
+        help="Default style strength used inside the decoder-prototype loss (default: 5.0)",
+    )
+    ap.add_argument(
+        "--decoder-prototype-style-strengths",
+        default="",
+        help=(
+            "Optional per-style strengths for decoder-prototype loss, e.g. "
+            "sad=3.5,enunciated=2.5"
+        ),
+    )
+    ap.add_argument(
+        "--decoder-prototype-control-mode",
+        default="target_only",
+        choices=["target_only", "all_style_dims"],
+        help=(
+            "How to apply style controls before decoding for prototype loss. "
+            "target_only mirrors inference by setting only the target style dim "
+            "(default: target_only)"
+        ),
+    )
+    ap.add_argument(
         "--schedule",
         default="static_balanced",
         choices=DEFAULT_SCHEDULES,
@@ -334,6 +471,12 @@ def main():
         and not args.style_teacher_checkpoint
     ):
         ap.error("--style-teacher-weight > 0 or --style-teacher-weight-final > 0 requires --style-teacher-checkpoint")
+    if args.decoder_prototype_weight < 0 or (args.decoder_prototype_weight_final or 0.0) < 0:
+        ap.error("Decoder-prototype weights must be non-negative")
+    if args.decoder_prototype_strength < 0:
+        ap.error("--decoder-prototype-strength must be non-negative")
+    if args.decoder_prototype_min_count < 1:
+        ap.error("--decoder-prototype-min-count must be >= 1")
 
     dpvc.utils.set_seed(args.seed)
     device = resolve_device()
@@ -414,6 +557,44 @@ def main():
             args.style_teacher_require_label,
         )
 
+    decoder_prototype_requested = (
+        args.decoder_prototype_weight > 0
+        or (args.decoder_prototype_weight_final or 0.0) > 0
+    )
+    decoder_prototype_targets = None
+    decoder_prototype_mask = None
+    decoder_prototype_row_weights = None
+    decoder_prototype_strengths = None
+    decoder_prototype_counts = None
+    decoder_prototype_strength_map = None
+    if decoder_prototype_requested:
+        prototype_sources = parse_label_sources(args.decoder_prototype_source)
+        decoder_prototype_targets, decoder_prototype_counts = build_decoder_prototypes(
+            embeddings,
+            style_targets,
+            style_label_mask,
+            data.get('style_label_source'),
+            supported_styles,
+            prototype_sources,
+            args.decoder_prototype_min_count,
+        )
+        decoder_prototype_mask = build_dataset_mask(
+            source_datasets,
+            args.decoder_prototype_datasets,
+            device,
+        )
+        decoder_prototype_row_weights = style_label_row_weights
+        decoder_prototype_strength_map = parse_style_strengths(
+            args.decoder_prototype_style_strengths,
+            supported_styles,
+            args.decoder_prototype_strength,
+        )
+        decoder_prototype_strengths = torch.tensor(
+            [decoder_prototype_strength_map[style] for style in supported_styles],
+            dtype=torch.float32,
+            device=device,
+        )
+
     labeled_rows = int((style_label_mask.view(-1) > 0).sum().item())
     print(f"Supported styles: {supported_styles}")
     print(f"Labeled rows: {labeled_rows}/{len(embeddings)}")
@@ -463,6 +644,12 @@ def main():
             print(f"Style teacher style weights: {style_teacher_style_weights}")
         if args.style_teacher_confidence_power > 0:
             print(f"Style teacher confidence power: {args.style_teacher_confidence_power}")
+    if decoder_prototype_requested:
+        print(f"Decoder prototype source: {args.decoder_prototype_source}")
+        print(f"Decoder prototype counts: {decoder_prototype_counts}")
+        print(f"Decoder prototype datasets: {args.decoder_prototype_datasets}")
+        print(f"Decoder prototype control mode: {args.decoder_prototype_control_mode}")
+        print(f"Decoder prototype strengths: {decoder_prototype_strength_map}")
 
     trainable_params, total_params = format_param_count(model)
     print(f"Freeze encoder: {args.freeze_encoder}")
@@ -504,6 +691,13 @@ def main():
         style_teacher_mask=style_teacher_mask,
         style_teacher_row_weights=style_teacher_row_weights,
         style_teacher_target_mode=args.style_teacher_target_mode,
+        decoder_prototype_targets=decoder_prototype_targets,
+        decoder_prototype_weight=args.decoder_prototype_weight,
+        decoder_prototype_weight_final=args.decoder_prototype_weight_final,
+        decoder_prototype_mask=decoder_prototype_mask,
+        decoder_prototype_row_weights=decoder_prototype_row_weights,
+        decoder_prototype_strengths=decoder_prototype_strengths,
+        decoder_prototype_control_mode=args.decoder_prototype_control_mode,
     )
 
     torch.save(model.state_dict(), args.output)

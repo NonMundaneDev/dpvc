@@ -49,6 +49,31 @@ def _slice_or_none(tensor: torch.Tensor, dims: Optional[Sequence[int]]):
     return tensor[:, list(dims)]
 
 
+def _apply_style_controls_to_latents(
+        latents: torch.Tensor,
+        style_targets: torch.Tensor,
+        style_strengths: torch.Tensor,
+        control_mode: str):
+    controlled = latents.clone()
+    num_styles = style_targets.shape[1]
+    if num_styles > controlled.shape[1]:
+        raise ValueError(
+            f"Style target width ({num_styles}) exceeds latent width ({controlled.shape[1]})"
+        )
+
+    if control_mode == "all_style_dims":
+        controlled[:, :num_styles] = style_targets * style_strengths.view(1, -1)
+        return controlled
+
+    if control_mode != "target_only":
+        raise ValueError(f"Unsupported decoder prototype control mode: {control_mode}")
+
+    target_indexes = torch.argmax(style_targets, dim=1)
+    row_indexes = torch.arange(controlled.shape[0], device=controlled.device)
+    controlled[row_indexes, target_indexes] = style_strengths[target_indexes]
+    return controlled
+
+
 def is_missing_metadata(value):
     if value is None:
         return True
@@ -270,7 +295,14 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                             style_teacher_dims=None,
                             style_teacher_mask=None,
                             style_teacher_row_weights=None,
-                            style_teacher_target_mode="all_dims"):
+                            style_teacher_target_mode="all_dims",
+                            decoder_prototype_targets=None,
+                            decoder_prototype_weight=0.0,
+                            decoder_prototype_weight_final=None,
+                            decoder_prototype_mask=None,
+                            decoder_prototype_row_weights=None,
+                            decoder_prototype_strengths=None,
+                            decoder_prototype_control_mode="target_only"):
     BATCH_SIZE = min(256, len(embeddings))
     trainable_params = [param for param in model.parameters() if param.requires_grad]
     if not trainable_params:
@@ -278,7 +310,9 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
     optimizer = torch.optim.Adam(trainable_params, lr=lr)
 
     if schedule_epochs <= 0 and (
-        schedule != "static_balanced" or style_teacher_weight_final is not None
+        schedule != "static_balanced"
+        or style_teacher_weight_final is not None
+        or decoder_prototype_weight_final is not None
     ):
         schedule_epochs = epochs
 
@@ -294,6 +328,8 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
     print(f"  label weight : {label_weight}")
     print(f"  teacher-style weight: {style_teacher_weight}"
           + (f" -> {style_teacher_weight_final}" if style_teacher_weight_final is not None else ""))
+    print(f"  decoder-prototype weight: {decoder_prototype_weight}"
+          + (f" -> {decoder_prototype_weight_final}" if decoder_prototype_weight_final is not None else ""))
     print(f"  schedule     : {schedule}")
     if schedule != "static_balanced":
         print(f"  schedule epochs: {schedule_epochs}")
@@ -334,12 +370,61 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                     f"min={nonzero_weights.min().item():.3f} "
                     f"max={nonzero_weights.max().item():.3f}"
                 )
+    decoder_prototype_enabled = (
+        decoder_prototype_targets is not None
+        and (
+            decoder_prototype_weight > 0
+            or (
+                decoder_prototype_weight_final is not None
+                and decoder_prototype_weight_final > 0
+            )
+        )
+    )
+    if decoder_prototype_enabled:
+        if decoder_prototype_targets.shape[0] != style_targets.shape[1]:
+            raise ValueError(
+                "decoder_prototype_targets must have one row per style target "
+                f"({style_targets.shape[1]}), got {decoder_prototype_targets.shape[0]}"
+            )
+        if decoder_prototype_strengths is None:
+            decoder_prototype_strengths = torch.ones(
+                style_targets.shape[1],
+                dtype=embeddings.dtype,
+                device=embeddings.device,
+            )
+        decoder_active = style_label_mask.view(-1) > 0
+        if decoder_prototype_mask is not None:
+            decoder_active = decoder_active & (decoder_prototype_mask.view(-1) > 0)
+        if decoder_prototype_row_weights is not None:
+            decoder_active = decoder_active & (decoder_prototype_row_weights.view(-1) > 0)
+        decoder_rows = int(decoder_active.sum().item())
+        nonzero_strengths = decoder_prototype_strengths.detach().cpu().tolist()
+        print(f"  decoder-prototype rows: {decoder_rows}/{len(embeddings)}")
+        print(f"  decoder-prototype control mode: {decoder_prototype_control_mode}")
+        print(f"  decoder-prototype strengths: {[round(float(v), 4) for v in nonzero_strengths]}")
+        if decoder_prototype_row_weights is not None:
+            nonzero_weights = decoder_prototype_row_weights.view(-1)[
+                decoder_prototype_row_weights.view(-1) > 0
+            ]
+            if nonzero_weights.numel() > 0:
+                print(
+                    "  decoder-prototype row weights: "
+                    f"mean={nonzero_weights.mean().item():.3f} "
+                    f"min={nonzero_weights.min().item():.3f} "
+                    f"max={nonzero_weights.max().item():.3f}"
+                )
 
     print(f"Training mixed-data autoencoder for {epochs} epochs...")
     for epoch in tqdm(range(epochs)):
         current_style_teacher_weight = _interpolate_weight(
             style_teacher_weight,
             style_teacher_weight_final,
+            epoch,
+            schedule_epochs,
+        )
+        current_decoder_prototype_weight = _interpolate_weight(
+            decoder_prototype_weight,
+            decoder_prototype_weight_final,
             epoch,
             schedule_epochs,
         )
@@ -373,6 +458,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
             recon_loss = ((embeddings_b - reconstructed)**2).sum()
             kl_loss = model.kl
             teacher_style_loss = embeddings_b.new_tensor(0.0)
+            decoder_prototype_loss = embeddings_b.new_tensor(0.0)
 
             batch_mask = style_label_mask[batch_indexes].view(-1) > 0
             if batch_mask.any():
@@ -426,11 +512,45 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                         teacher_row_loss = teacher_row_loss * row_weights
                     teacher_style_loss = teacher_row_loss.sum()
 
+            if decoder_prototype_enabled and current_decoder_prototype_weight > 0:
+                decoder_batch_mask = style_label_mask[batch_indexes].view(-1) > 0
+                if decoder_prototype_mask is not None:
+                    decoder_batch_mask = (
+                        decoder_batch_mask
+                        & (decoder_prototype_mask[batch_indexes].view(-1) > 0)
+                    )
+                if decoder_prototype_row_weights is not None:
+                    decoder_batch_mask = (
+                        decoder_batch_mask
+                        & (decoder_prototype_row_weights[batch_indexes].view(-1) > 0)
+                    )
+                if decoder_batch_mask.any():
+                    decoder_targets_b = style_targets[batch_indexes][decoder_batch_mask]
+                    controlled_latents = _apply_style_controls_to_latents(
+                        model.last_mu[decoder_batch_mask],
+                        decoder_targets_b,
+                        decoder_prototype_strengths,
+                        decoder_prototype_control_mode,
+                    )
+                    decoded_style_embeddings = model.decoder(controlled_latents)
+                    prototype_indexes = torch.argmax(decoder_targets_b, dim=1)
+                    prototype_targets_b = decoder_prototype_targets[prototype_indexes]
+                    decoder_row_loss = (
+                        (decoded_style_embeddings - prototype_targets_b) ** 2
+                    ).sum(dim=1)
+                    if decoder_prototype_row_weights is not None:
+                        row_weights = decoder_prototype_row_weights[batch_indexes].view(-1)[
+                            decoder_batch_mask
+                        ]
+                        decoder_row_loss = decoder_row_loss * row_weights
+                    decoder_prototype_loss = decoder_row_loss.sum()
+
             loss = (
                 recon_weight * recon_loss
                 + kl_weight * kl_loss
                 + label_weight * label_loss
                 + current_style_teacher_weight * teacher_style_loss
+                + current_decoder_prototype_weight * decoder_prototype_loss
             )
             loss.backward()
             optimizer.step()
@@ -445,6 +565,8 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                 f"kl: {kl_loss.item():.2f} (w={kl_weight:.2f})  "
                 f"label: {label_loss.item():.2f} (w={label_weight:.2f})  "
                 f"teacher: {teacher_style_loss.item():.2f} (w={current_style_teacher_weight:.2f})  "
+                f"decoder_proto: {decoder_prototype_loss.item():.2f} "
+                f"(w={current_decoder_prototype_weight:.4f})  "
                 f"mix: {masses_str}"
             )
 
