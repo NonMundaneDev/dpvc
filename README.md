@@ -149,7 +149,11 @@ recover the reference tradeoff: recall remains `42.4%`, novelty is high
 (`0.3032`), WER is still worse (`0.2782`), MOS delta is `-0.2122`, and any
 collapse remains higher (`26` files). This makes the decoder-prototype family
 a useful negative/cautionary result and keeps the expanded rare-supply
-`sad/enunciated` guard as the current quality-balanced reference. The
+`sad/enunciated` guard as the current quality-balanced reference. The new
+generated-audio failure-mining artifact confirms that reference has the lowest
+row-level failure score and localizes the remaining hard styles to `disgust`,
+`fear`, and `anger`, which makes failure-conditioned objectives the next
+training direction. The
 non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
 the safest default, `7.5` is a useful stronger option for styles like
 `whisper` and `confused`, and `10.0-12.5` look more like high-novelty
@@ -168,6 +172,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.md`](results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.md)
 - [`results/eval_mixed_teacher_cvrare_strength_profiles_summary.md`](results/eval_mixed_teacher_cvrare_strength_profiles_summary.md)
 - [`results/eval_mixed_teacher_cvrare_decoder_proto_summary.md`](results/eval_mixed_teacher_cvrare_decoder_proto_summary.md)
+- [`results/eval_mixed_teacher_generated_audio_failure_mining.md`](results/eval_mixed_teacher_generated_audio_failure_mining.md)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html)
 - [`results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html)

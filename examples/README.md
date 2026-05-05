@@ -1360,7 +1360,8 @@ Interpretation:
 - `mixed_teacher_cvrare_decoder_proto_labeled_warmup` is the first decoder-aware training pilot: it preserves high novelty (`0.3008`) but drops recall to `42.4%` and worsens mean styled WER to `0.2863`, so it is a cautionary baseline rather than the new reference
 - applying `cvrare_sad_enunc_guard` to the decoder-prototype checkpoint improves WER/MOS (`0.2592`, `-0.1787`) but leaves recall at `42.4%` and raises files with any collapse to `28`
 - lowering the decoder-prototype final weight to `0.005` keeps novelty high (`0.3032`) and slightly lowers collapse versus the `0.02` pilot (`26` files), but recall remains `42.4%` and WER remains worse than the current guard (`0.2782`)
-- the next mixed-data branch should move to generated-audio failure mining or teacher-calibrated objectives, because weight-only decoded-embedding prototype matching did not learn the manual `sad/enunciated` guard's quality-balanced repair
+- `results/eval_mixed_teacher_generated_audio_failure_mining.md` joins generated-audio failures across the current guard and decoder-prototype family; it confirms the current guard has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`
+- the next mixed-data branch should move to a failure-conditioned objective, because weight-only decoded-embedding prototype matching did not learn the manual `sad/enunciated` guard's quality-balanced repair
 
 Expanded rare-supply mixed artifact and first model run:
 
@@ -1550,6 +1551,8 @@ python scripts/run_generated_audio_eval_suite.py \
     --input output/mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup_eval \
     --result-tag mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup \
     --input-tag mixed_teacher
+
+python scripts/analyze_generated_audio_failures.py
 ```
 
 Decoder-prototype result readout:

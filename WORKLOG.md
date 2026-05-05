@@ -92,8 +92,9 @@ Priority tags:
 - [x] `[DONE]` Add a decoder-prototype training objective and first pilot; `mixed_teacher_cvrare_decoder_proto_labeled_warmup` reaches `42.4%` recall and `0.3008` novelty gain, but does not beat the `sad/enunciated` guard on WER, MOS, or collapse
 - [x] `[DONE]` Evaluate the decoder-prototype checkpoint with the existing `cvrare_sad_enunc_guard` style-strength map; the guard improves WER/MOS (`0.2592`, `-0.1787`) but does not recover recall (`42.4%`) or collapse (`28` files), so the decoder-prototype checkpoint remains diagnostic rather than a reference
 - [x] `[DONE]` Try a lower-weight decoder-prototype variant before abandoning the simple weight family; `mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup` keeps recall at `42.4%`, improves novelty to `0.3032`, and lowers any-collapse to `26`, but still misses the `sad/enunciated` guard on recall/WER/MOS/collapse
-- [ ] `[NOW]` Build a generated-audio calibration / failure-mining artifact that scores pilot generations with emotion2vec, WER, and MOS, then feeds target-style failures back into the next objective; decoded embedding prototypes alone are now a verified cautionary baseline
-- [ ] `[SOON]` Test a true-labeled-only or style-specific decoder-aware objective only after failure mining identifies which generated styles are worth supervising, because the lower-weight prototype result shows that scalar weight reduction alone is too blunt
+- [x] `[DONE]` Build a generated-audio calibration / failure-mining artifact that scores pilot generations with emotion2vec, WER, MOS, novelty, and collapse labels; it confirms the current `sad/enunciated` guard has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`
+- [ ] `[NOW]` Design the next failure-conditioned objective around generated-audio evidence: target `emotion_miss + style_to_neutral` rows for `anger`/`disgust`/`fear`, while excluding high-WER or very-low-MOS rows from direct positive targets unless explicitly repairing content
+- [ ] `[SOON]` Test a true-labeled-only or style-specific decoder-aware objective after failure mining, because the lower-weight prototype result shows that scalar weight reduction alone is too blunt
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [ ] `[SOON]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths, because the `sad/enunciated` guard is promising but should not become a hidden manual tuning step
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
@@ -2470,6 +2471,74 @@ Future upgrade to preserve:
   decoder-aware run should be true-labeled-only, style-specific, or filtered
   by generated-audio success/failure rather than by decoded embedding distance
   alone.
+
+---
+
+### 0.38 Generated-Audio Failure Mining Artifact (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Added `scripts/analyze_generated_audio_failures.py`.
+- Joined the current best expanded rare-supply guard and the decoder-prototype
+  family across emotion, novelty, WER, MOS, and collapse taxonomy outputs.
+- Wrote:
+  - `results/eval_mixed_teacher_generated_audio_failure_mining.csv`
+  - `results/eval_mixed_teacher_generated_audio_failure_mining.md`
+
+Command:
+
+```bash
+.venv/bin/python scripts/analyze_generated_audio_failures.py
+```
+
+Validation:
+
+- `Validation`: the script joined all four compared conditions without missing
+  metric CSVs.
+- `Validation`: the output CSV contains row-level failure labels for `396`
+  styled rows (`4` conditions x `99` styled generated files).
+- `Validation`: the Markdown readout reports condition-level, style-level,
+  failure-mode, and highest-priority-row tables.
+
+Compared conditions:
+
+| Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Files with any collapse | Any-failure rows | Mean failure score |
+|-----------|--------|--------------|-----------------|-----------|-------------------------|------------------|--------------------|
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `20` | `58/99` | `1.9899` |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `42.4%` | `0.3008` | `0.2863` | `-0.2148` | `27` | `65/99` | `2.2929` |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard` | `42.4%` | `0.2718` | `0.2592` | `-0.1787` | `28` | `61/99` | `2.2929` |
+| `mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup` | `42.4%` | `0.3032` | `0.2782` | `-0.2122` | `26` | `66/99` | `2.2525` |
+
+Readout:
+
+- The current `sad/enunciated` inference guard remains the best row-level
+  reference: it has the lowest any-failure count and mean failure score.
+- Decoder-prototype variants do not change the hard failure pattern enough:
+  their emotion misses remain at `38`, versus `35` for the current guard.
+- Persistent failures concentrate in:
+  - `disgust`: `43/44` rows fail across compared conditions, mean emotion
+    recall `0.0455`
+  - `fear`: `39/44` rows fail, mean emotion recall `0.1364`
+  - `anger`: `37/44` rows fail, mean emotion recall `0.1591`
+  - `enunciated`: `29/44` rows fail, mostly quality/MOS rather than
+    emotion-recall failure
+
+Training implication:
+
+- The next objective should not be another global decoder-prototype weight
+  sweep.
+- Best next design: focus on generated-audio rows with `emotion_miss` plus
+  `style_to_neutral` for `anger` / `disgust` / `fear`, while excluding
+  high-WER or very-low-MOS rows from direct positive style targets unless the
+  objective explicitly repairs content.
+
+Future upgrade to preserve:
+
+- `[NOW]` Add a failure-conditioned training-target selector that can emit a
+  small target file from `results/eval_mixed_teacher_generated_audio_failure_mining.csv`.
+- `[SOON]` Use that selector to run one targeted objective against
+  `anger`/`disgust`/`fear`, then evaluate against the current guard rather
+  than against the weaker decoder-prototype rows.
 
 ---
 

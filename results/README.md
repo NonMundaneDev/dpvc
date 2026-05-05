@@ -291,6 +291,8 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `eval_mos_mixed_teacher_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.csv` | `-0.2122` MOS delta | [`examples/eval_mos.py`](../examples/eval_mos.py) | FINDINGS Finding 32 |
 | `listening_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.html` | browser listening review | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 32 |
 | `eval_mixed_teacher_cvrare_decoder_proto_summary.md` | decoder-prototype pilot comparison | manual summary from checked-in CSVs | FINDINGS Finding 32 |
+| `eval_mixed_teacher_generated_audio_failure_mining.csv` | `396` styled rows joined across four conditions | [`scripts/analyze_generated_audio_failures.py`](../scripts/analyze_generated_audio_failures.py) | FINDINGS Finding 32 |
+| `eval_mixed_teacher_generated_audio_failure_mining.md` | row-level failure readout | [`scripts/analyze_generated_audio_failures.py`](../scripts/analyze_generated_audio_failures.py) | FINDINGS Finding 32 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.
@@ -307,6 +309,9 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
   references. The lower-weight `0.005` decoder-prototype variant keeps recall
   at `42.4%` and WER at `0.2782`, so weight-only prototype calibration is not
   the next best move.
+- The generated-audio failure-mining artifact confirms the current
+  `sad/enunciated` guard has the lowest row-level failure score (`1.9899`) and
+  localizes persistent failures to `disgust`, `fear`, and `anger`.
 
 Non-Trump style-strength sweep from 2026-05-03:
 

@@ -50,12 +50,21 @@ The lower-weight follow-up:
 - mean styled WER `0.2782`
 - files with any collapse `26`
 
+The generated-audio failure-mining artifact:
+- `results/eval_mixed_teacher_generated_audio_failure_mining.md`
+- compares the current guard plus decoder-prototype family across emotion,
+  novelty, WER, MOS, and collapse labels
+- confirms the current guard has the lowest row-level failure score (`1.9899`)
+- localizes persistent failures to `disgust`, `fear`, and `anger`
+
 That answers the first version of the branch question positively: better rare
 pseudo-label supply can move recall well above `18.2%`. The unresolved problem
 is learning the recall/quality tradeoff directly instead of depending on
 manual per-style inference calibration. The simple decoder-prototype weight
-family did not solve that problem, so the next move is generated-audio failure
-mining / calibration rather than another scalar prototype-weight sweep.
+family did not solve that problem, and failure mining now shows where to aim:
+`emotion_miss + style_to_neutral` rows for `anger` / `disgust` / `fear`, with
+high-WER or very-low-MOS rows excluded from direct positive targets unless the
+objective explicitly repairs content.
 
 So the next highest-value branch is a **decoder-aware or generated-audio style
 objective** that preserves the expanded rare-supply recall gain while repairing
@@ -589,9 +598,10 @@ Immediate next execution steps on this branch:
    `0.2592` / `-0.1787`, and the lower-weight `0.005` run raises novelty to
    `0.3032`, but none beats the expanded rare-supply `sad/enunciated` guard on
    recall/WER/collapse.
-2. Build the generated-audio failure-mining artifact that joins manifest rows
-   with emotion2vec predictions, WER, MOS, novelty, and collapse labels, then
-   use it to choose style-specific or true-labeled-only target supervision.
+2. Use the generated-audio failure-mining artifact to choose style-specific or
+   true-labeled-only target supervision: prioritize `anger` / `disgust` /
+   `fear` rows that miss by collapsing to neutral, and avoid turning
+   high-WER/low-MOS rows into positive style targets.
 3. Use
    `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest
    checked-in controllability/novelty reference (`47.0%` recall, `0.2995`
@@ -650,3 +660,7 @@ Expanded rare-supply gate status:
   `42.4%`; novelty rises to `0.3032` and any-collapse falls to `26`, but WER
   remains worse than the current reference (`0.2782` vs `0.2348`). Weight-only
   decoded-prototype calibration is therefore not enough.
+- The generated-audio failure-mining artifact confirms that the current
+  `sad/enunciated` guard is still the row-level reference (`58/99` any-failure
+  rows, mean failure score `1.9899`) and that persistent hard failures are
+  concentrated in `disgust`, `fear`, and `anger`.
