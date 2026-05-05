@@ -1,0 +1,13 @@
+{
+  "style_strengths": {
+    "anger": 5.0,
+    "confused": 4.0,
+    "disgust": 5.0,
+    "enunciated": 2.5,
+    "fear": 4.0,
+    "happy": 4.0,
+    "neutral": 5.0,
+    "sad": 3.5,
+    "whisper": 5.0
+  }
+}

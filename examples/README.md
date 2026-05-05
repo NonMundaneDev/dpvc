@@ -1356,6 +1356,7 @@ Interpretation:
 - `results/commonvoice_rare_supply_expansion_preflight.md` turns that bottleneck into a reproducible gate; after downloading the expanded local corpus at `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`, the gate now returns `GO` with `40000` usable rows and `20537` usable speakers
 - `results/commonvoice_pseudolabel_supply_audit_rare_supply.md` confirms the expanded rare-supply artifact now clears the training gate: the final mixed artifact keeps `anger=50` and `fear=50` CommonVoice pseudo rows while preserving `13308` CommonVoice speakers
 - `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` is the first expanded rare-supply generated-audio result: `47.0%` emotion recall, `0.2995` novelty gain, `0.2751` mean styled WER, and `-0.2640` MOS delta
+- `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` is the recommended quality-balanced inference profile for that checkpoint: it preserves `47.0%` recall while improving mean styled WER to `0.2348`, MOS delta to `-0.2081`, and files with any collapse to `20`
 - the next mixed-data branch should move to decoder-aware or generated-audio style objectives, because expanded rare supply recovered recall/novelty but introduced a real content/naturalness tradeoff
 
 Expanded rare-supply mixed artifact and first model run:
@@ -1434,6 +1435,31 @@ Expanded rare-supply result:
 | Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Files with any collapse | Listening report |
 |-----------|--------|--------------|-----------------|-----------|-------------------------|------------------|
 | `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` | `47.0%` | `0.2995` | `0.2751` | `-0.2640` | `25` | `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html` |
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_content_guard` | `40.9%` | `0.2653` | `0.2133` | `-0.1989` | `24` | `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_content_guard.html` |
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `20` | `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html` |
+
+Per-style strength profile generation and one-command evaluation:
+
+```bash
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup \
+    --out output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval \
+    --style-strength 5.0 \
+    --style-strength-map configs/style_strength_profiles/cvrare_sad_enunc_guard.json \
+    --noise-level 0.0 \
+    --seed 42
+
+python scripts/run_generated_audio_eval_suite.py \
+    --input output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval \
+    --result-tag mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard \
+    --input-tag mixed_teacher
+```
+
+`--style-strength-map` accepts either a JSON file with a top-level
+`style_strengths` object or an inline comma list such as
+`anger=5.0,sad=3.5,enunciated=2.5`. Styles omitted from the profile fall back
+to the global `--style-strength` value.
 
 Per-style canonical recall:
 

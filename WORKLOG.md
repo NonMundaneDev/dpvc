@@ -88,7 +88,9 @@ Priority tags:
 - [x] `[DONE]` Add a CommonVoice rare-supply preflight gate before more weighting experiments; it scans local `validated.tsv` + `clips/`, estimates the needed row count from the checked-in pseudo-label artifacts, and now returns `GO` on the expanded local corpus at `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` (`40000` usable rows / `20537` speakers)
 - [x] `[DONE]` Extract OpenVoice embeddings from the expanded local CommonVoice corpus, then score/filter/audit pseudo labels before training; `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt` now passes the rare-label supply gate with `anger=50` / `fear=50`
 - [x] `[DONE]` Evaluate the expanded rare-supply checkpoint and make a listening report; `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reached `46.97%` emotion recall and `0.2995` novelty gain, but exposed a content/naturalness tradeoff (`0.2751` mean styled WER, `-0.2640` MOS delta)
+- [x] `[DONE]` Add inference-side per-style strength profiles and a one-command generated-audio eval runner; the narrow `sad/enunciated` guard keeps the expanded checkpoint at `47.0%` recall while improving WER to `0.2348`, MOS delta to `-0.2081`, and files with any collapse to `20`
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
+- [ ] `[SOON]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths, because the `sad/enunciated` guard is promising but should not become a hidden manual tuning step
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
 
 ### Phase 2: Evaluation (Joe: emotion eval is #1 priority)
@@ -2069,6 +2071,89 @@ Future upgrade to preserve:
 - `[SOON]` Add a manifest-driven all-metrics runner so the emotion, novelty,
   WER, MOS, summary, collapse, diagnostics, and listening report commands can
   be reproduced from one experiment spec.
+
+---
+
+### 0.34 Per-Style Strength Profiles for the Expanded Rare-Supply Checkpoint (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Added `--style-strength-map` to `scripts/run_ablation_inference.py` so
+  deterministic ablation generation can use a JSON or inline per-style strength
+  profile instead of one global strength for every style.
+- Added profile configs:
+  - `configs/style_strength_profiles/cvrare_content_guard.json`
+  - `configs/style_strength_profiles/cvrare_sad_enunc_guard.json`
+- Added `scripts/run_generated_audio_eval_suite.py`, a manifest-driven runner
+  that executes emotion, novelty, WER, MOS, mixed-teacher summary/collapse, and
+  listening-report generation for one generated corpus.
+- Generated and evaluated two inference-calibrated corpora for
+  `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup`:
+  - `output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_content_guard_eval/`
+  - `output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/`
+- Built browser-playable listening reports:
+  - `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_content_guard.html`
+  - `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
+
+Validation:
+
+- `Validation`: `.venv/bin/python -m py_compile scripts/run_ablation_inference.py scripts/run_generated_audio_eval_suite.py`
+- `Validation`: `scripts/run_ablation_inference.py --help` exposes
+  `--style-strength-map` and still lists the expanded rare-supply condition.
+- `Validation`: `scripts/run_generated_audio_eval_suite.py --help` documents
+  the generated-audio evaluation wrapper.
+- `Validation`: `cvrare_content_guard` generated `110` manifest rows with
+  `sad=3.5`, `enunciated=2.5`, `fear=4.0`, `happy=4.0`, `confused=4.0`, and
+  other listed strengths at `5.0`.
+- `Validation`: `cvrare_sad_enunc_guard` generated `110` manifest rows with
+  `sad=3.5`, `enunciated=2.5`, `confused=4.0`, and the canonical emotions
+  otherwise at `5.0`.
+- `Validation`: the generated-audio eval suite wrote emotion, novelty, WER,
+  MOS, summary/collapse, listening HTML, and subjective-rating CSV artifacts
+  for both profiles.
+
+Result matrix:
+
+| Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Content collapse | Style-to-neutral collapse | Identity collapse | Mixed collapse | Files with any collapse |
+|-----------|--------|--------------|-----------------|-----------|------------------|---------------------------|-------------------|----------------|-------------------------|
+| `combined` | `25.8%` | `0.2599` | `0.2353` | `-0.0792` | `6` | `37` | `7` | `4` | `46` |
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` | `47.0%` | `0.2995` | `0.2751` | `-0.2640` | `7` | `18` | `1` | `1` | `25` |
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_content_guard` | `40.9%` | `0.2653` | `0.2133` | `-0.1989` | `1` | `24` | `1` | `2` | `24` |
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `2` | `18` | `1` | `1` | `20` |
+
+Readout:
+
+- The broad `content_guard` profile repairs WER/MOS the most, but it lowers
+  canonical recall from `47.0%` to `40.9%` by weakening `fear` and `happy`.
+- The narrower `sad/enunciated` guard is the better current Pareto point: it
+  preserves `47.0%` recall, keeps novelty above the combined baseline
+  (`0.2726` vs `0.2599`), improves mean WER to roughly the combined baseline
+  level (`0.2348` vs `0.2353`), improves MOS delta relative to the unguarded
+  expanded run, and reduces files with any collapse from `25` to `20`.
+- This is an inference-side calibration result, not a replacement for the
+  decoder-aware/generated-audio training objective.
+
+Paper story:
+
+- Added as a paper-facing finding because the result is generated-audio
+  verified and changes the interpretation of the expanded rare-supply
+  checkpoint: some of the quality cost can be reduced without giving up recall.
+- The recommended listening artifact for the expanded rare-supply model is now
+  `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`.
+- The unguarded expanded run remains the strongest novelty setting; the
+  `sad/enunciated` guard is the stronger quality-balanced setting.
+
+Future upgrade to preserve:
+
+- `[NOW]` Design and test the decoder-aware/generated-audio style objective;
+  the per-style profile is a useful stopgap, but a paper-ready training method
+  should learn this tradeoff rather than depend on manual inference calibration.
+- `[SOON]` Add a small per-style strength grid/optimizer over the expanded
+  checkpoint and log the search policy, so style profiles are reproducible
+  experiment outputs instead of hand-authored presets.
+- `[SOON]` Run subjective listening review on the unguarded and
+  `sad/enunciated` guard reports before freezing which profile appears in the
+  paper demo table.
 
 ---
 

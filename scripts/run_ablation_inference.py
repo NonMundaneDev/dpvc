@@ -318,6 +318,15 @@ def parse_args():
         help="Control strength or matched free-dim L2 norm (default: 5.0)",
     )
     ap.add_argument(
+        "--style-strength-map",
+        default=None,
+        help=(
+            "Optional per-style strength profile. Pass either a JSON file "
+            "containing style->strength values or an inline comma list such as "
+            "anger=5.0,sad=3.5. Styles not listed fall back to --style-strength."
+        ),
+    )
+    ap.add_argument(
         "--noise-level",
         type=float,
         default=0.0,
@@ -350,6 +359,45 @@ def collect_sources(source=None, source_dir=None):
     if not sources:
         raise FileNotFoundError(f"No supported audio files found in {root}")
     return sources
+
+
+def parse_style_strength_map(raw_value, valid_styles):
+    if not raw_value:
+        return {}
+
+    path = Path(raw_value)
+    if path.is_file():
+        with path.open("r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        if "style_strengths" in payload:
+            payload = payload["style_strengths"]
+        items = payload.items()
+    else:
+        items = []
+        for chunk in raw_value.split(","):
+            chunk = chunk.strip()
+            if not chunk:
+                continue
+            if "=" not in chunk:
+                raise ValueError(
+                    f"Invalid --style-strength-map item {chunk!r}; expected style=strength"
+                )
+            style, value = chunk.split("=", 1)
+            items.append((style.strip(), value.strip()))
+
+    valid_styles = set(valid_styles)
+    strength_map = {}
+    for style, value in items:
+        if style not in valid_styles:
+            raise ValueError(
+                f"Unknown style {style!r} in --style-strength-map; "
+                f"valid styles are {sorted(valid_styles)}"
+            )
+        strength = float(value)
+        if strength < 0:
+            raise ValueError(f"Style strength for {style!r} must be non-negative")
+        strength_map[style] = strength
+    return strength_map
 
 
 def build_anonymizer(vae_checkpoint, latent_dims):
@@ -428,6 +476,9 @@ def main():
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = resolve_manifest_path(out_dir, args.manifest)
+    style_strength_map = parse_style_strength_map(args.style_strength_map, cfg["styles"])
+    if style_strength_map:
+        print(f"Using per-style strength map: {style_strength_map}")
 
     anonymizer = build_anonymizer(vae_checkpoint, args.latent_dims)
     records = []
@@ -464,20 +515,21 @@ def main():
 
         for style in cfg["styles"]:
             style_index = cfg["style_to_index"][style]
+            style_strength = style_strength_map.get(style, args.style_strength)
             if cfg["control_mode"] == "random_free_dims":
                 control_features = build_random_free_dim_controls(
                     style_name=style,
                     style_index=style_index,
-                    style_strength=args.style_strength,
+                    style_strength=style_strength,
                     seed=args.seed,
                     free_dim_start=cfg["free_dim_start"],
                     free_dim_count=cfg["free_dim_count"],
                 )
             else:
-                control_features = {style_index: args.style_strength}
+                control_features = {style_index: style_strength}
 
             out_path = out_dir / f"{src_stem}_{style}.wav"
-            print(f"[{args.condition}] {style:12s} -> {out_path}")
+            print(f"[{args.condition}] {style:12s} strength={style_strength:g} -> {out_path}")
             run_one(
                 anonymizer,
                 source,
@@ -493,7 +545,7 @@ def main():
                     condition=args.condition,
                     style=style,
                     style_index=style_index,
-                    style_strength=args.style_strength,
+                    style_strength=style_strength,
                     noise_level=args.noise_level,
                     seed=args.seed,
                     vae_checkpoint=vae_checkpoint,

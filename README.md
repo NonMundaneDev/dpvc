@@ -21,9 +21,9 @@ Current experiment focus on that branch:
 
 Immediate next queue:
 
-1. build a decoder-aware or generated-audio style objective that preserves the expanded rare-supply recall gain while repairing WER/MOS
-2. use `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest checked-in controllability/novelty result, and keep `combined` as the cleanest original quality baseline
-3. run perceptual review from `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`, especially for `sad`, `happy`, `fear`, and `enunciated`
+1. build a decoder-aware or generated-audio style objective that learns the expanded rare-supply recall/quality tradeoff instead of relying on manual inference calibration
+2. use `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest checked-in novelty result, `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` as the current quality-balanced profile, and `combined` as the cleanest original quality baseline
+3. run perceptual review from `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`, with the unguarded report as the high-novelty comparison
 4. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
@@ -34,7 +34,7 @@ The dedicated next-step plans live in:
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
-- **[`FINDINGS.md`](FINDINGS.md)** — 30 paper-facing findings with methodology and per-row takeaways.
+- **[`FINDINGS.md`](FINDINGS.md)** — 31 paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 
@@ -127,7 +127,15 @@ it reaches `47.0%` emotion recall and `0.2995` novelty gain, beating both the
 prior mixed-teacher recall ceiling (`18.2%`) and the combined-only novelty
 reference (`0.2599`). The tradeoff is clear: mean styled WER rises to `0.2751`
 and MOS delta falls to `-0.2640`, so this is the strongest controllability /
-novelty result so far but not yet the cleanest quality result. The
+novelty result so far but not yet the cleanest quality result. A follow-up
+per-style strength calibration shows that the narrow
+`mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`
+profile keeps the `47.0%` recall gain while improving mean styled WER to
+`0.2348`, MOS delta to `-0.2081`, and files with any collapse to `20`; this is
+the recommended quality-balanced listening/eval profile for the expanded
+checkpoint. The broader `content_guard` repairs WER/MOS more aggressively but
+drops recall to `40.9%`, so it is a diagnostic profile rather than the new
+reference. The
 non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
 the safest default, `7.5` is a useful stronger option for styles like
 `whisper` and `confused`, and `10.0-12.5` look more like high-novelty
@@ -144,7 +152,10 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/eval_mixed_teacher_style_diagnostics_targetmask.md`](results/eval_mixed_teacher_style_diagnostics_targetmask.md)
 - [`results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md`](results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md)
 - [`results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.md`](results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.md)
+- [`results/eval_mixed_teacher_cvrare_strength_profiles_summary.md`](results/eval_mixed_teacher_cvrare_strength_profiles_summary.md)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html)
+- [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html)
+- [`configs/style_strength_profiles/cvrare_sad_enunc_guard.json`](configs/style_strength_profiles/cvrare_sad_enunc_guard.json)
 - [`results/commonvoice_pseudolabel_supply_audit_rare_supply.md`](results/commonvoice_pseudolabel_supply_audit_rare_supply.md)
 - [`results/commonvoice_rare_supply_expansion_preflight.md`](results/commonvoice_rare_supply_expansion_preflight.md)
 - [`results/eval_nontrump_strength_sweep.csv`](results/eval_nontrump_strength_sweep.csv)

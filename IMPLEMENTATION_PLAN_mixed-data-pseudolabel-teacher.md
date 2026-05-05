@@ -27,14 +27,22 @@ The expanded rare-supply teacher result now changes the branch status:
 - mean styled WER `0.2751`
 - MOS delta `-0.2640`
 
+The first inference-side calibration follow-up adds a quality-balanced profile:
+- `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`
+- recall `47.0%`
+- novelty `0.2726`
+- mean styled WER `0.2348`
+- MOS delta `-0.2081`
+- files with any collapse `20`
+
 That answers the first version of the branch question positively: better rare
 pseudo-label supply can move recall well above `18.2%`. The unresolved problem
-is preserving that recall/novelty gain while repairing the quality/content
-tradeoff.
+is learning the recall/quality tradeoff directly instead of depending on
+manual per-style inference calibration.
 
-So the next highest-value branch is to improve the **teacher that produces the
-pseudo labels**, and the **class-balanced acceptance policy** that decides which
-pseudo-labeled CommonVoice rows enter the mixed-data artifact.
+So the next highest-value branch is a **decoder-aware or generated-audio style
+objective** that preserves the expanded rare-supply recall gain while repairing
+WER/MOS during training.
 
 ## 2. Branch context
 
@@ -43,10 +51,9 @@ pseudo-labeled CommonVoice rows enter the mixed-data artifact.
 
 ## 3. Core question
 
-**Can a stronger pseudo-label teacher plus better class-balanced acceptance move
-mixed-data recall meaningfully above `18.2%`, and can the next decoder-aware
-objective preserve that gain without giving back the WER/MOS gains that made
-the mixed-data line interesting?**
+**Can a decoder-aware or generated-audio style objective preserve the expanded
+rare-supply recall gain while reducing the WER/MOS cost, and can it do so
+without depending on hand-authored per-style strength profiles?**
 
 ## 4. What stays fixed
 
@@ -577,9 +584,12 @@ Immediate next execution steps on this branch:
 5. Compare prototype-only versus hybrid teacher targets inside the same
    decoder-aware objective only after diagnostics confirm whether the failure is
    teacher calibration or decoder/output alignment.
-6. Add a manifest-driven all-metrics runner so future experiments regenerate
-   emotion, novelty, WER, MOS, summary, collapse, diagnostics, and listening
-   artifacts from one spec.
+6. Use `scripts/run_generated_audio_eval_suite.py` as the default closeout path
+   for generated-audio corpora so emotion, novelty, WER, MOS, summary/collapse,
+   and listening artifacts are regenerated consistently.
+7. Convert the hand-authored `cvrare_sad_enunc_guard` profile into a small
+   reproducible grid/optimizer only after the decoder-aware objective baseline
+   is defined.
 
 Expanded rare-supply gate status:
 
@@ -597,3 +607,8 @@ Expanded rare-supply gate status:
   `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%`
   recall and `0.2995` novelty gain, but mean styled WER rises to `0.2751` and
   MOS delta falls to `-0.2640`.
+- Inference-side per-style calibration now validates a stronger
+  quality-balanced readout:
+  `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`
+  preserves `47.0%` recall while improving mean styled WER to `0.2348`, MOS
+  delta to `-0.2081`, and files with any collapse to `20`.
