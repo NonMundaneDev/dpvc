@@ -214,14 +214,22 @@ def main():
     print(f"Whisper model         : {args.model}")
     print(f"Files transcribed     : {len(per_file)}")
 
-    scored = [r for r in rows if r['wer'] not in ('', '0.0000')]
+    scored = [
+        r
+        for r in rows
+        if r['wer'] != '' and r['style'] != 'baseline' and r['ref_source'] != 'self'
+    ]
     if scored:
         all_wers = [float(r['wer']) for r in scored]
+        nonzero_wers = [w for w in all_wers if w > 0.0]
         import statistics
-        print(f"WER values scored     : {len(all_wers)}")
-        print(f"Mean WER              : {statistics.mean(all_wers):.3f}")
-        print(f"Median WER            : {statistics.median(all_wers):.3f}")
+        print(f"Styled WER values     : {len(all_wers)}")
+        print(f"Mean styled WER       : {statistics.mean(all_wers):.3f}")
+        print(f"Median styled WER     : {statistics.median(all_wers):.3f}")
         print(f"Min / Max             : {min(all_wers):.3f} / {max(all_wers):.3f}")
+        if nonzero_wers:
+            print(f"Non-zero WER values   : {len(nonzero_wers)}")
+            print(f"Mean non-zero WER     : {statistics.mean(nonzero_wers):.3f}")
 
     if wers_by_style:
         print("\nPer-style WER (lower = more intelligible relative to reference):")

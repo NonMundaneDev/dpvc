@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-05 (Finding 29 from the labeled-first curriculum added; descriptive experiment titles now replace internal pass numbering)
+**Last updated:** 2026-05-05 (Finding 30 from the expanded rare-supply mixed teacher added; descriptive experiment titles now replace internal pass numbering)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -2028,12 +2028,156 @@ That experiment, its first quality follow-up, the first non-Trump
 
 ---
 
+## Finding 30: Expanded Rare-Class CommonVoice Supply Produces the First Large Mixed-Teacher Recall Jump, With a Clear Quality Tradeoff
+
+### Methodology
+
+Finding 28 showed that the previous mixed-teacher artifact had only `4` active
+`anger` rows and `4` active `fear` rows after filtering and speaker-first
+sampling. We therefore tested the data-side hypothesis directly: if rare
+CommonVoice pseudo-label supply is fixed, does generated-audio emotion recall
+move out of the neutral basin?
+
+The expanded run used:
+
+- branch: `research/controllable-vae`
+- local corpus: `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`
+- expanded OpenVoice extraction:
+  `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`
+- extracted CommonVoice embeddings: `25910`
+- unique CommonVoice speakers: `13308`
+- missing/unreadable clips: `0`
+- target-seeking emotion2vec scorer stop condition: `anger=50,fear=50`
+- rows annotated before stop: `6380/25910`
+- hybrid selected pseudo rows: `645`
+- final mixed artifact:
+  `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt`
+- final mixed rows: `14195`
+- final CommonVoice rows: `13370`
+- true labeled rows: `825` (`CREMA-D=546`, `Expresso=279`)
+
+The mixed builder used `--commonvoice-preserve-selected-pseudo`, which keeps
+one-clip-per-speaker speaker breadth but adds selected pseudo-labeled rows that
+would otherwise be lost behind the per-speaker cap. This preserved the expanded
+rare-label gate in the final training artifact:
+
+- `anger=50`
+- `confused=50`
+- `disgust=79`
+- `enunciated=50`
+- `fear=50`
+- `happy=80`
+- `neutral=116`
+- `sad=120`
+- `whisper=50`
+
+We then trained:
+
+- `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup`
+- checkpoint:
+  `embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt`
+- schedule: `labeled_warmup`
+- frozen teacher: `embeddings/openvoice_vae_combined.pt`
+- teacher-style weight ramp: `0.0 -> 0.25`
+- teacher dims: `0-8`
+
+Evaluation used the same deterministic 110-row, 11-speaker corpus as the
+previous mixed-teacher comparisons:
+
+- style strength: `5.0`
+- noise level: `0.0`
+- seed: `42`
+- emotion recall / emo_sim
+- speaker novelty gain
+- WER
+- predicted MOS
+- collapse taxonomy
+- browser listening report
+
+### Results
+
+| Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Identity collapse | Files with any collapse | Takeaway |
+|-----------|--------|--------------|-----------------|-----------|-------------------|-------------------------|----------|
+| `combined` | `25.8%` | `0.2599` | `0.2353` | `-0.0792` | `7` | `46` | Still the cleanest original controllable baseline |
+| `mixed_teacher_threshold_balanced` | `18.2%` | `0.0785` | `0.0829` | `-0.1012` | `62` | `66` | Best previous mixed-teacher reference |
+| `mixed_teacher_hybrid_style_distill_labeled_warmup` | `16.7%` | `0.0930` | `0.0924` | `-0.1093` | `54` | `61` | Best previous style-distillation novelty/collapse variant |
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` | `47.0%` | `0.2995` | `0.2751` | `-0.2640` | `1` | `25` | First large mixed-teacher recall/novelty jump, but with a quality/content cost |
+
+Per-style canonical recall for the expanded rare-supply run:
+
+| Style | Recall | Neutral predictions | Readout |
+|-------|--------|---------------------|---------|
+| `anger` | `1/11` | `7/11` | Still weak; expanded supply alone does not calibrate anger |
+| `disgust` | `2/11` | `9/11` | Still mostly neutral-classified |
+| `fear` | `3/11` | `0/11` | Moves off zero; errors are no longer just neutral collapse |
+| `happy` | `5/11` | `1/11` | Largest canonical improvement outside neutral/sad |
+| `neutral` | `10/11` | `10/11` | Strong, as expected |
+| `sad` | `10/11` | `1/11` | Strong recall, but carries the worst WER burden |
+
+### Diagnostics
+
+The expanded diagnostic report is:
+
+- `results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.md`
+
+It shows that supply is no longer the only bottleneck:
+
+| Style | Teacher rows | Teacher target top-1 | Student target top-1 | Recall | WER | MOS delta |
+|-------|--------------|----------------------|----------------------|--------|-----|-----------|
+| `anger` | `50` | `0.2600` | `0.3600` | `0.0909` | `0.1740` | `-0.0532` |
+| `disgust` | `79` | `0.1899` | `0.1519` | `0.1818` | `0.1529` | `-0.2315` |
+| `fear` | `50` | `0.1400` | `0.2000` | `0.2727` | `0.3461` | `-0.3903` |
+| `happy` | `80` | `0.2375` | `0.0625` | `0.4545` | `0.3981` | `-0.0026` |
+| `neutral` | `116` | `0.0948` | `0.0603` | `0.9091` | `0.1269` | `-0.1472` |
+| `sad` | `120` | `0.3167` | `0.1917` | `0.9091` | `0.5847` | `-0.0311` |
+
+### Interpretation
+
+1. **Rare-class supply was a real bottleneck.** Moving from `4-5` active
+   `anger` / `fear` rows to `50` each produced the first large mixed-teacher
+   recall jump: from the previous mixed-teacher ceiling of `18.2%` to `47.0%`.
+2. **The expanded run also beats the combined model on novelty.** Mean novelty
+   gain rises to `0.2995`, above the combined model's `0.2599`. This means the
+   model is not merely becoming more conservative; it is making larger speaker
+   embedding moves.
+3. **The price is intelligibility and naturalness.** Mean styled WER rises to
+   `0.2751`, MOS delta falls to `-0.2640`, and `enunciated`, `sad`, `happy`,
+   and `fear` need perceptual review before this can be treated as a clean win.
+4. **Expanded supply does not fully calibrate the teacher.** Teacher target
+   top-1 rates remain weak for canonical emotion classes, so the next
+   bottleneck is pseudo-label calibration / generated-output alignment, not raw
+   row scarcity.
+5. **This is now close to Joe's paper-quality recall target.** The system is
+   within a few points of `>50%` emotion recall on the standard 11-speaker
+   panel, but the quality tradeoff means the next experiment should preserve
+   this gain while repairing WER/MOS.
+
+### Implication
+
+Finding 30 is the strongest positive mixed-data result so far. It changes the
+story from "CommonVoice breadth improves quality but cannot recover control" to
+"CommonVoice breadth can recover control when rare pseudo-label supply is
+protected, but the current latent teacher objective pays for that control with
+content and naturalness degradation."
+
+For the paper, this supports both a stronger result and a sharper limitation:
+speaker breadth plus class-balanced pseudo-label supply can produce
+near-paper-target controllability, but robust controllable DP voice conversion
+needs decoder-aware or generated-audio style supervision to keep the outputs
+intelligible and natural.
+
+The listening artifact for subjective review is:
+
+- `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`
+
+---
+
 ## Open Questions
 
 1. **What are the formal privacy guarantees?** We need to compute epsilon for each noise level and report privacy-utility curves.
 2. ~~**Does style control generalize across source speakers?**~~ → **Answered in Finding 6.** Brightness generalizes (7/9 styles); F0 does not. Some speaker-style combinations collapse.
 3. ~~**How do we evaluate emotion controllability?**~~ → **Answered in Finding 7.** emotion2vec Recall Rate + emo_sim (per EmoVoice) is the primary metric. Recall is 20% — training gap identified.
-4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** The first validation-scale `cv500` run (Finding 10) improved WER but collapsed style toward neutral. CommonVoice finetune ablation showed that simple gentler finetuning is not enough to fix that on its own, CommonVoice objective ablation showed that simple scalar loss reweighting is not enough either, CommonVoice rich-objective ablation showed that teacher-style distillation plus free-dim anchoring during combined finetuning still leaves recall flat, CommonVoice partial-label pretraining showed that weak metadata / pseudo-label supervision during CommonVoice pretraining itself still leaves recall flat, the first mixed-data run (Finding 17) showed that simply combining CommonVoice + CREMA-D + Expresso under three schedule variants still leaves recall fixed at `16.7%`, and the mixed-data pseudo-label quality follow-up (Finding 18) only nudged the best mixed condition to `18.2%` while giving back WER and novelty. The open question is now whether better pseudo-label quality, stronger labeled-data protection, per-class pseudo-label caps, prototype- or teacher-space pretraining targets, stronger curricula, or larger-scale training can preserve the intelligibility gain without washing out the style axes.
+4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Finding 30: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain. The remaining open question is no longer whether CommonVoice breadth can move recall; it is whether decoder-aware / generated-audio style supervision can keep that recall gain while repairing WER and MOS.
 5. **Can we train age/gender and emotion knobs simultaneously?** CommonVoice has age/gender, CREMA-D has emotion. Can a single VAE learn all at once when each training stage only labels a subset? Unknown — Joe flagged this as an open research question.
 6. **Can an independent speaker verifier confirm the novelty signal?** Finding 11 uses OpenVoice's native embedding space. The next step is an external speaker encoder / EER-style check.
 7. **Can an adversary re-identify speakers from F0 alone?** If so, embedding-only DP is insufficient — motivates joint protection.
@@ -2041,7 +2185,7 @@ That experiment, its first quality follow-up, the first non-Trump
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** The first mixed-data pseudolabel mix experiment compared a static balanced mix, a CommonVoice-heavy warmup, and a labeled-data-heavy finish. None improved recall beyond `16.7%`. The mixed-data pseudo-label quality follow-up then added per-class thresholds/caps and stronger labeled-data protection. That finally moved the best mixed-data condition to `18.2%` recall (`mixed_quality_labeled_guarded`), but at the cost of worse WER (`0.0978`) and weaker novelty (`0.0764`) than the best original mixed schedules. The first mixed-data pseudo-label teacher family then showed that cleaner use of the current teacher can match that `18.2%` recall while improving WER, MOS, novelty, and identity collapse somewhat (`mixed_teacher_threshold_balanced`), but still does not break the recall ceiling. A same-teacher mapped-score agreement rule raised novelty slightly but lost recall/WER/MOS, while a combined-VAE latent prototype teacher restored `18.2%` recall and improved novelty to `0.0854` but gave back WER/MOS. A strong guarded prototype variant improved WER relative to the unguarded prototype but erased the novelty/collapse advantage and raised identity collapse. A hybrid emotion2vec + prototype extra-style teacher then produced the best mixed-teacher novelty so far (`0.0860`) and slightly fewer files with any collapse, but recall fell back to `16.7%` and MOS worsened. Continuous style-space distillation preserved the hybrid novelty gain (`0.0861`) and improved MOS/collapse versus hard hybrid labels, but recall still stayed at `16.7%`. A global teacher-weight sweep (`0.10`, `0.25`, `0.50`) also stayed at `16.7%`, showing that scalar teacher-loss calibration is not enough. A target-dimension mask / per-style weighting / confidence-scaling follow-up also stayed at `16.7%` and worsened WER/MOS versus the best global style-distillation setting, showing that latent target masking alone is not enough either. The per-style diagnostic then localized the problem: canonical pseudo-labeled CommonVoice rows often do not make the intended teacher style dim top-ranked, `anger` and `fear` have only `4` active rows each, and `sad` can align latently while still decoding to neutral-classified audio. A labeled-first curriculum improved novelty (`0.0930`) and reduced collapse counts, but still stayed at `16.7%` recall. The next open question is therefore narrower: can stronger rare-class supply or decoder-aware generated-audio style objectives move recall without giving back the mixed-data intelligibility gains?
+12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. The remaining mixed-data question is narrower and harder: can decoder-aware or generated-audio style objectives preserve this near-paper-target recall while reducing the quality/content cost (`0.2751` mean styled WER, `-0.2640` MOS delta)?
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---
@@ -2092,6 +2236,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 27. Target-dimension style-teacher masking with per-style row weights and confidence scaling still does not recover recall: `mixed_teacher_hybrid_style_distill_targetmask_balanced` remains at `16.7%`, preserves only a similar novelty signal (`0.0852`), and worsens WER/MOS versus the best global style-distillation setting. The next step should be diagnostic or curriculum-driven, not another latent-only mask/weight variant.
 28. Per-style diagnostics localize the mixed-teacher failure: canonical emotion pseudo-labels often do not correspond to teacher-latent target dominance (`anger=0.0000`, `fear=0.0000`, `happy=0.1000` teacher target-top1 rates), rare classes have too little accepted supply (`anger=4`, `fear=4`), and `sad` shows that latent alignment can still decode to neutral-classified audio. The next step should be labeled-first curriculum, stronger rare-class supply, or decoder-aware style supervision.
 29. A labeled-first curriculum protects CREMA-D/Expresso style axes before introducing CommonVoice teacher geometry and improves secondary axes (`0.0930` novelty gain, `54` identity-collapse files, `61` files with any collapse), but still remains at `16.7%` recall. The next step should move beyond schedule-only curriculum to stronger rare-class supply or decoder-aware/generated-audio style supervision.
+30. Expanded rare-class CommonVoice supply is the first mixed-teacher intervention to produce a large recall jump: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` emotion recall and `0.2995` novelty gain after preserving `anger=50` and `fear=50` selected CommonVoice pseudo rows. The limitation is quality/content cost (`0.2751` mean styled WER, `-0.2640` MOS delta), so the next paper-critical step is decoder-aware or generated-audio style supervision that keeps the recall gain while repairing WER/MOS.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion

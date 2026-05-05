@@ -17,9 +17,9 @@ Priority tags:
 - [x] `[NOW]` Consolidate the active controllable pipeline around OpenVoice; treat ControlVC as a useful DP baseline and negative result for style control
 
 ### Phase 0.6: Repository Consolidation
-- [ ] `[NOW]` Merge `integration/research-rollup` PR `#3` into `main`, because Joe explicitly said the branch sprawl was becoming hard to follow and the rollup PR is now the single accepted review surface
-- [ ] `[NOW]` Delete the merged sequential research branches from the remote after PR `#3` lands, while intentionally keeping unmerged side branches like `feat/controlvc`, `feat/openvoice-expresso`, and `feat/f0-style-control` until we decide separately whether any of their commits still belong in `main`
-- [ ] `[NOW]` Refresh local `main` from the merged remote and cut all future research branches from post-rollup `main`, so we do not immediately recreate the same branch-fragmentation problem after consolidating it
+- [x] `[DONE]` Revert the research rollup from upstream `main` after Joe clarified that `uvm-plaid/dpvc/main` should stay a stable reflection of the published work
+- [x] `[DONE]` Move ongoing controllable-VAE research to the fork `NonMundaneDev/dpvc`, with canonical active branch `research/controllable-vae`
+- [ ] `[SOON]` Keep future research pushes on the fork and avoid opening upstream-main PRs until Joe explicitly wants a paper/research integration surface
 
 ### Phase 1: Core Controllability (prove it works)
 - [x] End-to-end pipeline: extract → train VAE → infer → intelligible speech
@@ -63,7 +63,7 @@ Priority tags:
 - [x] `[DONE]` Re-run the mixed-data evaluation matrix on the improved artifact and compare it against the original mixed schedules; result: `mixed_quality_labeled_guarded` becomes the first mixed-data condition to move recall above `16.7%`, reaching `18.2%`, but the gain comes with worse WER (`0.0978`) and weaker novelty (`0.0764`) than the best original mixed schedules
 - [ ] `[SOON]` Clean up and enrich the Expresso label mapping inside the mixed-data follow-up, because Joe agreed the richer Expresso label space is still one of the best ways to inject emotion structure into the broader CommonVoice speaker prior
 - [ ] `[SOON]` Compare one-clip-per-speaker versus two-clips-per-speaker CommonVoice sampling inside the mixed-data setup, because the current real `openvoice_mixed_base.pt` artifact uses one clip per speaker and Joe's speaker-breadth heuristic still needs a direct empirical check
-- [ ] `[NOW]` Tighten the mixed-data pseudo-label teacher and per-class acceptance rules further, because the first quality branch only produced a narrow recall bump (`18.2%`) and still left identity collapse high (`69`)
+- [x] `[DONE]` Tighten the mixed-data pseudo-label teacher and per-class acceptance rules further; the expanded rare-supply teacher run reached `47.0%` recall and `0.2995` novelty gain, though the next work must repair WER/MOS
 - [x] `[DONE]` Add per-class CommonVoice pseudo-label thresholds or caps to the mixed-data builder; the quality artifact now records thresholds, threshold-rejected counts, cap-skipped counts, and final CommonVoice pseudo-style counts in `mixture_report`
 - [x] `[DONE]` Save one artifact-level `mixture_report` snapshot per mixed-data pseudolabel mix condition alongside the result bundle; the quality artifact now preserves threshold and row-weight config directly inside `embeddings/openvoice_mixed_quality_base.pt`
 - [x] `[DONE]` Run style-strength sweeps above `5.0` on representative non-Trump speakers on a dedicated follow-up branch `research/nontrump-style-strength-sweep`; result: `5.0` remains the safest default, `7.5` is a defensible stronger setting for whisper/confused when higher novelty matters, and `10.0-12.5` behave more like high-novelty demo settings with clearly worse overall WER/MOS
@@ -76,7 +76,7 @@ Priority tags:
 - [x] `[DONE]` Add stronger teacher diagnostics to the mixed-data artifact flow; the teacher branch now records top-k teacher labels/scores, optional per-style score maps, row-level filter decisions, and preserves pseudo-label report/filter metadata inside the mixed artifact `mixture_report`
 - [x] `[DONE]` Preserve a reusable score -> filter -> build flow for CommonVoice pseudo labels; `scripts/annotate_commonvoice_pseudolabels.py`, `scripts/filter_commonvoice_pseudolabels.py`, and `scripts/build_mixed_training_set.py --acceptance-policy artifact_selected` now let future teacher comparisons reuse one scored artifact across multiple acceptance policies
 - [x] `[DONE]` Re-score the full `cv500` CommonVoice artifact with the updated annotate script before the first teacher matrix training run; `embeddings/openvoice_commonvoice_cv500_pseudo_scored.pt` now provides branch-native teacher metadata, top-k scores, and mapped style-score totals, and `embeddings/openvoice_mixed_teacher_base.pt` is rebuilt from the scored -> filtered artifact path
-- [ ] `[SOON]` Address rare-class supply limits inside the teacher branch after full rescoring, because the current balanced-target filter only selected `anger=6` / `fear=4` rows before speaker-first mixing and only `anger=5` / `fear=4` rows in the real mixed artifact, so we may need two-clips-per-speaker or relaxed rare-class thresholds
+- [x] `[DONE]` Address rare-class supply limits inside the teacher branch after full rescoring; the expanded CommonVoice rare-supply artifact now selects `anger=50` / `fear=50`, and the final mixed artifact preserves those counts while keeping `13308` CommonVoice speakers
 - [x] `[DONE]` Test a softer mapped-score teacher-agreement rule inside the mixed-data teacher branch; `scripts/annotate_commonvoice_pseudolabels.py` now records a second center-crop teacher view plus score maps, `scripts/filter_commonvoice_pseudolabels.py` now supports `--secondary-agreement-mode mapped_score`, and the full `mixed_teacher_mapped015_balanced` checkpoint/eval bundle proved that the looser agreement rule raises novelty slightly (`0.0818`) but still loses to `mixed_teacher_threshold_balanced` on recall (`16.7%` vs `18.2%`), WER (`0.1090` vs `0.0829`), and MOS delta (`-0.1115` vs `-0.1012`)
 - [x] `[DONE]` Compare a genuinely different pseudo-label teacher inside the mixed-data teacher branch; `scripts/annotate_commonvoice_latent_prototypes.py` now uses combined-VAE latent style prototypes as an alternate teacher, and `mixed_teacher_prototype_balanced` improves novelty (`0.0854`) and identity/mixed collapse while tying the best mixed-data recall (`18.2%`) but giving back WER/MOS versus `mixed_teacher_threshold_balanced`
 - [x] `[DONE]` Test a guarded prototype-teacher variant with pseudo-confidence scaling, lower pseudo row weight, and stronger true-label protection; `mixed_teacher_prototype_guarded` ties the `18.2%` recall ceiling and improves WER versus the unguarded prototype (`0.0920` vs `0.1009`), but gives back the prototype novelty advantage (`0.0761` vs `0.0854`) and worsens identity/mixed collapse, so it does not replace `mixed_teacher_threshold_balanced`
@@ -86,7 +86,8 @@ Priority tags:
 - [x] `[DONE]` Add per-style teacher masks, confidence weighting, and a first labeled-first curriculum for the style-space loss; target masking and labeled warmup both stayed at `16.7%` recall, so curriculum timing with the current teacher is not enough to recover target emotion recall
 - [ ] `[NOW]` Design a decoder-aware or generated-audio style objective for canonical emotions, because the labeled-first curriculum improved novelty/collapse but still decoded to emotion2vec-neutral outputs
 - [x] `[DONE]` Add a CommonVoice rare-supply preflight gate before more weighting experiments; it scans local `validated.tsv` + `clips/`, estimates the needed row count from the checked-in pseudo-label artifacts, and now returns `GO` on the expanded local corpus at `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` (`40000` usable rows / `20537` speakers)
-- [ ] `[NOW]` Extract OpenVoice embeddings from the expanded local CommonVoice corpus, then score/filter/audit pseudo labels and only train after selected `anger` / `fear` supply passes the audit
+- [x] `[DONE]` Extract OpenVoice embeddings from the expanded local CommonVoice corpus, then score/filter/audit pseudo labels before training; `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt` now passes the rare-label supply gate with `anger=50` / `fear=50`
+- [x] `[DONE]` Evaluate the expanded rare-supply checkpoint and make a listening report; `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reached `46.97%` emotion recall and `0.2995` novelty gain, but exposed a content/naturalness tradeoff (`0.2751` mean styled WER, `-0.2640` MOS delta)
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
 
@@ -1646,8 +1647,9 @@ Future upgrade to preserve:
   `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`; validated shape is
   `25910 x 256 x 1`, with `13308` unique speakers and zero missing/unreadable
   clips.
-- `[NOW]` Score/filter the expanded corpus, then stop at the supply audit if
-  selected `anger` / `fear` rows remain below target.
+- `[DONE]` Score/filter the expanded corpus and stop at the supply audit before
+  training; the selected-label-preserving mixed artifact now keeps
+  `anger=50` / `fear=50` CommonVoice pseudo rows.
 - `[SOON]` Add optional sampled listening panels to compare multiple conditions
   side-by-side for the same speaker/style, so Joe can evaluate differences
   without opening several output folders.
@@ -1727,11 +1729,10 @@ Interpretation:
 
 Future upgrade to preserve:
 
-- `[NOW]` Run the gated extraction -> scoring -> filtering -> hybrid-combine ->
+- `[DONE]` Run the gated extraction -> scoring -> filtering -> hybrid-combine ->
   supply-audit commands from
-  `results/commonvoice_rare_supply_expansion_preflight.md`; only build/train
-  the mixed artifact after the audit confirms enough selected `anger` and
-  `fear` rows.
+  `results/commonvoice_rare_supply_expansion_preflight.md`; the final mixed
+  artifact now clears the selected `anger` / `fear` gate.
 - `[SOON]` If collaborators need a literal `/data/...` path on macOS, create a
   synthetic mount/symlink outside this live session; the current research-safe
   path is the user-space corpus above.
@@ -1818,16 +1819,256 @@ Interpretation:
 
 Future upgrade to preserve:
 
-- `[NOW]` Finish the live target-seeking emotion2vec scoring job and inspect
-  `embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_scored.pt` or its
-  `.checkpoint.pt` if interrupted.
-- `[NOW]` Run class-balanced filtering and the pseudo-label supply audit only
-  after the scorer has enough annotated rows or exhausts the expanded artifact.
+- `[DONE]` Finish the target-seeking emotion2vec scoring job and inspect
+  `embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_scored.pt`.
+- `[DONE]` Run class-balanced filtering and the pseudo-label supply audit only
+  after the scorer has enough annotated rows.
 - `[SOON]` Add a documented resume/monitor command for long teacher-scoring
   jobs, since backgrounding is reaped in this Codex execution environment.
 - `[SOON]` Consider another CommonVoice audio shard only if the expanded
   first-shard scorer still cannot reach `anger=50` and `fear=50` at the
   selected threshold.
+
+---
+
+### 0.32 Expanded CommonVoice Rare-Supply Filter, Hybrid Teacher, and Mixed Artifact (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Finished the target-seeking expanded CommonVoice emotion2vec scoring job:
+  - input: `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`
+  - output: `embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_scored.pt`
+  - checkpoint:
+    `embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_scored.pt.checkpoint.pt`
+  - annotated `6380/25910` rows before the configured rare-class stop condition
+    was satisfied.
+- Filtered the expanded emotion2vec teacher artifact with balanced canonical
+  targets:
+  - output: `embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_filtered.pt`
+  - selected counts: `anger=50`, `disgust=80`, `fear=50`, `happy=80`,
+    `neutral=120`, `sad=120`.
+- Ran the latent-prototype teacher on all expanded CommonVoice embeddings and
+  filtered the extra OpenVoice styles:
+  - scored output:
+    `embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_prototype.pt`
+  - filtered output:
+    `embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_prototype_filtered.pt`
+  - selected extra-style counts: `confused=50`, `enunciated=50`,
+    `whisper=50`.
+- Combined emotion2vec canonical labels and prototype extra-style labels into
+  the hybrid teacher artifact:
+  - output:
+    `embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_hybrid_extra_priority.pt`
+  - selected counts: `anger=50`, `confused=50`, `disgust=79`,
+    `enunciated=50`, `fear=50`, `happy=80`, `neutral=116`, `sad=120`,
+    `whisper=50`.
+- Added `--commonvoice-preserve-selected-pseudo` to
+  `scripts/build_mixed_training_set.py` so speaker-first sampling can keep one
+  clip per CommonVoice speaker while adding selected pseudo rows that the
+  per-speaker cap would otherwise drop.
+- Built the expanded rare-supply mixed artifact:
+  - output: `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt`
+  - rows: `14195`
+  - CommonVoice rows: `13370`
+  - CommonVoice speakers: `13308`
+  - CommonVoice pseudo-labeled rows: `645`
+  - selected CommonVoice pseudo counts: `anger=50`, `confused=50`,
+    `disgust=79`, `enunciated=50`, `fear=50`, `happy=80`, `neutral=116`,
+    `sad=120`, `whisper=50`.
+- Added deterministic inference support for the first expanded rare-supply
+  checkpoint condition:
+  - `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup`
+  - checkpoint:
+    `embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt`
+- Regenerated the rare-supply audit:
+  - `results/commonvoice_pseudolabel_supply_audit_rare_supply.csv`
+  - `results/commonvoice_pseudolabel_supply_audit_rare_supply.md`
+
+Validation:
+
+- `Validation`: `.venv/bin/python -m py_compile scripts/build_mixed_training_set.py`
+- `Validation`: the one-clip-per-speaker dry run without selected preservation
+  dropped selected CommonVoice pseudo counts below target (`anger=49`,
+  `fear=44`), confirming the need for an explicit preservation mode.
+- `Validation`: the selected-preserving dry run kept `anger=50` and `fear=50`
+  while adding only `62` rows beyond the compact one-clip speaker-breadth
+  baseline.
+- `Validation`: the canonical mixed artifact loads with shape `(14195, 256)`,
+  `source_dataset`, `style_label_mask`, `style_label_confidence`,
+  `style_label_row_weight`, and a populated `mixture_report`.
+- `Validation`: the canonical mixed artifact reports
+  `CommonVoice=13370`, `CREMA-D=546`, `Expresso=279`; label sources are
+  `none=12725`, `pseudo=645`, `true=825`.
+- `Validation`: the canonical mixed artifact preserves the rare-label gate:
+  `commonvoice_selected_pseudo_style_counts['anger']=50` and
+  `commonvoice_selected_pseudo_style_counts['fear']=50`.
+- `Validation`: `results/commonvoice_pseudolabel_supply_audit_rare_supply.md`
+  includes the scored, filtered, prototype-filtered, hybrid, and final mixed
+  artifacts in one reproducible supply table.
+
+Readout:
+
+- The data-side bottleneck has moved: the project is no longer blocked by
+  having only `4-5` active `anger` / `fear` CommonVoice rows in the mixed
+  teacher artifact.
+- Speaker breadth is still protected. We did not solve rare supply by simply
+  moving to three clips per speaker and bloating the CommonVoice reconstruction
+  pool; the selected-pseudo preservation mode adds only the selected rows lost
+  to the one-clip cap.
+- `disgust` and `neutral` are slightly below their original filtered targets in
+  the hybrid artifact because prototype extra-style rows take priority on a few
+  overlapping rows. That is acceptable for this run because the gate condition
+  was rare canonical `anger` / `fear` supply plus extra-style coverage, not
+  exact neutral/disgust caps.
+
+Interpretation:
+
+- This clears the training gate for an expanded rare-supply model, but it is
+  still engineering/data-readiness evidence rather than a paper-facing finding.
+- The paper-facing question is now testable: does fixing rare pseudo-label
+  supply improve generated-audio emotion recall/generalization, or does the
+  neutral decoding basin remain because the objective is still too latent-only?
+- Do not update `FINDINGS.md` until the new checkpoint has generated audio,
+  emotion recall, novelty, WER, MOS, collapse summaries, and a listening report.
+
+Training command:
+
+```bash
+.venv/bin/python examples/openvoice_train_vae_mixed.py \
+  --embeddings embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
+  --output embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt \
+  --schedule labeled_warmup \
+  --schedule-epochs 1000 \
+  --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+  --style-teacher-weight 0.0 \
+  --style-teacher-weight-final 0.25 \
+  --style-teacher-datasets CommonVoice \
+  --style-teacher-dims 0-8
+```
+
+Future upgrade to preserve:
+
+- `[DONE]` Finish training
+  `embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt`,
+  run deterministic inference/evaluation, and produce a browser-playable
+  listening report for perceptual review.
+- `[SOON]` Since expanded rare supply improved recall but worsened WER/MOS,
+  prioritize a decoder-aware/generated-audio style objective over another
+  latent-only teacher-weight or schedule variant.
+- `[SOON]` Add a selected-preserving speaker-sampling unit test or smoke test
+  fixture so future builder changes cannot silently drop scarce selected pseudo
+  rows behind the per-speaker cap.
+
+---
+
+### 0.33 Expanded Rare-Supply Teacher Checkpoint Evaluation (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Trained the first expanded rare-supply teacher checkpoint from
+  `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt`:
+  - checkpoint:
+    `embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt`
+  - schedule: `labeled_warmup`
+  - teacher: frozen combined VAE
+    `embeddings/openvoice_vae_combined.pt`
+  - teacher weight ramp: `0.0 -> 0.25`
+  - teacher rows: `CommonVoice`
+  - teacher dims: `0-8`
+- Generated the standard deterministic 110-row evaluation corpus:
+  - output:
+    `output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_eval/`
+  - manifest:
+    `output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_eval/generation_manifest.jsonl`
+  - source panel: `11` checked-in source speakers
+  - style strength: `5.0`
+  - noise level: `0.0`
+  - seed: `42`
+- Ran the full metric stack:
+  - `results/eval_emotion_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.csv`
+  - `results/eval_novelty_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.csv`
+  - `results/eval_wer_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.csv`
+  - `results/eval_mos_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.csv`
+  - regenerated `results/eval_mixed_teacher_summary.csv`
+  - regenerated `results/eval_mixed_teacher_collapse.csv`
+- Built the browser-playable perceptual review bundle:
+  - `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`
+  - `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_ratings.csv`
+- Ran style diagnostics for the expanded condition:
+  - `results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.csv`
+  - `results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.md`
+- Fixed `examples/eval_wer.py` summary wording so the CLI reports all styled
+  WER rows separately from the non-zero-only subset. The CSV schema is
+  unchanged.
+
+Validation:
+
+- `Validation`: `scripts/run_ablation_inference.py` exposes
+  `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as a deterministic
+  condition mapped to the expanded rare-supply checkpoint.
+- `Validation`: generation produced `110` manifest rows and the complete
+  baseline + 9-style output family for each of the `11` source speakers.
+- `Validation`: emotion evaluation scored `66` canonical emotion rows and
+  reached `31/66 = 46.97%` recall.
+- `Validation`: per-style canonical recall was `anger=1/11`,
+  `disgust=2/11`, `fear=3/11`, `happy=5/11`, `neutral=10/11`,
+  `sad=10/11`.
+- `Validation`: novelty evaluation wrote `110` rows with mean novelty gain
+  `0.2995`, above both the combined baseline (`0.2599`) and the previous
+  style-distillation high (`0.0930`).
+- `Validation`: WER evaluation wrote `110` rows; mean styled WER across all
+  non-baseline style rows is `0.2751`, while the non-zero-only subset is
+  `0.4778`.
+- `Validation`: MOS evaluation wrote `110` rows; mean non-baseline MOS is
+  `3.6771` and mean MOS delta vs same-speaker baseline is `-0.2640`.
+- `Validation`: collapse summary improved sharply on style/identity collapse:
+  content collapse `7`, style-to-neutral collapse `18`, identity collapse `1`,
+  mixed collapse `1`, files with any collapse `25`.
+- `Validation`: listening report and subjective-rating template were generated
+  for perceptual review before closeout.
+
+Readout:
+
+- Fixing rare CommonVoice pseudo-label supply is not merely an engineering
+  improvement. It produces the first large mixed-teacher recall jump:
+  `18.2% -> 47.0%` versus the prior mixed-teacher ceiling.
+- The recall improvement is broad enough to matter but uneven: `neutral` and
+  `sad` are strong, `happy` improves materially, `fear` moves off zero, while
+  `anger` and `disgust` remain weak and often still classify as neutral.
+- Novelty also becomes paper-strong: `0.2995` exceeds the combined-only model's
+  `0.2599`, meaning the expanded mixed teacher now moves speaker embeddings
+  more than the original combined reference.
+- The tradeoff is real. Intelligibility and naturalness degrade relative to the
+  best mixed-teacher rows, especially for `sad`, `happy`, `fear`, and
+  `enunciated`.
+- The diagnostic report shows why this is still not solved: rare canonical
+  classes now have enough rows, but teacher target-dim alignment remains weak
+  for several emotion2vec classes. Expanded data fixes supply; it does not
+  fully calibrate the teacher.
+
+Paper story:
+
+- This is a new paper-facing finding and has been added to `FINDINGS.md`.
+- The positive claim is now stronger: broad speaker coverage plus selected
+  rare pseudo-label preservation can push controllable emotion recall close to
+  the `>50%` target Joe described.
+- The limitation is also clearer: the method trades content/naturalness for
+  stronger style movement, so the next research move should be decoder-aware
+  style supervision or generated-audio feedback, not another latent-only
+  scalar/mask/schedule tweak.
+
+Future upgrade to preserve:
+
+- `[NOW]` Design and test a decoder-aware or generated-audio style objective
+  that keeps the expanded rare-supply recall gain while reducing WER/MOS
+  damage, especially for `sad`, `happy`, `fear`, and `enunciated`.
+- `[SOON]` Add per-style acceptance calibration for canonical pseudo labels,
+  because expanded supply solved row scarcity but diagnostics still show weak
+  teacher target-dim dominance for `anger`, `disgust`, `fear`, `happy`,
+  `neutral`, and `sad`.
+- `[SOON]` Add a manifest-driven all-metrics runner so the emotion, novelty,
+  WER, MOS, summary, collapse, diagnostics, and listening report commands can
+  be reproduced from one experiment spec.
 
 ---
 

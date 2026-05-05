@@ -122,6 +122,15 @@ def parse_args():
         help="Prefer pseudo-labeled CommonVoice rows when choosing per-speaker clips",
     )
     ap.add_argument(
+        "--commonvoice-preserve-selected-pseudo",
+        action="store_true",
+        help=(
+            "After speaker-first sampling, add remaining accepted CommonVoice "
+            "pseudo-labeled rows from sampled speakers so rare selected labels are "
+            "not lost to the per-speaker clip cap."
+        ),
+    )
+    ap.add_argument(
         "--pseudo-style-threshold",
         type=float,
         default=0.60,
@@ -420,6 +429,8 @@ def select_commonvoice_rows(cv_data, args, style_caps, threshold_map):
     selected_reason_counts = Counter()
     fallback_forced_unlabeled_counts = Counter()
     selected_labeled_rows = 0
+    selected_row_indices = set()
+    sampled_speaker_ids = set(speakers)
 
     for speaker_id in speakers:
         candidates = speaker_to_rows[speaker_id][:]
@@ -528,10 +539,49 @@ def select_commonvoice_rows(cv_data, args, style_caps, threshold_map):
                 'label_confidence': float(confidence) if confidence is not None else 0.0,
                 'selection_reason': selection_reason,
             })
+            selected_row_indices.add(row_idx)
+
+    if args.commonvoice_preserve_selected_pseudo:
+        for row_idx, speaker_id in enumerate(cv_data['speaker_ids']):
+            speaker_id = str(speaker_id)
+            if speaker_id not in sampled_speaker_ids or row_idx in selected_row_indices:
+                continue
+            style, confidence, candidate_reason = accepted_commonvoice_style(
+                cv_data, row_idx, threshold_map, args.acceptance_policy
+            )
+            candidate_reason_counts[candidate_reason] += 1
+            if style is None:
+                continue
+            if (
+                args.acceptance_policy == 'balanced_targets'
+                and style in style_targets
+                and selected_style_counts[style] >= style_targets[style]
+            ):
+                skipped_by_target_counts[style] += 1
+                continue
+            if style in style_caps and selected_style_counts[style] >= style_caps[style]:
+                skipped_by_cap_counts[style] += 1
+                continue
+
+            selected.append({
+                'dataset': 'CommonVoice',
+                'row_idx': row_idx,
+                'speaker_id': speaker_id,
+                'clip_path': cv_data['clip_paths'][row_idx] if 'clip_paths' in cv_data else None,
+                'style': style,
+                'label_source': 'pseudo',
+                'label_confidence': float(confidence) if confidence is not None else 0.0,
+                'selection_reason': 'pseudo_preserved_after_speaker_cap',
+            })
+            selected_row_indices.add(row_idx)
+            selected_style_counts[style] += 1
+            selected_labeled_rows += 1
+            selected_reason_counts['pseudo_preserved_after_speaker_cap'] += 1
 
     selection_report = {
         'acceptance_policy': args.acceptance_policy,
         'style_targets': style_targets,
+        'preserve_selected_pseudo': bool(args.commonvoice_preserve_selected_pseudo),
         'skipped_by_cap_counts': dict(skipped_by_cap_counts),
         'skipped_by_target_counts': dict(skipped_by_target_counts),
         'fallback_forced_unlabeled_counts': dict(fallback_forced_unlabeled_counts),
@@ -701,6 +751,7 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
             'min_clips_per_speaker': args.commonvoice_min_clips_per_speaker,
             'max_clips_per_speaker': args.commonvoice_max_clips_per_speaker,
             'prefer_pseudo': args.commonvoice_prefer_pseudo,
+            'preserve_selected_pseudo': bool(args.commonvoice_preserve_selected_pseudo),
         },
         'row_weight_config': {
             'pseudo_confidence_scale': bool(args.pseudo_confidence_scale),

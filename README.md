@@ -21,9 +21,9 @@ Current experiment focus on that branch:
 
 Immediate next queue:
 
-1. finish the resumable expanded CommonVoice teacher-scoring job from `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`, then filter/audit pseudo labels before any training
-2. build a decoder-aware or generated-audio style objective, because the labeled-first curriculum improved novelty/collapse but still decoded to emotion2vec-neutral outputs
-3. keep `mixed_teacher_threshold_balanced` as the best overall mixed-data teacher reference, while treating `mixed_teacher_hybrid_style_distill_labeled_warmup` as the strongest current style-distillation novelty/collapse variant
+1. build a decoder-aware or generated-audio style objective that preserves the expanded rare-supply recall gain while repairing WER/MOS
+2. use `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest checked-in controllability/novelty result, and keep `combined` as the cleanest original quality baseline
+3. run perceptual review from `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`, especially for `sad`, `happy`, `fear`, and `enunciated`
 4. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
@@ -34,7 +34,7 @@ The dedicated next-step plans live in:
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
-- **[`FINDINGS.md`](FINDINGS.md)** — 29 paper-facing findings with methodology and per-row takeaways.
+- **[`FINDINGS.md`](FINDINGS.md)** — 30 paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 
@@ -42,9 +42,10 @@ OpenVoice is the **canonical controllable pipeline**. ControlVC remains in the
 repository as a useful DP baseline and wrapper reference, but not as the
 recommended path for style control.
 
-Current best checked-in result: the **combined** OpenVoice model remains the
-best tradeoff across controllability, speaker novelty, intelligibility, and
-naturalness. The later CommonVoice finetune, objective, rich-objective, and
+Current best checked-in result: the expanded rare-supply mixed teacher is now
+the strongest controllability / novelty condition, while the original
+**combined** OpenVoice model remains the cleanest quality baseline. The later
+CommonVoice finetune, objective, rich-objective, and
 partial-label studies sharpened that conclusion by showing that neither simple
 gentler CommonVoice finetuning, nor simple scalar objective reweighting, nor
 the first richer teacher/anchor CommonVoice objectives, nor validation-scale
@@ -62,8 +63,8 @@ novelty a bit higher (`0.0818`), but drops back to `16.7%` recall and gives
 back WER/MOS. A genuinely different combined-VAE latent prototype teacher
 (`mixed_teacher_prototype_balanced`) restores the `18.2%` recall tie, improves
 novelty to `0.0854`, and slightly lowers identity / mixed collapse, but gives
-back WER and MOS versus `mixed_teacher_threshold_balanced`. That makes
-`mixed_teacher_threshold_balanced` the best overall mixed-data teacher
+back WER and MOS versus `mixed_teacher_threshold_balanced`. At that stage,
+`mixed_teacher_threshold_balanced` was the best overall mixed-data teacher
 reference and `mixed_teacher_prototype_balanced` the best novelty/coverage
 candidate. The guarded prototype follow-up (`mixed_teacher_prototype_guarded`)
 keeps the `18.2%` recall tie and repairs WER somewhat (`0.0920` vs `0.1009`),
@@ -74,7 +75,7 @@ hybrid prototype+emotion2vec follow-up (`mixed_teacher_hybrid_extra_balanced`)
 then tests that multi-teacher hypothesis directly: it reaches the best
 mixed-teacher novelty so far (`0.0860`) and slightly lowers files with any
 collapse, but drops recall back to `16.7%` and worsens MOS delta (`-0.1190`).
-That kept `mixed_teacher_threshold_balanced` as the best overall mixed-data
+That kept `mixed_teacher_threshold_balanced` as the historical mixed-data
 teacher reference and motivated a richer continuous teacher objective. The
 style-space distillation follow-up
 (`mixed_teacher_hybrid_style_distill_balanced`) uses the frozen combined VAE as
@@ -115,9 +116,18 @@ current `22538` usable-row rare-supply preflight target. OpenVoice extraction
 from that expanded corpus now produced
 `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt` with `25910`
 embeddings, `13308` unique speakers, and zero missing/unreadable clips. The
-current next move is therefore the resumable target-seeking emotion2vec scorer,
-then the pseudo-label supply audit; stop unless selected `anger` and `fear`
-rows reach the target. The
+resumable target-seeking emotion2vec scorer then annotated `6380/25910` rows,
+the expanded hybrid teacher artifact selected `645` pseudo-labeled rows, and
+the final mixed artifact
+`embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt` preserves
+`13308` CommonVoice speakers while keeping `anger=50` and `fear=50` CommonVoice
+pseudo rows in the training set. The expanded rare-supply checkpoint
+(`mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup`) is now evaluated:
+it reaches `47.0%` emotion recall and `0.2995` novelty gain, beating both the
+prior mixed-teacher recall ceiling (`18.2%`) and the combined-only novelty
+reference (`0.2599`). The tradeoff is clear: mean styled WER rises to `0.2751`
+and MOS delta falls to `-0.2640`, so this is the strongest controllability /
+novelty result so far but not yet the cleanest quality result. The
 non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
 the safest default, `7.5` is a useful stronger option for styles like
 `whisper` and `confused`, and `10.0-12.5` look more like high-novelty
@@ -133,6 +143,9 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/eval_mixed_teacher_summary.csv`](results/eval_mixed_teacher_summary.csv)
 - [`results/eval_mixed_teacher_style_diagnostics_targetmask.md`](results/eval_mixed_teacher_style_diagnostics_targetmask.md)
 - [`results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md`](results/eval_mixed_teacher_style_diagnostics_labeled_warmup.md)
+- [`results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.md`](results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.md)
+- [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html)
+- [`results/commonvoice_pseudolabel_supply_audit_rare_supply.md`](results/commonvoice_pseudolabel_supply_audit_rare_supply.md)
 - [`results/commonvoice_rare_supply_expansion_preflight.md`](results/commonvoice_rare_supply_expansion_preflight.md)
 - [`results/eval_nontrump_strength_sweep.csv`](results/eval_nontrump_strength_sweep.csv)
 - [`results/eval_nontrump_strength_sweep_summary.md`](results/eval_nontrump_strength_sweep_summary.md)

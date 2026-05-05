@@ -1354,7 +1354,109 @@ Interpretation:
 - `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup.html` is the browser-playable listening report for perceptual review of the latest condition, with a companion subjective scoring template at `results/listening_mixed_teacher_hybrid_style_distill_labeled_warmup_ratings.csv`
 - `results/commonvoice_pseudolabel_supply_audit.md` confirms the current local CommonVoice subset is the rare-class bottleneck: even before mixed-data speaker-first selection, the hybrid artifact only has `anger=5` and `fear=4` selected rows
 - `results/commonvoice_rare_supply_expansion_preflight.md` turns that bottleneck into a reproducible gate; after downloading the expanded local corpus at `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`, the gate now returns `GO` with `40000` usable rows and `20537` usable speakers
-- the next mixed-data branch should extract/score/audit the expanded CommonVoice corpus or move to decoder-aware style objectives, rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, schedule-only curricula, or latent-only mask/weight variants
+- `results/commonvoice_pseudolabel_supply_audit_rare_supply.md` confirms the expanded rare-supply artifact now clears the training gate: the final mixed artifact keeps `anger=50` and `fear=50` CommonVoice pseudo rows while preserving `13308` CommonVoice speakers
+- `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` is the first expanded rare-supply generated-audio result: `47.0%` emotion recall, `0.2995` novelty gain, `0.2751` mean styled WER, and `-0.2640` MOS delta
+- the next mixed-data branch should move to decoder-aware or generated-audio style objectives, because expanded rare supply recovered recall/novelty but introduced a real content/naturalness tradeoff
+
+Expanded rare-supply mixed artifact and first model run:
+
+```bash
+python scripts/filter_commonvoice_pseudolabels.py \
+    --input embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_scored.pt \
+    --output embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_filtered.pt \
+    --default-threshold 0.60 \
+    --style-targets anger=50,fear=50,disgust=80,happy=80,neutral=120,sad=120 \
+    --acceptance-policy balanced_targets
+
+python scripts/annotate_commonvoice_latent_prototypes.py \
+    --commonvoice embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt \
+    --combined embeddings/openvoice_combined_emb.pt \
+    --checkpoint embeddings/openvoice_vae_combined.pt \
+    --output embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_prototype.pt
+
+python scripts/filter_commonvoice_pseudolabels.py \
+    --input embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_prototype.pt \
+    --output embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_prototype_filtered.pt \
+    --default-threshold 0.35 \
+    --style-targets confused=50,enunciated=50,whisper=50 \
+    --acceptance-policy balanced_targets
+
+python scripts/combine_commonvoice_pseudolabel_teachers.py \
+    --emotion2vec embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_filtered.pt \
+    --prototype embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_prototype_filtered.pt \
+    --output embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_hybrid_extra_priority.pt \
+    --policy prototype_extra_priority
+
+python scripts/build_mixed_training_set.py \
+    --commonvoice embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_hybrid_extra_priority.pt \
+    --cremad embeddings/openvoice_cremad_emb.pt \
+    --expresso embeddings/openvoice_expresso_emb.pt \
+    --output embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
+    --commonvoice-max-clips-per-speaker 1 \
+    --commonvoice-preserve-selected-pseudo \
+    --acceptance-policy artifact_selected \
+    --commonvoice-prefer-pseudo \
+    --pseudo-confidence-scale \
+    --pseudo-row-weight 0.5
+
+python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt \
+    --schedule labeled_warmup \
+    --schedule-epochs 1000 \
+    --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --style-teacher-weight 0.0 \
+    --style-teacher-weight-final 0.25 \
+    --style-teacher-datasets CommonVoice \
+    --style-teacher-dims 0-8
+
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup \
+    --out output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_eval \
+    --style-strength 5.0 \
+    --noise-level 0.0 \
+    --seed 42
+
+python examples/eval_emotion.py --input output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_eval --out results/eval_emotion_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.csv
+python examples/eval_novelty.py --manifest output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_eval/generation_manifest.jsonl --out results/eval_novelty_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.csv
+python examples/eval_wer.py     --input output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_eval --out results/eval_wer_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.csv
+python examples/eval_mos.py     --input output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_eval --out results/eval_mos_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.csv
+
+python scripts/build_listening_report.py \
+    --manifest output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_eval/generation_manifest.jsonl \
+    --input-tag mixed_teacher \
+    --out results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html
+```
+
+Expanded rare-supply result:
+
+| Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Files with any collapse | Listening report |
+|-----------|--------|--------------|-----------------|-----------|-------------------------|------------------|
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` | `47.0%` | `0.2995` | `0.2751` | `-0.2640` | `25` | `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html` |
+
+Per-style canonical recall:
+
+| Style | Recall |
+|-------|--------|
+| `anger` | `1/11` |
+| `disgust` | `2/11` |
+| `fear` | `3/11` |
+| `happy` | `5/11` |
+| `neutral` | `10/11` |
+| `sad` | `10/11` |
+
+Diagnostic follow-up:
+
+```bash
+python scripts/analyze_mixed_teacher_style_diagnostics.py \
+    --mixed-artifact embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
+    --teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --student-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt \
+    --condition mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup \
+    --out-csv results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.csv \
+    --out-md results/eval_mixed_teacher_style_diagnostics_cvrare_labeled_warmup.md
+```
 
 Non-Trump style-strength sweep:
 
@@ -1603,7 +1705,7 @@ scores more interpretable.
 - `openvoice_train_vae_mixed.py` — Schedule-aware mixed-data VAE training on a sampled CommonVoice + CREMA-D + Expresso artifact.
 - `eval_novelty.py` — Measures source-vs-generated speaker novelty in OpenVoice embedding space.
 - `../scripts/prepare_commonvoice_subset.py` — Filters a full Common Voice `validated.tsv` down to the locally available clip subset.
-- `../scripts/build_mixed_training_set.py` — Builds the first mixed-data bootstrap artifact with CommonVoice speaker-first sampling, pseudo-label filtering, style caps, and a saved mixture report.
+- `../scripts/build_mixed_training_set.py` — Builds mixed-data bootstrap artifacts with CommonVoice speaker-first sampling, pseudo-label filtering, style caps, optional selected-pseudo preservation, and a saved mixture report.
 - `../scripts/filter_commonvoice_pseudolabels.py` — Applies reusable row-level pseudo-label acceptance rules so CommonVoice scoring and class-balanced selection can be iterated separately.
 - `../scripts/plan_commonvoice_rare_supply_expansion.py` — Checks whether a local CommonVoice corpus has enough usable rows and speakers to justify rebuilding rare-class pseudo labels before another model run.
 - `../scripts/prepare_ablation_embeddings.py` — Builds the evaluation ablation matrix `cremad_only` / `expresso_only` embedding sets.
