@@ -21,7 +21,7 @@ Current experiment focus on that branch:
 
 Immediate next queue:
 
-1. extract OpenVoice embeddings from the expanded local CommonVoice corpus at `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`, then score/filter/audit pseudo labels before any training
+1. finish the resumable expanded CommonVoice teacher-scoring job from `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`, then filter/audit pseudo labels before any training
 2. build a decoder-aware or generated-audio style objective, because the labeled-first curriculum improved novelty/collapse but still decoded to emotion2vec-neutral outputs
 3. keep `mixed_teacher_threshold_balanced` as the best overall mixed-data teacher reference, while treating `mixed_teacher_hybrid_style_distill_labeled_warmup` as the strongest current style-distillation novelty/collapse variant
 4. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
@@ -111,10 +111,13 @@ because the root filesystem is read-only, so the usable stable local corpus is
 English metadata as `validated_full.tsv`, uses an active `validated.tsv`
 filtered to the locally extracted `40000` MP3 clips from the first validated
 audio shard, and yields `40000` usable rows / `20537` speakers. That clears the
-current `22538` usable-row rare-supply preflight target. The current next move
-is therefore to extract OpenVoice embeddings from this expanded corpus, then
-stop at the pseudo-label supply audit unless selected `anger` and `fear` rows
-reach the target. The
+current `22538` usable-row rare-supply preflight target. OpenVoice extraction
+from that expanded corpus now produced
+`embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt` with `25910`
+embeddings, `13308` unique speakers, and zero missing/unreadable clips. The
+current next move is therefore the resumable target-seeking emotion2vec scorer,
+then the pseudo-label supply audit; stop unless selected `anger` and `fear`
+rows reach the target. The
 non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
 the safest default, `7.5` is a useful stronger option for styles like
 `whisper` and `confused`, and `10.0-12.5` look more like high-novelty
@@ -189,7 +192,7 @@ See also:
 - `examples/openvoice_extract_commonvoice.py` + `examples/openvoice_pretrain_vae_commonvoice.py` — Common Voice pretraining path, including validation-scale weak supervision from metadata and pseudo labels.
 - `scripts/build_mixed_training_set.py` + `examples/openvoice_train_vae_mixed.py` — mixed-data bootstrap path that combines pseudo-labeled CommonVoice with labeled CREMA-D and Expresso under schedule-controlled sampling, including optional style-space teacher distillation via `--style-teacher-checkpoint`, `--style-teacher-weight`, `--style-teacher-weight-final`, `--style-teacher-dims`, `--style-teacher-datasets`, `--style-teacher-target-mode`, `--style-teacher-require-label`, `--style-teacher-style-weights`, and `--style-teacher-confidence-power`.
 - `scripts/prepare_commonvoice_subset.py` — helper for turning downloaded Common Voice shards into a filtered local `validated.tsv` + `clips/` subset.
-- `scripts/annotate_commonvoice_pseudolabels.py` — adds confidence-scored pseudo-style labels to a Common Voice embedding artifact.
+- `scripts/annotate_commonvoice_pseudolabels.py` — adds confidence-scored pseudo-style labels to a Common Voice embedding artifact, with batch size, checkpoint/resume, per-row error recording, and target-seeking stop controls for expanded-corpus teacher runs.
 - `scripts/annotate_commonvoice_latent_prototypes.py` — scores Common Voice rows against combined-VAE latent style prototypes as an alternate pseudo-label teacher.
 - `scripts/combine_commonvoice_pseudolabel_teachers.py` — combines filtered emotion2vec and latent-prototype CommonVoice pseudo labels into a reusable hybrid teacher artifact.
 - `scripts/audit_commonvoice_pseudolabel_supply.py` — audits rare-style pseudo-label supply before more CommonVoice weighting/curriculum experiments.

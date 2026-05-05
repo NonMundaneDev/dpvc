@@ -520,10 +520,37 @@ Real local validation completed so far:
     extraction should target at least `22538` usable CommonVoice rows before
     another model run
 
+- expanded CommonVoice extraction and resumable teacher scoring
+  - extracted the expanded local corpus into:
+    - `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`
+  - validated:
+    - `25910` embeddings
+    - `13308` unique speakers
+    - tensor shape `(25910, 256, 1)`
+    - `0` missing clip files
+    - `0` unreadable clip files
+  - upgraded `scripts/annotate_commonvoice_pseudolabels.py` for expanded
+    teacher runs:
+    - `--batch-size`
+    - `--checkpoint-every`
+    - `--checkpoint-path`
+    - automatic checkpoint resume
+    - `--no-resume`
+    - `--fail-on-error`
+    - per-row `pseudo_style_error`
+    - `--stop-when-accepted-targets anger=50,fear=50`
+  - smoke-tested the scorer:
+    - 16-row run wrote checkpoint + final artifact and resumed with `0`
+      pending rows
+    - 64-row timing run confirmed the full emotion2vec teacher pass remains
+      multi-hour, so checkpoint/resume and target-seeking are required
+  - active target-seeking command:
+    - `.venv/bin/python scripts/annotate_commonvoice_pseudolabels.py --embeddings embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt --output embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_scored.pt --save-style-score-map --report-threshold 0.60 --batch-size 4 --checkpoint-every 500 --stop-when-accepted-targets anger=50,fear=50`
+
 Immediate next execution steps on this branch:
 
-1. Extract OpenVoice embeddings from
-   `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`, then score/filter the
+1. Finish or resume the expanded emotion2vec teacher-scoring job from
+   `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`, then filter the
    expanded pseudo-label pool and only proceed past the pseudo-label supply
    audit if selected `anger` and `fear` rows reach the target.
 2. Design a decoder-aware or generated-audio style objective for canonical

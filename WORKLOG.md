@@ -1642,8 +1642,12 @@ Future upgrade to preserve:
 - `[DONE]` Download/build an expanded local English CommonVoice corpus at
   `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`; `/data` is not
   creatable in this macOS session because the root filesystem is read-only.
-- `[NOW]` Extract and score the expanded corpus, then stop at the supply audit
-  if selected `anger` / `fear` rows remain below target.
+- `[DONE]` Extract OpenVoice embeddings from the expanded corpus into
+  `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`; validated shape is
+  `25910 x 256 x 1`, with `13308` unique speakers and zero missing/unreadable
+  clips.
+- `[NOW]` Score/filter the expanded corpus, then stop at the supply audit if
+  selected `anger` / `fear` rows remain below target.
 - `[SOON]` Add optional sampled listening panels to compare multiple conditions
   side-by-side for the same speaker/style, so Joe can evaluate differences
   without opening several output folders.
@@ -1734,6 +1738,96 @@ Future upgrade to preserve:
 - `[SOON]` Add an optional `--min-selected-rare-rows` check to
   `scripts/audit_commonvoice_pseudolabel_supply.py` so the audit itself can
   fail CI/automation when rare labels remain undersupplied.
+
+---
+
+### 0.31 Expanded CommonVoice Extraction and Resumable Teacher Scoring (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Extracted OpenVoice embeddings from the expanded local English CommonVoice
+  corpus:
+  - corpus: `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`
+  - output: `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`
+  - command used the preflight-recommended speaker/clip caps:
+    `--max-speakers 13308 --max-clips-per-speaker 3 --seed 42`
+- Hardened `scripts/annotate_commonvoice_pseudolabels.py` so expanded
+  emotion2vec scoring is practical:
+  - added `--batch-size`
+  - added resumable checkpointing via `--checkpoint-every`,
+    `--checkpoint-path`, and automatic checkpoint resume
+  - added `--no-resume` for clean smoke tests
+  - added `--fail-on-error` plus per-row `pseudo_style_error` recording
+  - added `--stop-when-accepted-targets`, e.g. `anger=50,fear=50`, so a
+    rare-supply run can stop once enough high-confidence target rows exist
+
+Validation:
+
+- `Validation`: the expanded extractor completed and saved `25910` embeddings.
+- `Validation`: extracted artifact loads with keys for `data`, `speaker_ids`,
+  `clip_paths`, `age`, `gender`, `accent`, corpus metadata, and metadata
+  coverage report.
+- `Validation`: tensor shape is `(25910, 256, 1)` with dtype `float32`.
+- `Validation`: sidecar list lengths match the tensor row count:
+  `speaker_ids=25910`, `clip_paths=25910`, `age=25910`, `gender=25910`,
+  `accent=25910`.
+- `Validation`: extracted unique speaker count is `13308`.
+- `Validation`: extraction skipped `0` missing clip files and `0` unreadable
+  clip files.
+- `Validation`: `.venv/bin/python -m py_compile scripts/annotate_commonvoice_pseudolabels.py`
+- `Validation`: a 16-row scoring smoke test wrote checkpoint and final
+  artifacts, annotated `16/16` rows, recorded `0` failures, and produced
+  accepted pseudo-style counts.
+- `Validation`: rerunning the same 16-row smoke command resumed from the
+  checkpoint with `0` pending rows and did not recompute already-scored rows.
+- `Validation`: a 64-row timing run with `--batch-size 16` completed and
+  confirmed the full emotion2vec path remains multi-hour, which justifies
+  checkpoint/resume and target-seeking scoring.
+
+Readout:
+
+- The expanded extraction step is now complete and reproducible from a local
+  CommonVoice layout; this satisfies the data-side precondition for the
+  rare-class supply experiment.
+- Full emotion2vec scoring is compute-bound and should be treated as a
+  resumable teacher job rather than an interactive smoke command.
+- The active teacher command is target-seeking:
+
+```bash
+.venv/bin/python scripts/annotate_commonvoice_pseudolabels.py \
+  --embeddings embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt \
+  --output embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_scored.pt \
+  --save-style-score-map \
+  --report-threshold 0.60 \
+  --batch-size 4 \
+  --checkpoint-every 500 \
+  --stop-when-accepted-targets anger=50,fear=50
+```
+
+Interpretation:
+
+- This is engineering/reproducibility evidence, not a new paper-facing result
+  yet.
+- Do **not** update `FINDINGS.md` until the scored/filter/audit chain verifies
+  whether selected `anger` and `fear` rows actually reach the target.
+- If the rare targets are met, proceed to filtering, hybrid teacher combining,
+  supply audit, mixed-artifact construction, and only then a new model run.
+- If the rare targets are not met, the next evidence-bearing move is either a
+  larger CommonVoice audio shard or a different teacher/calibration strategy,
+  not another loss-weight experiment on undersupplied rare rows.
+
+Future upgrade to preserve:
+
+- `[NOW]` Finish the live target-seeking emotion2vec scoring job and inspect
+  `embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_scored.pt` or its
+  `.checkpoint.pt` if interrupted.
+- `[NOW]` Run class-balanced filtering and the pseudo-label supply audit only
+  after the scorer has enough annotated rows or exhausts the expanded artifact.
+- `[SOON]` Add a documented resume/monitor command for long teacher-scoring
+  jobs, since backgrounding is reaped in this Codex execution environment.
+- `[SOON]` Consider another CommonVoice audio shard only if the expanded
+  first-shard scorer still cannot reach `anger=50` and `fear=50` at the
+  selected threshold.
 
 ---
 

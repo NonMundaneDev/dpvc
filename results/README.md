@@ -204,6 +204,28 @@ CommonVoice rare-class supply preflight from 2026-05-05:
 - Based on checked-in selected `anger` / `fear` rates, the next rare-supply extraction should target at least `22538` usable rows before another model run.
 - This is an engineering/reproducibility gate, not a new paper-facing finding by itself.
 
+Expanded rare-class extraction / teacher-scoring status from 2026-05-05:
+
+- `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt` validates with
+  `25910` OpenVoice embeddings, `13308` unique speakers, and zero
+  missing/unreadable clips.
+- The expanded emotion2vec scorer is intentionally resumable and target-seeking:
+
+```bash
+python scripts/annotate_commonvoice_pseudolabels.py \
+    --embeddings embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt \
+    --output embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_scored.pt \
+    --save-style-score-map \
+    --report-threshold 0.60 \
+    --batch-size 4 \
+    --checkpoint-every 500 \
+    --stop-when-accepted-targets anger=50,fear=50
+```
+
+- Do not interpret this as a paper-facing finding until the resulting scored,
+  filtered, and audited artifacts show whether selected `anger` and `fear`
+  supply actually reaches target.
+
 Non-Trump style-strength sweep from 2026-05-03:
 
 - The full strength-sweep result bundle is now checked in for:

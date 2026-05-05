@@ -179,6 +179,34 @@ python examples/openvoice_extract_commonvoice.py \
     --output embeddings/openvoice_commonvoice_cv500_emb.pt
 ```
 
+For the expanded rare-class supply run on this machine, the validated local
+corpus is `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`. The extraction
+artifact validated on 2026-05-05 was:
+
+```bash
+python examples/openvoice_extract_commonvoice.py \
+    --corpus-path /Users/steve/datasets/cv-corpus-21.0-2025-03-14/en \
+    --output embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt \
+    --seed 42 \
+    --max-speakers 13308 \
+    --max-clips-per-speaker 3 \
+    --checkpoint-every 2500
+```
+
+The expanded teacher-scoring path is resumable and can stop once rare accepted
+targets are met:
+
+```bash
+python scripts/annotate_commonvoice_pseudolabels.py \
+    --embeddings embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt \
+    --output embeddings/openvoice_commonvoice_cvrare_expanded_pseudo_scored.pt \
+    --save-style-score-map \
+    --report-threshold 0.60 \
+    --batch-size 4 \
+    --checkpoint-every 500 \
+    --stop-when-accepted-targets anger=50,fear=50
+```
+
 Then run reconstruction-only pretraining:
 
 ```bash
@@ -1560,7 +1588,7 @@ scores more interpretable.
 | 10b | `../scripts/summarize_commonvoice_finetune_ablation.py` | CommonVoice finetune ablation eval CSVs | `eval_commonvoice_finetune_summary_pass5.csv` + `eval_commonvoice_finetune_collapse_pass5.csv` |
 | 10c | `../scripts/summarize_commonvoice_objective_ablation.py` | CommonVoice objective ablation eval CSVs | `eval_commonvoice_objective_summary_pass6.csv` + `eval_commonvoice_objective_collapse_pass6.csv` |
 | 10d | `../scripts/summarize_commonvoice_rich_objectives.py` | CommonVoice rich-objective ablation eval CSVs | `eval_commonvoice_rich_objectives_summary_pass7.csv` + `eval_commonvoice_rich_objectives_collapse_pass7.csv` |
-| 10e | `../scripts/annotate_commonvoice_pseudolabels.py` | CommonVoice embedding artifact | enriched artifact with `pseudo_style`, `pseudo_style_confidence`, `pseudo_style_topk_*`, `pseudo_style_teacher`, and `pseudo_style_report` |
+| 10e | `../scripts/annotate_commonvoice_pseudolabels.py` | CommonVoice embedding artifact | enriched artifact with `pseudo_style`, `pseudo_style_confidence`, `pseudo_style_topk_*`, `pseudo_style_teacher`, `pseudo_style_report`, optional checkpoint/resume, and target-seeking rare-label stop controls |
 | 10ea | `../scripts/filter_commonvoice_pseudolabels.py` | scored CommonVoice artifact | filtered artifact with `pseudo_style_selected*` fields and `pseudo_style_filter_report` |
 | 10eb | `../scripts/plan_commonvoice_rare_supply_expansion.py` | local CommonVoice `validated.tsv` + `clips/` plus reference pseudo-label artifacts | `commonvoice_rare_supply_expansion_preflight.json` + `commonvoice_rare_supply_expansion_preflight.md` |
 | 10f | `../scripts/summarize_commonvoice_partial_label.py` | CommonVoice partial-label pretraining eval CSVs | `eval_commonvoice_partial_label_summary_pass8.csv` + `eval_commonvoice_partial_label_collapse_pass8.csv` |
@@ -1580,7 +1608,7 @@ scores more interpretable.
 - `../scripts/plan_commonvoice_rare_supply_expansion.py` — Checks whether a local CommonVoice corpus has enough usable rows and speakers to justify rebuilding rare-class pseudo labels before another model run.
 - `../scripts/prepare_ablation_embeddings.py` — Builds the evaluation ablation matrix `cremad_only` / `expresso_only` embedding sets.
 - `../scripts/run_ablation_inference.py` — Generates the evaluation ablation matrix corpora, the CommonVoice finetune ablation corpora, the CommonVoice objective ablation corpora, the CommonVoice rich-objective ablation corpora, the CommonVoice partial-label pretraining corpora, and the mixed-data pseudolabel mix corpora.
-- `../scripts/annotate_commonvoice_pseudolabels.py` — Adds confidence-scored pseudo-style labels to a CommonVoice embedding artifact so weak-label pretraining can be reproduced without rerunning the teacher every time.
+- `../scripts/annotate_commonvoice_pseudolabels.py` — Adds confidence-scored pseudo-style labels to a CommonVoice embedding artifact so weak-label pretraining can be reproduced without rerunning the teacher every time; expanded-corpus runs support batch size, checkpoint/resume, per-row error recording, and `--stop-when-accepted-targets`.
 - `../scripts/summarize_mixed_teacher_results.py` — Convenience wrapper for summarizing the teacher-focused mixed-data branch with the dedicated `mixed_teacher` result tag.
 - `../scripts/summarize_ablation_results.py` — Aggregates evaluation ablation matrix metrics into a condition table and a collapse taxonomy.
 - `../scripts/summarize_commonvoice_finetune_ablation.py` — Aggregates CommonVoice finetune metrics into a condition table and a collapse taxonomy.
