@@ -76,6 +76,25 @@ def parse_dataset_masses(raw):
     return masses
 
 
+def parse_style_weights(raw, supported_styles):
+    weights = {style: 1.0 for style in supported_styles}
+    raw = (raw or "").strip()
+    if not raw:
+        return weights
+    for item in raw.split(','):
+        item = item.strip()
+        if not item:
+            continue
+        if '=' not in item:
+            raise ValueError(f"Expected style weight in name=value form, got: {item}")
+        name, value = item.split('=', 1)
+        style = name.strip()
+        if style not in weights:
+            raise ValueError(f"Unknown style in teacher style-weight config: {style}")
+        weights[style] = float(value.strip())
+    return weights
+
+
 def parse_dim_list(raw):
     dims = []
     for item in raw.split(','):
@@ -103,6 +122,44 @@ def build_dataset_mask(source_datasets, raw, device):
         dtype=torch.float32,
         device=device,
     )
+
+
+def build_style_teacher_row_weights(
+    style_targets,
+    style_label_mask,
+    style_label_confidence,
+    supported_styles,
+    raw_style_weights,
+    confidence_power,
+    require_label,
+):
+    style_weights = parse_style_weights(raw_style_weights, supported_styles)
+    row_weights = torch.ones(
+        style_targets.shape[0],
+        dtype=torch.float32,
+        device=style_targets.device,
+    )
+    label_mask = style_label_mask.view(-1) > 0
+
+    if require_label:
+        row_weights = row_weights * label_mask.float()
+
+    if raw_style_weights:
+        style_indices = torch.argmax(style_targets, dim=1)
+        for idx, style in enumerate(supported_styles):
+            style_mask = label_mask & (style_indices == idx)
+            row_weights[style_mask] *= float(style_weights[style])
+
+    if confidence_power and confidence_power > 0:
+        if style_label_confidence is None:
+            raise ValueError(
+                "--style-teacher-confidence-power requires style_label_confidence "
+                "in the mixed artifact"
+            )
+        confidence = style_label_confidence.view(-1).clamp(min=0.0)
+        row_weights = row_weights * torch.pow(confidence, confidence_power)
+
+    return row_weights.view(-1, 1), style_weights
 
 
 def main():
@@ -202,6 +259,37 @@ def main():
         ),
     )
     ap.add_argument(
+        "--style-teacher-target-mode",
+        default="all_dims",
+        choices=["all_dims", "target_dim"],
+        help=(
+            "Use teacher loss on all selected dims or only each row's accepted "
+            "style target dim (default: all_dims)"
+        ),
+    )
+    ap.add_argument(
+        "--style-teacher-require-label",
+        action="store_true",
+        help="Apply teacher-style loss only to rows with an accepted style label",
+    )
+    ap.add_argument(
+        "--style-teacher-style-weights",
+        default="",
+        help=(
+            "Optional per-style row weights for teacher loss, e.g. "
+            "anger=4,fear=4,neutral=0.25"
+        ),
+    )
+    ap.add_argument(
+        "--style-teacher-confidence-power",
+        type=float,
+        default=0.0,
+        help=(
+            "Optional exponent for multiplying teacher row weights by label "
+            "confidence^power (default: 0.0, disabled)"
+        ),
+    )
+    ap.add_argument(
         "--schedule",
         default="static_balanced",
         choices=DEFAULT_SCHEDULES,
@@ -275,6 +363,9 @@ def main():
     style_label_row_weights = data.get('style_label_row_weight')
     if style_label_row_weights is not None:
         style_label_row_weights = style_label_row_weights.to(device)
+    style_label_confidence = data.get('style_label_confidence')
+    if style_label_confidence is not None:
+        style_label_confidence = style_label_confidence.to(device)
 
     source_datasets = data.get('source_dataset')
     if source_datasets is None:
@@ -285,6 +376,26 @@ def main():
             source_datasets,
             args.style_teacher_datasets,
             device,
+        )
+    style_teacher_row_weights = None
+    style_teacher_style_weights = None
+    if args.style_teacher_checkpoint and args.style_teacher_weight > 0:
+        if args.style_teacher_target_mode == "target_dim":
+            max_dim = max(style_teacher_dims) if style_teacher_dims else -1
+            if max_dim >= style_targets.shape[1]:
+                raise ValueError(
+                    "--style-teacher-target-mode target_dim requires teacher dims "
+                    f"inside the style-label range [0, {style_targets.shape[1] - 1}], "
+                    f"got {style_teacher_dims}"
+                )
+        style_teacher_row_weights, style_teacher_style_weights = build_style_teacher_row_weights(
+            style_targets,
+            style_label_mask,
+            style_label_confidence,
+            supported_styles,
+            args.style_teacher_style_weights,
+            args.style_teacher_confidence_power,
+            args.style_teacher_require_label,
         )
 
     labeled_rows = int((style_label_mask.view(-1) > 0).sum().item())
@@ -328,6 +439,12 @@ def main():
         set_module_requires_grad(style_teacher_model, trainable=False)
         print(f"Style teacher dims: {style_teacher_dims}")
         print(f"Style teacher datasets: {args.style_teacher_datasets}")
+        print(f"Style teacher target mode: {args.style_teacher_target_mode}")
+        print(f"Style teacher require label: {args.style_teacher_require_label}")
+        if args.style_teacher_style_weights:
+            print(f"Style teacher style weights: {style_teacher_style_weights}")
+        if args.style_teacher_confidence_power > 0:
+            print(f"Style teacher confidence power: {args.style_teacher_confidence_power}")
 
     trainable_params, total_params = format_param_count(model)
     print(f"Freeze encoder: {args.freeze_encoder}")
@@ -366,6 +483,8 @@ def main():
         style_teacher_weight=args.style_teacher_weight,
         style_teacher_dims=style_teacher_dims,
         style_teacher_mask=style_teacher_mask,
+        style_teacher_row_weights=style_teacher_row_weights,
+        style_teacher_target_mode=args.style_teacher_target_mode,
     )
 
     torch.save(model.state_dict(), args.output)

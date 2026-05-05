@@ -264,7 +264,9 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                             style_teacher_model=None,
                             style_teacher_weight=0.0,
                             style_teacher_dims=None,
-                            style_teacher_mask=None):
+                            style_teacher_mask=None,
+                            style_teacher_row_weights=None,
+                            style_teacher_target_mode="all_dims"):
     BATCH_SIZE = min(256, len(embeddings))
     trainable_params = [param for param in model.parameters() if param.requires_grad]
     if not trainable_params:
@@ -300,13 +302,24 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
     labeled_rows = int((style_label_mask.view(-1) > 0).sum().item())
     print(f"  labeled rows : {labeled_rows}/{len(embeddings)}")
     if style_teacher_model is not None and style_teacher_weight > 0:
-        teacher_rows = (
-            int((style_teacher_mask.view(-1) > 0).sum().item())
-            if style_teacher_mask is not None
-            else len(embeddings)
-        )
+        teacher_active = torch.ones(len(embeddings), dtype=torch.bool, device=embeddings.device)
+        if style_teacher_mask is not None:
+            teacher_active = teacher_active & (style_teacher_mask.view(-1) > 0)
+        if style_teacher_row_weights is not None:
+            teacher_active = teacher_active & (style_teacher_row_weights.view(-1) > 0)
+        teacher_rows = int(teacher_active.sum().item())
         print(f"  teacher-style dims: {list(style_teacher_dims or [])}")
         print(f"  teacher-style rows: {teacher_rows}/{len(embeddings)}")
+        print(f"  teacher target mode: {style_teacher_target_mode}")
+        if style_teacher_row_weights is not None:
+            nonzero_weights = style_teacher_row_weights.view(-1)[style_teacher_row_weights.view(-1) > 0]
+            if nonzero_weights.numel() > 0:
+                print(
+                    "  teacher row weights: "
+                    f"mean={nonzero_weights.mean().item():.3f} "
+                    f"min={nonzero_weights.min().item():.3f} "
+                    f"max={nonzero_weights.max().item():.3f}"
+                )
 
     print(f"Training mixed-data autoencoder for {epochs} epochs...")
     for epoch in tqdm(range(epochs)):
@@ -370,13 +383,28 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                 if teacher_batch_mask.any():
                     with torch.no_grad():
                         teacher_mu, _ = style_teacher_model.encoder(embeddings_b)
-                    teacher_style_loss = (
-                        (
-                            _slice_or_none(model.last_mu[teacher_batch_mask], style_teacher_dims)
-                            - _slice_or_none(teacher_mu[teacher_batch_mask], style_teacher_dims)
+                    teacher_errors = (
+                        _slice_or_none(model.last_mu[teacher_batch_mask], style_teacher_dims)
+                        - _slice_or_none(teacher_mu[teacher_batch_mask], style_teacher_dims)
+                    ) ** 2
+                    if style_teacher_target_mode == "target_dim":
+                        dim_weights = _slice_or_none(
+                            style_targets[batch_indexes][teacher_batch_mask],
+                            style_teacher_dims,
+                        ) > 0
+                        dim_weights = dim_weights.to(teacher_errors.dtype)
+                        teacher_errors = teacher_errors * dim_weights
+                    elif style_teacher_target_mode != "all_dims":
+                        raise ValueError(
+                            f"Unsupported style_teacher_target_mode: {style_teacher_target_mode}"
                         )
-                        ** 2
-                    ).sum()
+                    teacher_row_loss = teacher_errors.sum(dim=1)
+                    if style_teacher_row_weights is not None:
+                        row_weights = style_teacher_row_weights[batch_indexes].view(-1)[
+                            teacher_batch_mask
+                        ]
+                        teacher_row_loss = teacher_row_loss * row_weights
+                    teacher_style_loss = teacher_row_loss.sum()
 
             loss = (
                 recon_weight * recon_loss

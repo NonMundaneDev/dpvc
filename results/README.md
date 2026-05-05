@@ -134,7 +134,7 @@ Mixed-data pseudolabel quality follow-up from 2026-05-03:
   - the gain is not a clean win, because it gives back WER versus `mixed_labeled_finish` and novelty versus `mixed_static_balanced`
   - `mixed_quality_labeled_guarded` was the checkpoint carried into the first non-Trump style-strength sweep before the teacher-family follow-up
 
-Mixed-data pseudolabel teacher follow-up from 2026-05-04:
+Mixed-data pseudolabel teacher follow-up from 2026-05-04/2026-05-05:
 
 - The full teacher-family result bundle is now checked in for:
   - `mixed_teacher_threshold_balanced`
@@ -145,6 +145,7 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04:
   - `mixed_teacher_prototype_guarded`
   - `mixed_teacher_hybrid_extra_balanced`
   - `mixed_teacher_hybrid_style_distill_balanced`
+  - `mixed_teacher_hybrid_style_distill_targetmask_balanced`
   - `mixed_teacher_hybrid_style_distill_w010_balanced`
   - `mixed_teacher_hybrid_style_distill_w050_balanced`
 - The teacher summary reuses copied reference CSVs for:
@@ -168,6 +169,7 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04:
   - `mixed_teacher_prototype_guarded`: recall `18.2%`, novelty `0.0761`, mean WER `0.0920`, MOS delta `-0.1081`
   - `mixed_teacher_hybrid_extra_balanced`: recall `16.7%`, novelty `0.0860`, mean WER `0.0931`, MOS delta `-0.1190`
   - `mixed_teacher_hybrid_style_distill_balanced`: recall `16.7%`, novelty `0.0861`, mean WER `0.0938`, MOS delta `-0.1072`
+  - `mixed_teacher_hybrid_style_distill_targetmask_balanced`: recall `16.7%`, novelty `0.0852`, mean WER `0.1062`, MOS delta `-0.1181`
   - `mixed_teacher_hybrid_style_distill_w010_balanced`: recall `16.7%`, novelty `0.0854`, mean WER `0.0924`, MOS delta `-0.1161`
   - `mixed_teacher_hybrid_style_distill_w050_balanced`: recall `16.7%`, novelty `0.0840`, mean WER `0.0821`, MOS delta `-0.1196`
 - Current conclusion:
@@ -180,7 +182,8 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04:
   - `mixed_teacher_hybrid_extra_balanced` shows that prototype+emotion2vec hard-label mixing produces the best mixed-teacher novelty so far, but loses recall and MOS
   - `mixed_teacher_hybrid_style_distill_balanced` shows that continuous style-space distillation preserves the hybrid novelty gain and improves MOS/collapse versus hard hybrid labels, but recall remains fixed at `16.7%`
   - the global style-teacher weight sweep shows that weights `0.10`, `0.25`, and `0.50` all remain fixed at `16.7%` recall; `0.50` improves WER and identity/mixed collapse, while `0.25` remains the better novelty/MOS tradeoff
-  - the next mixed-data branch should focus on per-style style-space supervision with masks, confidence weighting, or curriculum, not more schedule variants, hard pseudo-label arbitration, or another global scalar teacher-weight sweep
+  - `mixed_teacher_hybrid_style_distill_targetmask_balanced` shows that target-dimension masks, per-style row weights, and confidence scaling also remain fixed at `16.7%` recall while slightly worsening WER/MOS versus global `0.25` style distillation
+  - the next mixed-data branch should focus on per-style diagnostics, labeled-first curriculum, or decoder-aware style objectives, not more schedule variants, hard pseudo-label arbitration, scalar teacher-weight sweeps, or another latent-only mask/weight variant
 
 Non-Trump style-strength sweep from 2026-05-03:
 

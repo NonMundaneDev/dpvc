@@ -1204,6 +1204,32 @@ python examples/eval_novelty.py --manifest output/mixed_teacher_hybrid_style_dis
 python examples/eval_wer.py     --input output/mixed_teacher_hybrid_style_distill_w050_balanced_eval --out results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_w050_balanced.csv
 python examples/eval_mos.py     --input output/mixed_teacher_hybrid_style_distill_w050_balanced_eval --out results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_w050_balanced.csv
 
+python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_targetmask_balanced.pt \
+    --schedule static_balanced \
+    --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --style-teacher-weight 0.25 \
+    --style-teacher-datasets CommonVoice \
+    --style-teacher-dims 0-8 \
+    --style-teacher-target-mode target_dim \
+    --style-teacher-require-label \
+    --style-teacher-style-weights anger=4.0,fear=4.0,happy=2.0,disgust=2.0,sad=1.5,neutral=0.25,confused=1.0,enunciated=1.0,whisper=1.0 \
+    --style-teacher-confidence-power 0.5
+
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_hybrid_style_distill_targetmask_balanced \
+    --out output/mixed_teacher_hybrid_style_distill_targetmask_balanced_eval \
+    --style-strength 5.0 \
+    --noise-level 0.0 \
+    --seed 42
+
+python examples/eval_emotion.py --input output/mixed_teacher_hybrid_style_distill_targetmask_balanced_eval --out results/eval_emotion_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv
+python examples/eval_novelty.py --manifest output/mixed_teacher_hybrid_style_distill_targetmask_balanced_eval/generation_manifest.jsonl --out results/eval_novelty_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv
+python examples/eval_wer.py     --input output/mixed_teacher_hybrid_style_distill_targetmask_balanced_eval --out results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv
+python examples/eval_mos.py     --input output/mixed_teacher_hybrid_style_distill_targetmask_balanced_eval --out results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv
+
 python scripts/summarize_mixed_teacher_results.py
 ```
 
@@ -1219,6 +1245,7 @@ Current checked-in result summary for the first teacher-family run:
 - `mixed_teacher_hybrid_style_distill_balanced`: recall `16.7%`, novelty `0.0861`, mean WER `0.0938`, MOS delta `-0.1072`
 - `mixed_teacher_hybrid_style_distill_w010_balanced`: recall `16.7%`, novelty `0.0854`, mean WER `0.0924`, MOS delta `-0.1161`
 - `mixed_teacher_hybrid_style_distill_w050_balanced`: recall `16.7%`, novelty `0.0840`, mean WER `0.0821`, MOS delta `-0.1196`
+- `mixed_teacher_hybrid_style_distill_targetmask_balanced`: recall `16.7%`, novelty `0.0852`, mean WER `0.1062`, MOS delta `-0.1181`
 
 Interpretation:
 
@@ -1231,7 +1258,8 @@ Interpretation:
 - `mixed_teacher_hybrid_extra_balanced` shows that prototype+emotion2vec hard-label mixing can produce the best mixed-teacher novelty so far, but recall falls back to `16.7%` and MOS worsens
 - `mixed_teacher_hybrid_style_distill_balanced` shows that continuous teacher geometry is a better use of the hybrid teacher than hard row labels for novelty/naturalness/collapse, but it still does not recover recall
 - the style-teacher weight sweep shows that global scalar calibration is not enough: weights `0.10`, `0.25`, and `0.50` all stay at `16.7%` recall
-- the next mixed-data branch should move to per-style masks, confidence weighting, and curriculum rather than repeating more hard pseudo-label arbitration or another scalar teacher-weight sweep
+- `mixed_teacher_hybrid_style_distill_targetmask_balanced` shows that per-style target masks, row weights, and confidence scaling also do not recover recall and slightly worsen WER/MOS versus global `0.25` style distillation
+- the next mixed-data branch should move to diagnostics, labeled-first curriculum, or decoder-aware style objectives rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, or latent-only mask/weight variants
 
 Non-Trump style-strength sweep:
 

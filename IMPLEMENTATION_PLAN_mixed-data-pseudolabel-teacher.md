@@ -433,21 +433,42 @@ Real local validation completed so far:
     `16.7%` recall; `0.50` improves WER (`0.0821`) and identity/mixed collapse
     (`56` / `48`), while `0.25` remains the stronger novelty/MOS tradeoff
 
+- target-dimension style-teacher mask follow-up
+  - extended the mixed-data trainer so style-teacher loss can be applied only
+    to each row's accepted style dimension, with optional accepted-label
+    masking, per-style row weights, and pseudo-label confidence scaling
+  - new public training flags:
+    - `--style-teacher-target-mode {all_dims,target_dim}`
+    - `--style-teacher-require-label`
+    - `--style-teacher-style-weights`
+    - `--style-teacher-confidence-power`
+  - real artifacts now on disk:
+    - `embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_targetmask_balanced.pt`
+    - `output/mixed_teacher_hybrid_style_distill_targetmask_balanced_eval/`
+    - `results/eval_emotion_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv`
+    - `results/eval_novelty_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv`
+    - `results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv`
+    - `results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv`
+  - result: target masking, per-style row weights, and confidence scaling still
+    remain at `16.7%` recall; the run preserves similar novelty (`0.0852`) but
+    worsens WER/MOS versus the best global `0.25` style-distillation condition
+
 Immediate next execution steps on this branch:
 
-1. Add per-style teacher masks, confidence weighting, or curriculum for
-   canonical emotions and extra styles, because treating all CommonVoice
-   teacher rows equally appears to preserve geometry without forcing target
-   class recovery.
-2. Compare prototype-only versus hybrid teacher targets inside the same
-   continuous style-space objective, because hard-label prototype supervision
-   improved coverage/novelty but worsened WER/MOS.
-3. Diagnose whether the hybrid/style-distillation failure is driven by tiny rare canonical
-   counts (`anger=4`, `fear=4` after speaker-first mixing), pseudo-label noise,
-   or style-space supervision being too weakly calibrated to steer the decoder.
-4. Keep `mixed_teacher_threshold_balanced` as the current best overall
+1. Build a per-style diagnostic/probe report before the next training run:
+   compare teacher mean targets, student encoder means, generated emotion
+   predictions, novelty gain, and collapse flags by style and speaker.
+2. Test a curriculum that protects labeled CREMA-D/Expresso style axes before
+   introducing CommonVoice teacher geometry, because latent target masking by
+   itself moves novelty without moving emotion2vec recall.
+3. Consider a decoder-aware or generated-audio style objective if diagnostics
+   show latent alignment is not visible to the emotion classifier.
+4. Compare prototype-only versus hybrid teacher targets inside the same
+   continuous style-space objective only after diagnostics confirm which
+   teacher geometry is failing.
+5. Keep `mixed_teacher_threshold_balanced` as the current best overall
    mixed-data teacher reference, while treating
    `mixed_teacher_hybrid_style_distill_balanced` as the best hybrid
    novelty/naturalness tradeoff.
-5. Revisit rare-class supply after per-style style-space calibration is tested,
-   because the global scalar sweep shows teacher geometry alone is not enough.
+6. Revisit rare-class supply after diagnostics, because `anger=4` and `fear=4`
+   accepted CommonVoice rows are probably too small for weighting alone to fix.

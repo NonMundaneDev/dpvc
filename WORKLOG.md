@@ -1277,10 +1277,116 @@ Interpretation:
 - The bottleneck is probably not "teacher loss too weak" globally; it is more likely per-style imbalance, noisy teacher geometry for canonical emotions, or a decoder/latent mismatch that needs class-specific masks, confidence weighting, or curriculum
 
 Future upgrade to preserve:
-- `[NOW]` Add per-style teacher masks or style-specific loss weights so rare canonical emotions (`anger`, `fear`, `happy`, `sad`) are not trained with the same scalar pressure as high-supply or extra-style rows
-- `[NOW]` Add teacher-confidence weighting to the continuous style loss so low-confidence CommonVoice pseudo-style rows contribute less than high-confidence rows
+- `[DONE]` Add per-style teacher masks or style-specific loss weights so rare canonical emotions (`anger`, `fear`, `happy`, `sad`) are not trained with the same scalar pressure as high-supply or extra-style rows; the target-masked follow-up is logged in section 0.26 and did not recover recall
+- `[DONE]` Add teacher-confidence weighting to the continuous style loss so low-confidence CommonVoice pseudo-style rows contribute less than high-confidence rows; the first confidence-weighted target-mask run is logged in section 0.26
 - `[SOON]` Test a curriculum that starts with protected true-label reconstruction/style loss, then introduces continuous CommonVoice teacher geometry after the labeled style axes are stable
 - `[SOON]` Compare prototype-only continuous targets against hybrid continuous targets, because the scalar hybrid sweep shows teacher geometry is useful for novelty but not sufficient for recall
+
+---
+
+### 0.26 Target-Dimension Style-Teacher Mask Follow-Up (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Added target-dimension style-teacher loss support to mixed-data training:
+  - `--style-teacher-target-mode {all_dims,target_dim}`
+  - `--style-teacher-require-label`
+  - `--style-teacher-style-weights`
+  - `--style-teacher-confidence-power`
+- Extended `dpvc/utils.py` so the frozen teacher loss can be applied only to
+  the accepted style dimension for each row, with optional row weights and
+  pseudo-label confidence scaling.
+- Added the deterministic inference condition
+  `mixed_teacher_hybrid_style_distill_targetmask_balanced`.
+- Trained the first target-masked / per-style-weighted / confidence-weighted
+  style-distillation checkpoint from the fixed hybrid artifact:
+  - `embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt`
+  - `embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_targetmask_balanced.pt`
+- Evaluated the matched 110-row, 11-speaker corpus:
+  - `output/mixed_teacher_hybrid_style_distill_targetmask_balanced_eval/`
+  - `results/eval_emotion_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv`
+  - `results/eval_novelty_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv`
+  - `results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv`
+  - `results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv`
+  - regenerated `results/eval_mixed_teacher_summary.csv`
+  - regenerated `results/eval_mixed_teacher_collapse.csv`
+
+Training command:
+
+```bash
+python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_targetmask_balanced.pt \
+    --schedule static_balanced \
+    --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --style-teacher-weight 0.25 \
+    --style-teacher-datasets CommonVoice \
+    --style-teacher-dims 0-8 \
+    --style-teacher-target-mode target_dim \
+    --style-teacher-require-label \
+    --style-teacher-style-weights anger=4.0,fear=4.0,happy=2.0,disgust=2.0,sad=1.5,neutral=0.25,confused=1.0,enunciated=1.0,whisper=1.0 \
+    --style-teacher-confidence-power 0.5
+```
+
+Validation:
+
+- `Validation`: Python compile checks passed for the changed training,
+  utility, and inference scripts.
+- `Validation`: The new training flags appear in
+  `examples/openvoice_train_vae_mixed.py --help`.
+- `Validation`: A two-epoch smoke run verified positive teacher loss with
+  `target_dim`, accepted-label masking, style row weights, and confidence
+  scaling on the real hybrid artifact.
+- `Validation`: The full checkpoint trained with `267/1325` active teacher
+  rows, target mode `target_dim`, row-weight mean `1.705`, min `0.250`, max
+  `4.000`.
+- `Validation`: Deterministic inference wrote the expected 110-row manifest;
+  the only warning was the known short-audio watermark warning for
+  `male_2_cremad_1051`.
+- `Validation`: Emotion, novelty, WER, and MOS CSVs were regenerated and
+  summarized into the mixed-teacher summary/collapse tables.
+- `Validation`: The comparison explicitly answers whether per-style target
+  masks and confidence weighting recover recall.
+
+Top-line comparison:
+
+| Condition | Recall | Novelty gain vs baseline | Mean WER | Mean MOS delta | Identity collapse | Style collapse | Mixed collapse | Files with any collapse | Takeaway |
+|-----------|--------|--------------------------|----------|----------------|-------------------|----------------|----------------|-------------------------|----------|
+| `mixed_teacher_threshold_balanced` | `18.2%` | `0.0785` | `0.0829` | `-0.1012` | `62` | `53` | `49` | `66` | Best overall mixed-data teacher reference |
+| `mixed_teacher_hybrid_style_distill_balanced` | `16.7%` | `0.0861` | `0.0938` | `-0.1072` | `58` | `55` | `50` | `63` | Best global style-distillation novelty/MOS tradeoff |
+| `mixed_teacher_hybrid_style_distill_targetmask_balanced` | `16.7%` | `0.0852` | `0.1062` | `-0.1181` | `60` | `54` | `51` | `63` | Target masks and confidence weighting do not recover recall and slightly worsen WER/MOS |
+| `mixed_teacher_hybrid_style_distill_w050_balanced` | `16.7%` | `0.0840` | `0.0821` | `-0.1196` | `56` | `55` | `48` | `63` | Higher global teacher weight improves WER/collapse but not recall or MOS |
+
+Interpretation:
+
+- Target-dimension teacher masking does **not** break the neutral recall basin;
+  recall remains `16.7%`, again entirely from neutral.
+- The run preserves much of the style-distillation novelty signal (`0.0852`),
+  especially for `confused` and `whisper`, but it does not improve classifier
+  target alignment.
+- Compared with global `0.25` style distillation, target masking slightly
+  lowers novelty (`0.0852` vs `0.0861`) and worsens mean WER / MOS delta
+  (`0.1062` / `-0.1181` vs `0.0938` / `-0.1072`).
+- The failure is now narrower: the issue is not simply global teacher-loss
+  strength, and it is not solved by only supervising the accepted style
+  dimension. The likely gap is decoder-aware style alignment, pseudo-label
+  quality, rare-class supply, or curriculum timing.
+
+Future upgrade to preserve:
+
+- `[NOW]` Add a per-style diagnostic/probe report before the next training run:
+  compare teacher mean targets, student encoder means, generated emotion
+  predictions, novelty gain, and collapse flags by style and speaker so the
+  next objective is aimed at the actual failing axes rather than guessed.
+- `[NOW]` Test a curriculum that first protects labeled CREMA-D/Expresso style
+  axes, then introduces CommonVoice teacher geometry after the decoder has a
+  stable target-emotion map.
+- `[SOON]` Add a decoder-aware style objective or generated-audio
+  teacher/proxy signal if latent teacher alignment keeps moving novelty without
+  moving emotion2vec recall.
+- `[SOON]` Compare prototype-only continuous targets against hybrid continuous
+  targets only after the diagnostic confirms whether the current hybrid teacher
+  geometry is the source of the neutral-basin failure.
 
 ---
 
