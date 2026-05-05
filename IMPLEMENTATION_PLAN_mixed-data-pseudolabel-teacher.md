@@ -35,10 +35,27 @@ The first inference-side calibration follow-up adds a quality-balanced profile:
 - MOS delta `-0.2081`
 - files with any collapse `20`
 
+The decoder-prototype training family is now evaluated as a cautionary
+baseline:
+- `mixed_teacher_cvrare_decoder_proto_labeled_warmup`
+- recall `42.4%`
+- novelty `0.3008`
+- mean styled WER `0.2863`
+- files with any collapse `27`
+
+The lower-weight follow-up:
+- `mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup`
+- recall `42.4%`
+- novelty `0.3032`
+- mean styled WER `0.2782`
+- files with any collapse `26`
+
 That answers the first version of the branch question positively: better rare
 pseudo-label supply can move recall well above `18.2%`. The unresolved problem
 is learning the recall/quality tradeoff directly instead of depending on
-manual per-style inference calibration.
+manual per-style inference calibration. The simple decoder-prototype weight
+family did not solve that problem, so the next move is generated-audio failure
+mining / calibration rather than another scalar prototype-weight sweep.
 
 So the next highest-value branch is a **decoder-aware or generated-audio style
 objective** that preserves the expanded rare-supply recall gain while repairing
@@ -566,14 +583,15 @@ Real local validation completed so far:
 
 Immediate next execution steps on this branch:
 
-1. Treat the first decoder-prototype pilot and its guarded readout as
-   implemented cautionary baselines for decoder-aware training: the unguarded
-   run reaches `42.4%` recall and `0.3008` novelty gain, and the guarded run
-   improves WER/MOS to `0.2592` / `-0.1787`, but neither beats the expanded
-   rare-supply `sad/enunciated` guard on recall, WER, and collapse.
-2. Design the safer follow-up objective: lower decoder-prototype weights,
-   style-specific prototype subsets, or offline generated-audio calibration
-   from emotion2vec / WER / MOS feedback.
+1. Treat the decoder-prototype pilot family as implemented cautionary
+   baselines for decoder-aware training: the unguarded run reaches `42.4%`
+   recall and `0.3008` novelty gain, the guarded run improves WER/MOS to
+   `0.2592` / `-0.1787`, and the lower-weight `0.005` run raises novelty to
+   `0.3032`, but none beats the expanded rare-supply `sad/enunciated` guard on
+   recall/WER/collapse.
+2. Build the generated-audio failure-mining artifact that joins manifest rows
+   with emotion2vec predictions, WER, MOS, novelty, and collapse labels, then
+   use it to choose style-specific or true-labeled-only target supervision.
 3. Use
    `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest
    checked-in controllability/novelty reference (`47.0%` recall, `0.2995`
@@ -628,3 +646,7 @@ Expanded rare-supply gate status:
   checkpoint improves WER/MOS (`0.2592`, `-0.1787`) but leaves recall at
   `42.4%` and increases files with any collapse to `28`, so inference
   calibration repairs only part of the decoder-prototype failure.
+- Lowering the decoder-prototype final weight to `0.005` still leaves recall at
+  `42.4%`; novelty rises to `0.3032` and any-collapse falls to `26`, but WER
+  remains worse than the current reference (`0.2782` vs `0.2348`). Weight-only
+  decoded-prototype calibration is therefore not enough.

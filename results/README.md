@@ -285,6 +285,11 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `eval_wer_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.csv` | `0.2592` mean styled WER | [`examples/eval_wer.py`](../examples/eval_wer.py) | FINDINGS Finding 32 |
 | `eval_mos_mixed_teacher_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.csv` | `-0.1787` MOS delta | [`examples/eval_mos.py`](../examples/eval_mos.py) | FINDINGS Finding 32 |
 | `listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html` | browser listening review | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 32 |
+| `eval_emotion_mixed_teacher_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.csv` | `42.4%` recall | [`examples/eval_emotion.py`](../examples/eval_emotion.py) | FINDINGS Finding 32 |
+| `eval_novelty_mixed_teacher_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.csv` | `0.3032` novelty gain | [`examples/eval_novelty.py`](../examples/eval_novelty.py) | FINDINGS Finding 32 |
+| `eval_wer_mixed_teacher_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.csv` | `0.2782` mean styled WER | [`examples/eval_wer.py`](../examples/eval_wer.py) | FINDINGS Finding 32 |
+| `eval_mos_mixed_teacher_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.csv` | `-0.2122` MOS delta | [`examples/eval_mos.py`](../examples/eval_mos.py) | FINDINGS Finding 32 |
+| `listening_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.html` | browser listening review | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 32 |
 | `eval_mixed_teacher_cvrare_decoder_proto_summary.md` | decoder-prototype pilot comparison | manual summary from checked-in CSVs | FINDINGS Finding 32 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
@@ -297,8 +302,11 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
   The first decoder-prototype training pilot implements that direction, and
   its own `sad/enunciated` guarded readout improves WER/MOS, but neither beats
   the expanded rare-supply `sad/enunciated` inference guard. Treat both
-  decoder-prototype readouts as cautionary baselines for safer
-  generated-audio-calibrated objectives rather than as new references.
+  decoder-prototype readouts as cautionary baselines for generated-audio
+  failure mining / teacher-calibrated objectives rather than as new
+  references. The lower-weight `0.005` decoder-prototype variant keeps recall
+  at `42.4%` and WER at `0.2782`, so weight-only prototype calibration is not
+  the next best move.
 
 Non-Trump style-strength sweep from 2026-05-03:
 

@@ -19,6 +19,7 @@ expanded rare-supply checkpoint.
 | `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `2` | `18` | `1` | `1` | `20` |
 | `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `42.4%` | `0.3008` | `0.2863` | `-0.2148` | `4` | `22` | `1` | `0` | `27` |
 | `mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard` | `42.4%` | `0.2718` | `0.2592` | `-0.1787` | `4` | `23` | `2` | `1` | `28` |
+| `mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup` | `42.4%` | `0.3032` | `0.2782` | `-0.2122` | `3` | `22` | `1` | `0` | `26` |
 
 ## Decoder-Prototype Command
 
@@ -44,12 +45,37 @@ expanded rare-supply checkpoint.
     --decoder-prototype-control-mode target_only
 ```
 
+## Lower-Weight Decoder-Prototype Command
+
+```bash
+.venv/bin/python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.pt \
+    --init-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt \
+    --epochs 1000 \
+    --schedule labeled_warmup \
+    --schedule-epochs 1000 \
+    --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --style-teacher-weight 0.0 \
+    --style-teacher-weight-final 0.25 \
+    --style-teacher-datasets CommonVoice \
+    --style-teacher-dims 0-8 \
+    --decoder-prototype-weight 0.0 \
+    --decoder-prototype-weight-final 0.005 \
+    --decoder-prototype-datasets CommonVoice \
+    --decoder-prototype-source true \
+    --decoder-prototype-strength 5.0 \
+    --decoder-prototype-style-strengths sad=3.5,enunciated=2.5,confused=4.0 \
+    --decoder-prototype-control-mode target_only
+```
+
 ## Listening
 
 Open the checked-in listening report:
 
 - `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`
 - `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html`
+- `results/listening_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.html`
 
 For comparison, the current quality-balanced reference remains:
 
@@ -62,5 +88,7 @@ checkpoint is not a new best model. The unguarded pilot preserves high novelty
 and improves recall over the original `combined` baseline, while the guarded
 readout improves WER/MOS. Neither readout beats the current expanded
 rare-supply `sad/enunciated` guard on the recall/WER/collapse Pareto point. The
-next training-side objective should be safer and more directly calibrated
-against generated audio, not only decoded embedding prototypes.
+lower-weight `0.005` pilot improves novelty and slightly reduces collapse
+versus the `0.02` pilot, but it still does not recover recall or WER. The next
+training-side objective should be more directly calibrated against generated
+audio, not another simple decoded-embedding prototype weight sweep.
