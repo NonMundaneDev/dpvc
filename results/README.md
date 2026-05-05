@@ -183,7 +183,8 @@ Mixed-data pseudolabel teacher follow-up from 2026-05-04/2026-05-05:
   - `mixed_teacher_hybrid_style_distill_balanced` shows that continuous style-space distillation preserves the hybrid novelty gain and improves MOS/collapse versus hard hybrid labels, but recall remains fixed at `16.7%`
   - the global style-teacher weight sweep shows that weights `0.10`, `0.25`, and `0.50` all remain fixed at `16.7%` recall; `0.50` improves WER and identity/mixed collapse, while `0.25` remains the better novelty/MOS tradeoff
   - `mixed_teacher_hybrid_style_distill_targetmask_balanced` shows that target-dimension masks, per-style row weights, and confidence scaling also remain fixed at `16.7%` recall while slightly worsening WER/MOS versus global `0.25` style distillation
-  - the next mixed-data branch should focus on per-style diagnostics, labeled-first curriculum, or decoder-aware style objectives, not more schedule variants, hard pseudo-label arbitration, scalar teacher-weight sweeps, or another latent-only mask/weight variant
+  - `results/eval_mixed_teacher_style_diagnostics_targetmask.md` localizes the target-mask failure: canonical emotion pseudo-labels often lack teacher target-dim dominance, `anger` and `fear` have only `4` active rows each, and `sad` can align latently while still decoding to neutral-classified audio
+  - the next mixed-data branch should focus on labeled-first curriculum, rare-class supply, or decoder-aware style objectives, not more schedule variants, hard pseudo-label arbitration, scalar teacher-weight sweeps, or another latent-only mask/weight variant
 
 Non-Trump style-strength sweep from 2026-05-03:
 

@@ -1231,6 +1231,14 @@ python examples/eval_wer.py     --input output/mixed_teacher_hybrid_style_distil
 python examples/eval_mos.py     --input output/mixed_teacher_hybrid_style_distill_targetmask_balanced_eval --out results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_targetmask_balanced.csv
 
 python scripts/summarize_mixed_teacher_results.py
+
+python scripts/analyze_mixed_teacher_style_diagnostics.py \
+    --mixed-artifact embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt \
+    --teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --student-checkpoint embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_targetmask_balanced.pt \
+    --condition mixed_teacher_hybrid_style_distill_targetmask_balanced \
+    --out-csv results/eval_mixed_teacher_style_diagnostics_targetmask.csv \
+    --out-md results/eval_mixed_teacher_style_diagnostics_targetmask.md
 ```
 
 Current checked-in result summary for the first teacher-family run:
@@ -1259,7 +1267,8 @@ Interpretation:
 - `mixed_teacher_hybrid_style_distill_balanced` shows that continuous teacher geometry is a better use of the hybrid teacher than hard row labels for novelty/naturalness/collapse, but it still does not recover recall
 - the style-teacher weight sweep shows that global scalar calibration is not enough: weights `0.10`, `0.25`, and `0.50` all stay at `16.7%` recall
 - `mixed_teacher_hybrid_style_distill_targetmask_balanced` shows that per-style target masks, row weights, and confidence scaling also do not recover recall and slightly worsen WER/MOS versus global `0.25` style distillation
-- the next mixed-data branch should move to diagnostics, labeled-first curriculum, or decoder-aware style objectives rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, or latent-only mask/weight variants
+- `eval_mixed_teacher_style_diagnostics_targetmask.md` shows why: canonical pseudo labels often do not have teacher target-dim dominance, `anger` and `fear` have only `4` active teacher rows each, and `sad` can align latently while still decoding to neutral-classified audio
+- the next mixed-data branch should move to labeled-first curriculum, rare-class supply, or decoder-aware style objectives rather than repeating more hard pseudo-label arbitration, scalar teacher-weight sweeps, or latent-only mask/weight variants
 
 Non-Trump style-strength sweep:
 

@@ -453,16 +453,29 @@ Real local validation completed so far:
     remain at `16.7%` recall; the run preserves similar novelty (`0.0852`) but
     worsens WER/MOS versus the best global `0.25` style-distillation condition
 
+- per-style diagnostic follow-up
+  - added `scripts/analyze_mixed_teacher_style_diagnostics.py`
+  - joined label supply, teacher encoder means, student encoder means,
+    generated-output metrics, and collapse flags for
+    `mixed_teacher_hybrid_style_distill_targetmask_balanced`
+  - real diagnostic artifacts now on disk:
+    - `results/eval_mixed_teacher_style_diagnostics_targetmask.csv`
+    - `results/eval_mixed_teacher_style_diagnostics_targetmask.md`
+  - result: canonical emotion pseudo labels often do not have teacher target-dim
+    dominance (`anger=0.0000`, `fear=0.0000`, `happy=0.1000` teacher top1
+    rates), rare classes are undersupplied (`anger=4`, `fear=4` active rows),
+    and `sad` can align latently while still decoding to neutral-classified
+    audio
+
 Immediate next execution steps on this branch:
 
-1. Build a per-style diagnostic/probe report before the next training run:
-   compare teacher mean targets, student encoder means, generated emotion
-   predictions, novelty gain, and collapse flags by style and speaker.
-2. Test a curriculum that protects labeled CREMA-D/Expresso style axes before
+1. Test a curriculum that protects labeled CREMA-D/Expresso style axes before
    introducing CommonVoice teacher geometry, because latent target masking by
    itself moves novelty without moving emotion2vec recall.
-3. Consider a decoder-aware or generated-audio style objective if diagnostics
+2. Consider a decoder-aware or generated-audio style objective if diagnostics
    show latent alignment is not visible to the emotion classifier.
+3. Rebuild or rebalance rare canonical CommonVoice pseudo-label supply before
+   more weighting experiments; `anger=4` and `fear=4` are not enough.
 4. Compare prototype-only versus hybrid teacher targets inside the same
    continuous style-space objective only after diagnostics confirm which
    teacher geometry is failing.
@@ -470,5 +483,3 @@ Immediate next execution steps on this branch:
    mixed-data teacher reference, while treating
    `mixed_teacher_hybrid_style_distill_balanced` as the best hybrid
    novelty/naturalness tradeoff.
-6. Revisit rare-class supply after diagnostics, because `anger=4` and `fear=4`
-   accepted CommonVoice rows are probably too small for weighting alone to fix.

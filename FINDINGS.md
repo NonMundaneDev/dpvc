@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-05 (Finding 27 from the target-dimension style-teacher mask follow-up added; descriptive experiment titles now replace internal pass numbering)
+**Last updated:** 2026-05-05 (Finding 28 from the per-style mixed-teacher diagnostic added; descriptive experiment titles now replace internal pass numbering)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -1817,6 +1817,76 @@ mixed-data intelligibility gains?
 
 ---
 
+## Finding 28: Per-Style Diagnostics Localize the Mixed-Teacher Failure
+
+### Methodology
+
+After Finding 27, the next risk was wasting another training turn on a guessed
+objective. We therefore built a per-style diagnostic that joins:
+
+- CommonVoice / CREMA-D / Expresso label supply in the mixed artifact,
+- frozen combined-VAE teacher encoder means,
+- target-masked mixed-teacher student encoder means,
+- generated-output emotion2vec, novelty, WER, and MOS metrics,
+- and collapse taxonomy rows.
+
+The diagnostic was run on:
+
+- mixed artifact:
+  `embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt`
+- frozen teacher:
+  `embeddings/openvoice_vae_combined.pt`
+- student checkpoint:
+  `embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_targetmask_balanced.pt`
+- condition:
+  `mixed_teacher_hybrid_style_distill_targetmask_balanced`
+
+Artifacts:
+
+- `scripts/analyze_mixed_teacher_style_diagnostics.py`
+- `results/eval_mixed_teacher_style_diagnostics_targetmask.csv`
+- `results/eval_mixed_teacher_style_diagnostics_targetmask.md`
+
+The most important latent diagnostic is **target top1 rate**: among the selected
+style dims `0-8`, how often is the intended target style dimension the largest
+teacher or student encoder-mean dimension for rows accepted as that style?
+
+### Results
+
+| Style | Active CommonVoice teacher rows | Teacher target top1 | Student target top1 | Recall | Neutral prediction rate | Novelty gain | Takeaway |
+|-------|---------------------------------|---------------------|---------------------|--------|-------------------------|--------------|----------|
+| anger | 4 | 0.0000 | 0.0000 | 0.0000 | 1.0000 | -0.0020 | Too few rows and no teacher target dominance |
+| disgust | 27 | 0.2222 | 0.0741 | 0.0000 | 1.0000 | 0.0251 | Teacher target usually not dominant |
+| fear | 4 | 0.0000 | 0.0000 | 0.0000 | 1.0000 | -0.0036 | Too few rows and no teacher target dominance |
+| happy | 30 | 0.1000 | 0.2333 | 0.0000 | 0.9091 | -0.0011 | More rows, but weak teacher target geometry |
+| sad | 78 | 0.2692 | 0.7308 | 0.0000 | 1.0000 | 0.0232 | Student can align latent sad, but generated audio still reads neutral |
+| confused | 22 | 1.0000 | 0.6818 | n/a | 0.8182 | 0.2411 | Latent geometry moves novelty, but this is not an emotion2vec recall class |
+| whisper | 9 | 1.0000 | 0.7778 | n/a | 0.3636 | 0.3714 | Strong latent novelty, but high WER/MOS cost remains |
+
+### Interpretation
+
+1. **The canonical-emotion failure is visible before decoding.** For `anger`, `fear`, `happy`, `disgust`, `neutral`, and `sad`, the frozen teacher's accepted CommonVoice rows often do not rank the intended style dimension first. That means the pseudo-style labels and teacher latent geometry are not well aligned for the styles that matter to emotion2vec recall.
+2. **Rare-class weighting cannot solve absent supply.** `anger` and `fear` each have only `4` active CommonVoice teacher rows. Upweighting four rows does not create a stable class manifold.
+3. **Sad exposes a decoder/output-level mismatch.** The student makes the sad target dimension top-ranked for `73.1%` of active sad rows, but generated sad samples are still classified as neutral. This shows that latent target dominance can be insufficient if the decoder maps that latent state to classifier-neutral audio.
+4. **Extra styles behave differently from canonical emotions.** `confused` and `whisper` have coherent latent teacher geometry and strong novelty gains, but they are not counted by emotion2vec recall and they carry quality/intelligibility costs.
+5. **The next intervention should be curriculum or decoder-aware, not another latent-only mask.** We now know where the failure sits: weak canonical teacher geometry, rare pseudo-label supply, and latent-to-output mismatch.
+
+### Implication
+
+Finding 28 sharpens the mixed-data story substantially. The issue is not merely
+that CommonVoice is broad and weakly labeled. The accepted pseudo labels for
+canonical emotions often do not correspond to a teacher latent state where the
+intended style dimension is dominant, and even when the student can align a
+latent dimension (`sad`), the generated audio can remain classifier-neutral.
+
+For the paper, this supports a more rigorous negative-result narrative: broad
+speaker coverage plus pseudo labels improves some stability/quality axes, but
+recovering controllable emotion needs stronger class-specific supply and an
+objective that is aware of generated audio behavior, not just latent teacher
+agreement.
+
+---
+
 ## April 30 Meeting Alignment with Joe
 
 The April 30 call with Joe did **not** change the scientific findings above,
@@ -1872,8 +1942,8 @@ to:
 
 That experiment, its first quality follow-up, the first non-Trump
   style-strength sweep, the teacher-family branch, the first style-space
-  distillation follow-up, the global style-teacher weight sweep, and the
-  target-dimension mask follow-up are now
+  distillation follow-up, the global style-teacher weight sweep, the
+  target-dimension mask follow-up, and the first per-style diagnostic are now
 complete, so the current follow-up framing is:
 
 - "**move from latent-only mixed-data teacher calibration to diagnostics,
@@ -1895,7 +1965,7 @@ complete, so the current follow-up framing is:
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** The first mixed-data pseudolabel mix experiment compared a static balanced mix, a CommonVoice-heavy warmup, and a labeled-data-heavy finish. None improved recall beyond `16.7%`. The mixed-data pseudo-label quality follow-up then added per-class thresholds/caps and stronger labeled-data protection. That finally moved the best mixed-data condition to `18.2%` recall (`mixed_quality_labeled_guarded`), but at the cost of worse WER (`0.0978`) and weaker novelty (`0.0764`) than the best original mixed schedules. The first mixed-data pseudo-label teacher family then showed that cleaner use of the current teacher can match that `18.2%` recall while improving WER, MOS, novelty, and identity collapse somewhat (`mixed_teacher_threshold_balanced`), but still does not break the recall ceiling. A same-teacher mapped-score agreement rule raised novelty slightly but lost recall/WER/MOS, while a combined-VAE latent prototype teacher restored `18.2%` recall and improved novelty to `0.0854` but gave back WER/MOS. A strong guarded prototype variant improved WER relative to the unguarded prototype but erased the novelty/collapse advantage and raised identity collapse. A hybrid emotion2vec + prototype extra-style teacher then produced the best mixed-teacher novelty so far (`0.0860`) and slightly fewer files with any collapse, but recall fell back to `16.7%` and MOS worsened. Continuous style-space distillation preserved the hybrid novelty gain (`0.0861`) and improved MOS/collapse versus hard hybrid labels, but recall still stayed at `16.7%`. A global teacher-weight sweep (`0.10`, `0.25`, `0.50`) also stayed at `16.7%`, showing that scalar teacher-loss calibration is not enough. A target-dimension mask / per-style weighting / confidence-scaling follow-up also stayed at `16.7%` and worsened WER/MOS versus the best global style-distillation setting, showing that latent target masking alone is not enough either. The next open question is therefore narrower: can diagnostics, labeled-first curriculum, stronger rare-class supply, or decoder-aware generated-audio style objectives move recall without giving back the mixed-data intelligibility gains?
+12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** The first mixed-data pseudolabel mix experiment compared a static balanced mix, a CommonVoice-heavy warmup, and a labeled-data-heavy finish. None improved recall beyond `16.7%`. The mixed-data pseudo-label quality follow-up then added per-class thresholds/caps and stronger labeled-data protection. That finally moved the best mixed-data condition to `18.2%` recall (`mixed_quality_labeled_guarded`), but at the cost of worse WER (`0.0978`) and weaker novelty (`0.0764`) than the best original mixed schedules. The first mixed-data pseudo-label teacher family then showed that cleaner use of the current teacher can match that `18.2%` recall while improving WER, MOS, novelty, and identity collapse somewhat (`mixed_teacher_threshold_balanced`), but still does not break the recall ceiling. A same-teacher mapped-score agreement rule raised novelty slightly but lost recall/WER/MOS, while a combined-VAE latent prototype teacher restored `18.2%` recall and improved novelty to `0.0854` but gave back WER/MOS. A strong guarded prototype variant improved WER relative to the unguarded prototype but erased the novelty/collapse advantage and raised identity collapse. A hybrid emotion2vec + prototype extra-style teacher then produced the best mixed-teacher novelty so far (`0.0860`) and slightly fewer files with any collapse, but recall fell back to `16.7%` and MOS worsened. Continuous style-space distillation preserved the hybrid novelty gain (`0.0861`) and improved MOS/collapse versus hard hybrid labels, but recall still stayed at `16.7%`. A global teacher-weight sweep (`0.10`, `0.25`, `0.50`) also stayed at `16.7%`, showing that scalar teacher-loss calibration is not enough. A target-dimension mask / per-style weighting / confidence-scaling follow-up also stayed at `16.7%` and worsened WER/MOS versus the best global style-distillation setting, showing that latent target masking alone is not enough either. The per-style diagnostic then localized the problem: canonical pseudo-labeled CommonVoice rows often do not make the intended teacher style dim top-ranked, `anger` and `fear` have only `4` active rows each, and `sad` can align latently while still decoding to neutral-classified audio. The next open question is therefore narrower: can labeled-first curriculum, stronger rare-class supply, or decoder-aware generated-audio style objectives move recall without giving back the mixed-data intelligibility gains?
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---
@@ -1944,6 +2014,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 25. Continuous style-space distillation on the hybrid teacher artifact (`mixed_teacher_hybrid_style_distill_balanced`) preserves the best mixed-teacher novelty (`0.0861`) and improves MOS/collapse versus hard hybrid labels (`-0.1072` MOS delta, `58` identity collapse, `63` files with any collapse), but recall remains `16.7%`. The next step is calibrated teacher supervision, not just replacing hard pseudo labels with one continuous loss.
 26. A global style-teacher weight sweep (`0.10`, `0.25`, `0.50`) does not recover recall: all three style-distillation weights stay at `16.7%`. Higher weight (`0.50`) improves mean WER (`0.0821`) and identity/mixed collapse (`56` / `48`) but loses novelty/MOS, while `0.25` remains the best style-distillation novelty/MOS tradeoff. The next step should be per-style masks, confidence weighting, or curriculum, not another scalar teacher-weight tweak.
 27. Target-dimension style-teacher masking with per-style row weights and confidence scaling still does not recover recall: `mixed_teacher_hybrid_style_distill_targetmask_balanced` remains at `16.7%`, preserves only a similar novelty signal (`0.0852`), and worsens WER/MOS versus the best global style-distillation setting. The next step should be diagnostic or curriculum-driven, not another latent-only mask/weight variant.
+28. Per-style diagnostics localize the mixed-teacher failure: canonical emotion pseudo-labels often do not correspond to teacher-latent target dominance (`anger=0.0000`, `fear=0.0000`, `happy=0.1000` teacher target-top1 rates), rare classes have too little accepted supply (`anger=4`, `fear=4`), and `sad` shows that latent alignment can still decode to neutral-classified audio. The next step should be labeled-first curriculum, stronger rare-class supply, or decoder-aware style supervision.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion

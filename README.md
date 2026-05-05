@@ -21,8 +21,8 @@ Current experiment focus on that branch:
 
 Immediate next queue:
 
-1. add per-style diagnostics before the next training run, because target-dimension masks, per-style row weights, and confidence scaling also stayed at `16.7%` recall
-2. test a labeled-first curriculum or decoder-aware style objective instead of another latent-only mask/weight variant
+1. test a labeled-first curriculum or decoder-aware style objective, because the per-style diagnostic shows canonical teacher geometry and decoded emotion are misaligned
+2. rebuild or rebalance rare canonical CommonVoice pseudo-label supply before more weighting experiments, especially `anger` and `fear`
 3. keep `mixed_teacher_threshold_balanced` as the best overall mixed-data teacher reference, while treating `mixed_teacher_hybrid_style_distill_balanced` as the strongest novelty/naturalness tradeoff result from the hybrid teacher line
 4. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
@@ -34,7 +34,7 @@ The dedicated next-step plans live in:
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
-- **[`FINDINGS.md`](FINDINGS.md)** — 27 paper-facing findings with methodology and per-row takeaways.
+- **[`FINDINGS.md`](FINDINGS.md)** — 28 paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 
@@ -92,8 +92,14 @@ novelty/MOS tradeoff. The target-dimension style-teacher mask follow-up
 class-specific teacher loss, per-style row weights, and confidence scaling; it
 also stayed at `16.7%` recall, preserved similar novelty (`0.0852`), and
 worsened WER/MOS versus global `0.25` style distillation. The next useful step
-is diagnostic or curriculum-driven rather than another latent-only mask/weight
-variant. The
+was diagnostic or curriculum-driven rather than another latent-only mask/weight
+variant. The per-style diagnostic then localized the failure: canonical
+CommonVoice pseudo labels often do not make the intended frozen-teacher style
+dimension dominant (`anger=0.0000`, `fear=0.0000`, `happy=0.1000` teacher
+target-top1 rates), `anger` and `fear` have only `4` active teacher rows each,
+and `sad` can align latently while still decoding to neutral-classified audio.
+That makes the next training move a labeled-first curriculum or decoder-aware
+style objective, not another latent-only calibration variant. The
 non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
 the safest default, `7.5` is a useful stronger option for styles like
 `whisper` and `confused`, and `10.0-12.5` look more like high-novelty
@@ -107,6 +113,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/eval_mixed_data_summary_pass9.csv`](results/eval_mixed_data_summary_pass9.csv)
 - [`results/eval_mixed_quality_summary.csv`](results/eval_mixed_quality_summary.csv)
 - [`results/eval_mixed_teacher_summary.csv`](results/eval_mixed_teacher_summary.csv)
+- [`results/eval_mixed_teacher_style_diagnostics_targetmask.md`](results/eval_mixed_teacher_style_diagnostics_targetmask.md)
 - [`results/eval_nontrump_strength_sweep.csv`](results/eval_nontrump_strength_sweep.csv)
 - [`results/eval_nontrump_strength_sweep_summary.md`](results/eval_nontrump_strength_sweep_summary.md)
 

@@ -1374,10 +1374,11 @@ Interpretation:
 
 Future upgrade to preserve:
 
-- `[NOW]` Add a per-style diagnostic/probe report before the next training run:
+- `[DONE]` Add a per-style diagnostic/probe report before the next training run:
   compare teacher mean targets, student encoder means, generated emotion
   predictions, novelty gain, and collapse flags by style and speaker so the
-  next objective is aimed at the actual failing axes rather than guessed.
+  next objective is aimed at the actual failing axes rather than guessed; first
+  report logged in section 0.27.
 - `[NOW]` Test a curriculum that first protects labeled CREMA-D/Expresso style
   axes, then introduces CommonVoice teacher geometry after the decoder has a
   stable target-emotion map.
@@ -1387,6 +1388,83 @@ Future upgrade to preserve:
 - `[SOON]` Compare prototype-only continuous targets against hybrid continuous
   targets only after the diagnostic confirms whether the current hybrid teacher
   geometry is the source of the neutral-basin failure.
+
+---
+
+### 0.27 Per-Style Teacher Diagnostic Report (2026-05-05, branch `research/controllable-vae`)
+
+What changed:
+
+- Added `scripts/analyze_mixed_teacher_style_diagnostics.py`, a reusable
+  diagnostic tool that joins:
+  - mixed-artifact label supply by style
+  - frozen teacher encoder means
+  - trained student encoder means
+  - generated-output emotion / novelty / WER / MOS metrics
+  - collapse taxonomy rows
+- Ran the diagnostic on:
+  - mixed artifact:
+    `embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt`
+  - frozen teacher:
+    `embeddings/openvoice_vae_combined.pt`
+  - student:
+    `embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_targetmask_balanced.pt`
+  - evaluated condition:
+    `mixed_teacher_hybrid_style_distill_targetmask_balanced`
+- New diagnostic artifacts:
+  - `results/eval_mixed_teacher_style_diagnostics_targetmask.csv`
+  - `results/eval_mixed_teacher_style_diagnostics_targetmask.md`
+
+Validation:
+
+- `Validation`: The diagnostic script compiles and exposes a documented CLI.
+- `Validation`: The script successfully encoded all `1325` mixed-artifact rows
+  through both teacher and student VAEs.
+- `Validation`: The report joins the existing four-metric target-mask CSVs and
+  collapse taxonomy without regenerating audio.
+- `Validation`: The diagnostic explains why the target-mask run failed before
+  we spend another turn on a guessed objective.
+
+Key diagnostic table:
+
+| Style | Active teacher rows | Teacher target top1 | Student target top1 | Recall | Neutral prediction rate | Novelty | WER | MOS delta | Takeaway |
+|-------|---------------------|---------------------|---------------------|--------|-------------------------|---------|-----|-----------|----------|
+| `anger` | `4` | `0.0000` | `0.0000` | `0.0000` | `1.0000` | `-0.0020` | `0.0325` | `-0.0011` | Rare rows and teacher geometry do not support the target axis |
+| `disgust` | `27` | `0.2222` | `0.0741` | `0.0000` | `1.0000` | `0.0251` | `0.0507` | `+0.0110` | Moderate supply, but teacher target is usually not dominant |
+| `fear` | `4` | `0.0000` | `0.0000` | `0.0000` | `1.0000` | `-0.0036` | `0.1071` | `-0.0320` | Same failure as anger: too few rows and no teacher target dominance |
+| `happy` | `30` | `0.1000` | `0.2333` | `0.0000` | `0.9091` | `-0.0011` | `0.2089` | `-0.0210` | More rows, but teacher geometry still does not point cleanly at happy |
+| `sad` | `78` | `0.2692` | `0.7308` | `0.0000` | `1.0000` | `0.0232` | `0.0617` | `-0.0148` | Student can make sad latent top-ranked, but generated audio still reads neutral |
+| `confused` | `22` | `1.0000` | `0.6818` | n/a | `0.8182` | `0.2411` | `0.0831` | `-0.3444` | Extra-style geometry moves novelty, but hurts MOS and has no emotion2vec recall label |
+| `whisper` | `9` | `1.0000` | `0.7778` | n/a | `0.3636` | `0.3714` | `0.1838` | `-0.5144` | Strong latent novelty, but quality/intelligibility cost remains high |
+
+Interpretation:
+
+- The target-mask failure is now localized. For canonical emotions that should
+  count in emotion2vec recall, the frozen teacher's accepted CommonVoice rows
+  usually do **not** rank the intended style dimension first.
+- `anger` and `fear` have only `4` active CommonVoice teacher rows each, so row
+  weighting cannot substitute for real data supply.
+- `happy` has more rows (`30`) but still has weak teacher-target dominance
+  (`0.1000`), which explains why per-style weighting did not help.
+- `sad` is especially informative: the student makes the sad dim top-ranked for
+  many active rows (`0.7308`), but generated audio is still classified as
+  neutral. That points to a decoder/output-level mismatch, not just latent
+  underfitting.
+- `confused` and `whisper` show the opposite pattern: latent teacher geometry
+  is coherent and novelty moves strongly, but these are not emotion2vec-scored
+  recall classes and they carry WER/MOS costs.
+
+Future upgrade to preserve:
+
+- `[NOW]` Build a labeled-first curriculum condition that keeps CREMA-D/Expresso
+  style axes stable before adding CommonVoice teacher geometry.
+- `[NOW]` Add an output-level or decoder-aware style objective/proxy for
+  canonical emotions, because latent alignment alone can still generate
+  neutral-classified audio.
+- `[SOON]` Rebuild CommonVoice pseudo-label supply for rare canonical classes
+  before more weighting experiments; `anger=4` and `fear=4` are not enough.
+- `[SOON]` Add this diagnostic to future mixed-teacher reports so every new
+  condition reports both latent target dominance and generated metric behavior.
 
 ---
 
