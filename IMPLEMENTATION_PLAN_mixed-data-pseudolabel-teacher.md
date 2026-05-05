@@ -391,19 +391,44 @@ Real local validation completed so far:
     collapse, but recall falls back to `16.7%` and MOS worsens, so it is a
     useful tradeoff/negative rather than the new overall reference
 
+- style-space distillation follow-up
+  - extended `examples/openvoice_train_vae_mixed.py` and `dpvc/utils.py` so
+    mixed-data training can use a frozen VAE teacher as a continuous style-space
+    target on selected encoder mean dimensions
+  - real style-distillation artifacts now on disk:
+    - `embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_balanced.pt`
+    - `output/mixed_teacher_hybrid_style_distill_balanced_eval/`
+    - `results/eval_emotion_mixed_teacher_mixed_teacher_hybrid_style_distill_balanced.csv`
+    - `results/eval_novelty_mixed_teacher_mixed_teacher_hybrid_style_distill_balanced.csv`
+    - `results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_balanced.csv`
+    - `results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_balanced.csv`
+  - tested command shape:
+    - `--style-teacher-checkpoint embeddings/openvoice_vae_combined.pt`
+    - `--style-teacher-weight 0.25`
+    - `--style-teacher-datasets CommonVoice`
+    - `--style-teacher-dims 0-8`
+  - result: `mixed_teacher_hybrid_style_distill_balanced` preserves the hard
+    hybrid novelty gain (`0.0861`), improves MOS delta (`-0.1072` vs.
+    `-0.1190`), and reduces collapse counts, but recall remains `16.7%`
+
 Immediate next execution steps on this branch:
 
-1. Design a richer style-space auxiliary/prototype-distillation objective for
-   mixed-data training, because the hybrid hard-label teacher proved prototype
-   geometry can buy novelty but still does not recover recall or MOS.
-2. Add per-style curriculum or weighting for `confused`, `enunciated`, and
-   `whisper`, because prototype extra-style labels are consistently useful but
-   need better protection from WER/MOS degradation.
-3. Diagnose whether the hybrid failure is driven by tiny rare canonical
+1. Sweep style-teacher objective strength (`0.10`, `0.50`, and optionally a
+   ramp) because the first `0.25` continuous teacher loss improved
+   novelty/naturalness/collapse but did not move recall.
+2. Add per-style teacher masks, confidence weighting, or curriculum for
+   canonical emotions and extra styles, because treating all CommonVoice
+   teacher rows equally appears to preserve geometry without forcing target
+   class recovery.
+3. Compare prototype-only versus hybrid teacher targets inside the same
+   continuous style-space objective, because hard-label prototype supervision
+   improved coverage/novelty but worsened WER/MOS.
+4. Diagnose whether the hybrid/style-distillation failure is driven by tiny rare canonical
    counts (`anger=4`, `fear=4` after speaker-first mixing), pseudo-label noise,
-   or hard row-label supervision being too weak to steer the decoder.
-4. Keep `mixed_teacher_threshold_balanced` as the current best overall
+   or style-space supervision being too weakly calibrated to steer the decoder.
+5. Keep `mixed_teacher_threshold_balanced` as the current best overall
    mixed-data teacher reference, while treating
-   `mixed_teacher_hybrid_extra_balanced` as the best novelty/coverage tradeoff.
-5. Revisit rare-class supply after the style-space objective is drafted,
-   because the hybrid result shows hard-label row supply alone is not enough.
+   `mixed_teacher_hybrid_style_distill_balanced` as the best hybrid
+   novelty/naturalness tradeoff.
+6. Revisit rare-class supply after style-space calibration is tested, because
+   the first continuous objective shows teacher geometry alone is not enough.

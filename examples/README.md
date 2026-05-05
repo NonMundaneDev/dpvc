@@ -1138,6 +1138,28 @@ python examples/eval_novelty.py --manifest output/mixed_teacher_hybrid_extra_bal
 python examples/eval_wer.py     --input output/mixed_teacher_hybrid_extra_balanced_eval --out results/eval_wer_mixed_teacher_mixed_teacher_hybrid_extra_balanced.csv
 python examples/eval_mos.py     --input output/mixed_teacher_hybrid_extra_balanced_eval --out results/eval_mos_mixed_teacher_mixed_teacher_hybrid_extra_balanced.csv
 
+python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_balanced.pt \
+    --schedule static_balanced \
+    --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \
+    --style-teacher-weight 0.25 \
+    --style-teacher-datasets CommonVoice \
+    --style-teacher-dims 0-8
+
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_hybrid_style_distill_balanced \
+    --out output/mixed_teacher_hybrid_style_distill_balanced_eval \
+    --style-strength 5.0 \
+    --noise-level 0.0 \
+    --seed 42
+
+python examples/eval_emotion.py --input output/mixed_teacher_hybrid_style_distill_balanced_eval --out results/eval_emotion_mixed_teacher_mixed_teacher_hybrid_style_distill_balanced.csv
+python examples/eval_novelty.py --manifest output/mixed_teacher_hybrid_style_distill_balanced_eval/generation_manifest.jsonl --out results/eval_novelty_mixed_teacher_mixed_teacher_hybrid_style_distill_balanced.csv
+python examples/eval_wer.py     --input output/mixed_teacher_hybrid_style_distill_balanced_eval --out results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_balanced.csv
+python examples/eval_mos.py     --input output/mixed_teacher_hybrid_style_distill_balanced_eval --out results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_balanced.csv
+
 python scripts/summarize_mixed_teacher_results.py
 ```
 
@@ -1150,6 +1172,7 @@ Current checked-in result summary for the first teacher-family run:
 - `mixed_teacher_prototype_balanced`: recall `18.2%`, novelty `0.0854`, mean WER `0.1009`, MOS delta `-0.1086`
 - `mixed_teacher_prototype_guarded`: recall `18.2%`, novelty `0.0761`, mean WER `0.0920`, MOS delta `-0.1081`
 - `mixed_teacher_hybrid_extra_balanced`: recall `16.7%`, novelty `0.0860`, mean WER `0.0931`, MOS delta `-0.1190`
+- `mixed_teacher_hybrid_style_distill_balanced`: recall `16.7%`, novelty `0.0861`, mean WER `0.0938`, MOS delta `-0.1072`
 
 Interpretation:
 
@@ -1160,7 +1183,8 @@ Interpretation:
 - `mixed_teacher_prototype_balanced` shows that a genuinely different latent-prototype teacher can broaden pseudo-label coverage and improve novelty, but still needs guardrails because WER/MOS worsen versus `mixed_teacher_threshold_balanced`
 - `mixed_teacher_prototype_guarded` shows that strong guardrails improve WER versus the unguarded prototype but erase the prototype novelty/collapse advantage
 - `mixed_teacher_hybrid_extra_balanced` shows that prototype+emotion2vec hard-label mixing can produce the best mixed-teacher novelty so far, but recall falls back to `16.7%` and MOS worsens
-- the next mixed-data branch should move toward style-space auxiliary supervision, prototype distillation, or a per-style curriculum rather than repeating more hard pseudo-label arbitration
+- `mixed_teacher_hybrid_style_distill_balanced` shows that continuous teacher geometry is a better use of the hybrid teacher than hard row labels for novelty/naturalness/collapse, but it still does not recover recall
+- the next mixed-data branch should calibrate style-space auxiliary supervision with per-style masks, confidence weighting, and curriculum rather than repeating more hard pseudo-label arbitration
 
 Non-Trump style-strength sweep:
 

@@ -260,7 +260,11 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                             label_weight=1.0, schedule="static_balanced",
                             schedule_epochs=0, style_label_row_weights=None,
                             static_masses=None, schedule_start_masses=None,
-                            schedule_end_masses=None):
+                            schedule_end_masses=None,
+                            style_teacher_model=None,
+                            style_teacher_weight=0.0,
+                            style_teacher_dims=None,
+                            style_teacher_mask=None):
     BATCH_SIZE = min(256, len(embeddings))
     trainable_params = [param for param in model.parameters() if param.requires_grad]
     if not trainable_params:
@@ -280,6 +284,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
     print(f"  recon weight : {recon_weight}")
     print(f"  kl weight    : {kl_weight}")
     print(f"  label weight : {label_weight}")
+    print(f"  teacher-style weight: {style_teacher_weight}")
     print(f"  schedule     : {schedule}")
     if schedule != "static_balanced":
         print(f"  schedule epochs: {schedule_epochs}")
@@ -294,6 +299,14 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
         print(f"  dataset rows {dataset:11s}: {dataset_counts[dataset]}")
     labeled_rows = int((style_label_mask.view(-1) > 0).sum().item())
     print(f"  labeled rows : {labeled_rows}/{len(embeddings)}")
+    if style_teacher_model is not None and style_teacher_weight > 0:
+        teacher_rows = (
+            int((style_teacher_mask.view(-1) > 0).sum().item())
+            if style_teacher_mask is not None
+            else len(embeddings)
+        )
+        print(f"  teacher-style dims: {list(style_teacher_dims or [])}")
+        print(f"  teacher-style rows: {teacher_rows}/{len(embeddings)}")
 
     print(f"Training mixed-data autoencoder for {epochs} epochs...")
     for epoch in tqdm(range(epochs)):
@@ -326,6 +339,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
             reconstructed = model(embeddings_b)
             recon_loss = ((embeddings_b - reconstructed)**2).sum()
             kl_loss = model.kl
+            teacher_style_loss = embeddings_b.new_tensor(0.0)
 
             batch_mask = style_label_mask[batch_indexes].view(-1) > 0
             if batch_mask.any():
@@ -340,10 +354,35 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
             else:
                 label_loss = embeddings_b.new_tensor(0.0)
 
+            if (
+                style_teacher_model is not None
+                and style_teacher_weight > 0
+                and style_teacher_dims
+            ):
+                if style_teacher_mask is not None:
+                    teacher_batch_mask = style_teacher_mask[batch_indexes].view(-1) > 0
+                else:
+                    teacher_batch_mask = torch.ones(
+                        embeddings_b.shape[0],
+                        dtype=torch.bool,
+                        device=embeddings_b.device,
+                    )
+                if teacher_batch_mask.any():
+                    with torch.no_grad():
+                        teacher_mu, _ = style_teacher_model.encoder(embeddings_b)
+                    teacher_style_loss = (
+                        (
+                            _slice_or_none(model.last_mu[teacher_batch_mask], style_teacher_dims)
+                            - _slice_or_none(teacher_mu[teacher_batch_mask], style_teacher_dims)
+                        )
+                        ** 2
+                    ).sum()
+
             loss = (
                 recon_weight * recon_loss
                 + kl_weight * kl_loss
                 + label_weight * label_loss
+                + style_teacher_weight * teacher_style_loss
             )
             loss.backward()
             optimizer.step()
@@ -357,6 +396,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                 f"recon: {recon_loss.item():.2f} (w={recon_weight:.2f})  "
                 f"kl: {kl_loss.item():.2f} (w={kl_weight:.2f})  "
                 f"label: {label_loss.item():.2f} (w={label_weight:.2f})  "
+                f"teacher: {teacher_style_loss.item():.2f} (w={style_teacher_weight:.2f})  "
                 f"mix: {masses_str}"
             )
 

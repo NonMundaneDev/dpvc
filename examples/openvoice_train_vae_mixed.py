@@ -76,6 +76,35 @@ def parse_dataset_masses(raw):
     return masses
 
 
+def parse_dim_list(raw):
+    dims = []
+    for item in raw.split(','):
+        item = item.strip()
+        if not item:
+            continue
+        if '-' in item:
+            start, end = item.split('-', 1)
+            dims.extend(range(int(start), int(end) + 1))
+        else:
+            dims.append(int(item))
+    return sorted(set(dims))
+
+
+def build_dataset_mask(source_datasets, raw, device):
+    raw = (raw or "").strip()
+    if not raw or raw.lower() == "all":
+        return torch.ones(len(source_datasets), dtype=torch.float32, device=device)
+    selected = {item.strip() for item in raw.split(',') if item.strip()}
+    unknown = selected - set(DATASET_NAMES)
+    if unknown:
+        raise ValueError(f"Unknown dataset(s) in teacher dataset filter: {sorted(unknown)}")
+    return torch.tensor(
+        [1.0 if str(dataset) in selected else 0.0 for dataset in source_datasets],
+        dtype=torch.float32,
+        device=device,
+    )
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
@@ -146,6 +175,33 @@ def main():
         help="Style-label loss weight (default: 1.0)",
     )
     ap.add_argument(
+        "--style-teacher-checkpoint",
+        default=None,
+        help=(
+            "Optional frozen VAE checkpoint for continuous style-space "
+            "distillation during mixed-data training"
+        ),
+    )
+    ap.add_argument(
+        "--style-teacher-weight",
+        type=float,
+        default=0.0,
+        help="Continuous style-teacher loss weight (default: 0.0)",
+    )
+    ap.add_argument(
+        "--style-teacher-dims",
+        default="0-8",
+        help="Comma-separated or ranged style dims for teacher loss (default: 0-8)",
+    )
+    ap.add_argument(
+        "--style-teacher-datasets",
+        default="CommonVoice",
+        help=(
+            "Datasets receiving the teacher-style loss, comma-separated or 'all' "
+            "(default: CommonVoice)"
+        ),
+    )
+    ap.add_argument(
         "--schedule",
         default="static_balanced",
         choices=DEFAULT_SCHEDULES,
@@ -176,12 +232,20 @@ def main():
 
     if args.freeze_encoder and args.freeze_decoder:
         ap.error("Refusing to freeze both encoder and decoder; nothing would remain trainable")
+    if args.style_teacher_weight > 0 and not args.style_teacher_checkpoint:
+        ap.error("--style-teacher-weight > 0 requires --style-teacher-checkpoint")
 
     dpvc.utils.set_seed(args.seed)
     device = resolve_device()
     static_masses = parse_dataset_masses(args.static_masses)
     schedule_start_masses = parse_dataset_masses(args.schedule_start_masses)
     schedule_end_masses = parse_dataset_masses(args.schedule_end_masses)
+    style_teacher_dims = parse_dim_list(args.style_teacher_dims)
+    if any(dim < 0 or dim >= args.latent_dims for dim in style_teacher_dims):
+        raise ValueError(
+            f"Style-teacher dims must be within [0, {args.latent_dims - 1}], "
+            f"got {style_teacher_dims}"
+        )
 
     data = torch.load(args.embeddings, weights_only=False)
     embeddings = data['data'].to(device).squeeze()
@@ -215,6 +279,13 @@ def main():
     source_datasets = data.get('source_dataset')
     if source_datasets is None:
         raise ValueError("Mixed artifact is missing source_dataset")
+    style_teacher_mask = None
+    if args.style_teacher_checkpoint and args.style_teacher_weight > 0:
+        style_teacher_mask = build_dataset_mask(
+            source_datasets,
+            args.style_teacher_datasets,
+            device,
+        )
 
     labeled_rows = int((style_label_mask.view(-1) > 0).sum().item())
     print(f"Supported styles: {supported_styles}")
@@ -242,6 +313,21 @@ def main():
         set_module_requires_grad(model.encoder, trainable=False)
     if args.freeze_decoder:
         set_module_requires_grad(model.decoder, trainable=False)
+
+    style_teacher_model = None
+    if args.style_teacher_checkpoint and args.style_teacher_weight > 0:
+        print(f"Loading style teacher checkpoint from {args.style_teacher_checkpoint}")
+        style_teacher_model = dpvc.VariationalAutoencoder(
+            latent_dims=args.latent_dims,
+            input_dim=embeddings.shape[-1],
+        ).to(device)
+        style_teacher_model.load_state_dict(
+            torch.load(args.style_teacher_checkpoint, weights_only=True, map_location=device)
+        )
+        style_teacher_model.eval()
+        set_module_requires_grad(style_teacher_model, trainable=False)
+        print(f"Style teacher dims: {style_teacher_dims}")
+        print(f"Style teacher datasets: {args.style_teacher_datasets}")
 
     trainable_params, total_params = format_param_count(model)
     print(f"Freeze encoder: {args.freeze_encoder}")
@@ -276,6 +362,10 @@ def main():
         static_masses=static_masses,
         schedule_start_masses=schedule_start_masses,
         schedule_end_masses=schedule_end_masses,
+        style_teacher_model=style_teacher_model,
+        style_teacher_weight=args.style_teacher_weight,
+        style_teacher_dims=style_teacher_dims,
+        style_teacher_mask=style_teacher_mask,
     )
 
     torch.save(model.state_dict(), args.output)

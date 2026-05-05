@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-04 (Finding 24 from the hybrid emotion2vec + prototype teacher follow-up added; descriptive experiment titles now replace internal pass numbering)
+**Last updated:** 2026-05-05 (Finding 25 from the mixed-data style-space distillation follow-up added; descriptive experiment titles now replace internal pass numbering)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -1585,6 +1585,70 @@ represented only as hard pseudo labels.
 
 ---
 
+## Finding 25: Continuous Style-Space Distillation Improves the Hybrid Teacher Tradeoff, But Still Does Not Recover Recall
+
+### Methodology
+
+Finding 24 showed that the hybrid emotion2vec + latent-prototype teacher
+contains useful geometry: it produced the best mixed-teacher novelty so far,
+but using that teacher only as selected hard pseudo labels hurt recall and
+naturalness.
+
+This follow-up changed the supervision mechanism rather than the data artifact:
+
+- kept the hybrid mixed artifact fixed:
+  `embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt`
+- trained a mixed VAE with a frozen style teacher:
+  `embeddings/openvoice_vae_combined.pt`
+- added a continuous MSE loss on VAE encoder mean dimensions `0-8`
+- applied that loss only to `CommonVoice` rows in the mixed artifact
+- used teacher weight `0.25` with the same `static_balanced` schedule
+
+This produced:
+
+- `embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_balanced.pt`
+- `output/mixed_teacher_hybrid_style_distill_balanced_eval/`
+- the full emotion / novelty / WER / MOS result bundle under
+  `results/eval_*_mixed_teacher_mixed_teacher_hybrid_style_distill_balanced.csv`
+- regenerated summary and collapse tables:
+  `results/eval_mixed_teacher_summary.csv` and
+  `results/eval_mixed_teacher_collapse.csv`
+
+### Results
+
+Top-line comparison:
+
+| Condition | Recall | Novelty gain vs baseline | Mean WER | Mean MOS delta | Identity collapse | Style collapse | Mixed collapse | Files with any collapse | Takeaway |
+|-----------|--------|--------------------------|----------|----------------|-------------------|----------------|----------------|-------------------------|----------|
+| `mixed_teacher_threshold_balanced` | 18.2% | 0.0785 | 0.0829 | -0.1012 | 62 | 53 | 49 | 66 | Best overall mixed-data teacher reference |
+| `mixed_teacher_prototype_balanced` | 18.2% | 0.0854 | 0.1009 | -0.1086 | 60 | 54 | 48 | 66 | Best prototype novelty/coverage before hybrid, but worse WER/MOS |
+| `mixed_teacher_hybrid_extra_balanced` | 16.7% | 0.0860 | 0.0931 | -0.1190 | 61 | 55 | 51 | 65 | Best hard-label hybrid novelty, but recall/MOS are worse |
+| `mixed_teacher_hybrid_style_distill_balanced` | 16.7% | 0.0861 | 0.0938 | -0.1072 | 58 | 55 | 50 | 63 | Preserves hybrid novelty and improves MOS/collapse, but recall remains stuck |
+
+### Interpretation
+
+1. **Continuous style-space supervision is better than hard hybrid labels for naturalness/collapse.** MOS delta improves from `-0.1190` to `-0.1072`, identity collapse falls from `61` to `58`, mixed collapse falls from `51` to `50`, and files with any collapse fall from `65` to `63`.
+2. **It preserves the hybrid teacher's novelty benefit.** Mean novelty gain is `0.0861`, narrowly above the hard hybrid result (`0.0860`) and above the prototype-only result (`0.0854`).
+3. **It still does not recover target emotion recall.** Recall remains `16.7%`, so the neutral-basin failure is not caused only by hard-label arbitration.
+4. **The threshold teacher remains the best overall mixed-data reference.** `mixed_teacher_threshold_balanced` still wins on recall (`18.2%`), WER (`0.0829`), and MOS delta (`-0.1012`).
+5. **The next bottleneck is calibration, not just objective form.** A continuous teacher target helps the tradeoff, but it likely needs per-style masks, confidence weighting, teacher-weight sweeps, or a curriculum to push rare canonical emotions out of the neutral basin.
+
+### Implication
+
+Finding 25 strengthens the paper story in two ways:
+
+- it shows the project did not stop at hard pseudo labels; we tested a richer
+  latent-space supervision mechanism,
+- and it narrows the remaining research gap to calibrated teacher supervision
+  or architecture/curriculum changes, rather than simply "try better labels."
+
+For the paper, this is a useful tradeoff finding: the broad CommonVoice speaker
+prior can be combined with continuous teacher geometry to preserve novelty and
+naturalness better than hard hybrid labels, but current mixed-data supervision
+still cannot match the combined-only controllability reference.
+
+---
+
 ## April 30 Meeting Alignment with Joe
 
 The April 30 call with Joe did **not** change the scientific findings above,
@@ -1638,12 +1702,13 @@ to:
 - "**run the first sampled mixed-data experiment with pseudo-labeled CommonVoice
   plus explicit mixture/schedule control**."
 
-That experiment, its first quality follow-up, and the first non-Trump
-style-strength sweep are now complete, so the current follow-up framing is:
+That experiment, its first quality follow-up, the first non-Trump
+style-strength sweep, the teacher-family branch, and the first style-space
+distillation follow-up are now complete, so the current follow-up framing is:
 
-- "**return to the mixed-data supervision problem with a better pseudo-label
-  teacher or class-balanced acceptance strategy, while keeping the new
-  style-strength guidance as a documented inference-side finding**."
+- "**calibrate mixed-data style-space supervision with per-style masks,
+  confidence weighting, or curriculum, while keeping the new style-strength
+  guidance as a documented inference-side finding**."
 
 ---
 
@@ -1660,7 +1725,7 @@ style-strength sweep are now complete, so the current follow-up framing is:
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** The first mixed-data pseudolabel mix experiment compared a static balanced mix, a CommonVoice-heavy warmup, and a labeled-data-heavy finish. None improved recall beyond `16.7%`. The mixed-data pseudo-label quality follow-up then added per-class thresholds/caps and stronger labeled-data protection. That finally moved the best mixed-data condition to `18.2%` recall (`mixed_quality_labeled_guarded`), but at the cost of worse WER (`0.0978`) and weaker novelty (`0.0764`) than the best original mixed schedules. The first mixed-data pseudo-label teacher family then showed that cleaner use of the current teacher can match that `18.2%` recall while improving WER, MOS, novelty, and identity collapse somewhat (`mixed_teacher_threshold_balanced`), but still does not break the recall ceiling. A same-teacher mapped-score agreement rule raised novelty slightly but lost recall/WER/MOS, while a combined-VAE latent prototype teacher restored `18.2%` recall and improved novelty to `0.0854` but gave back WER/MOS. A strong guarded prototype variant improved WER relative to the unguarded prototype but erased the novelty/collapse advantage and raised identity collapse. A hybrid emotion2vec + prototype extra-style teacher then produced the best mixed-teacher novelty so far (`0.0860`) and slightly fewer files with any collapse, but recall fell back to `16.7%` and MOS worsened. The next open question is therefore narrower: can richer style-space supervision, prototype distillation, a per-style curriculum, or an architecture change move recall without giving back the mixed-data intelligibility gains?
+12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** The first mixed-data pseudolabel mix experiment compared a static balanced mix, a CommonVoice-heavy warmup, and a labeled-data-heavy finish. None improved recall beyond `16.7%`. The mixed-data pseudo-label quality follow-up then added per-class thresholds/caps and stronger labeled-data protection. That finally moved the best mixed-data condition to `18.2%` recall (`mixed_quality_labeled_guarded`), but at the cost of worse WER (`0.0978`) and weaker novelty (`0.0764`) than the best original mixed schedules. The first mixed-data pseudo-label teacher family then showed that cleaner use of the current teacher can match that `18.2%` recall while improving WER, MOS, novelty, and identity collapse somewhat (`mixed_teacher_threshold_balanced`), but still does not break the recall ceiling. A same-teacher mapped-score agreement rule raised novelty slightly but lost recall/WER/MOS, while a combined-VAE latent prototype teacher restored `18.2%` recall and improved novelty to `0.0854` but gave back WER/MOS. A strong guarded prototype variant improved WER relative to the unguarded prototype but erased the novelty/collapse advantage and raised identity collapse. A hybrid emotion2vec + prototype extra-style teacher then produced the best mixed-teacher novelty so far (`0.0860`) and slightly fewer files with any collapse, but recall fell back to `16.7%` and MOS worsened. Continuous style-space distillation preserved the hybrid novelty gain (`0.0861`) and improved MOS/collapse versus hard hybrid labels, but recall still stayed at `16.7%`. The next open question is therefore narrower: can calibrated style-space supervision with per-style masks, confidence weighting, curriculum, or an architecture change move recall without giving back the mixed-data intelligibility gains?
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---
@@ -1706,6 +1771,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 22. A combined-VAE latent prototype teacher (`mixed_teacher_prototype_balanced`) gives broader CommonVoice pseudo-label coverage and the best mixed-teacher novelty so far (`0.0854`) while tying the best mixed-data recall (`18.2%`) and slightly reducing identity/mixed collapse. It still gives back WER/MOS versus `mixed_teacher_threshold_balanced`, so it is a promising coverage/novelty teacher but not yet the overall mixed-data reference.
 23. Strong guardrails on the prototype teacher (`mixed_teacher_prototype_guarded`) preserve the `18.2%` recall tie and improve WER versus the unguarded prototype (`0.0920` vs `0.1009`), but erase the prototype novelty advantage (`0.0761` vs `0.0854`) and worsen identity collapse (`71`). The next teacher step should be multi-teacher or intermediate-guarded rather than simply weaker prototype supervision.
 24. A hybrid emotion2vec + latent-prototype teacher (`mixed_teacher_hybrid_extra_balanced`) produces the best mixed-teacher novelty so far (`0.0860`) and slightly lowers files with any collapse (`65`), but recall falls back to `16.7%` and MOS worsens (`-0.1190`). The next mixed-data step should use richer style-space supervision, prototype distillation, or per-style curriculum rather than more hard pseudo-label arbitration.
+25. Continuous style-space distillation on the hybrid teacher artifact (`mixed_teacher_hybrid_style_distill_balanced`) preserves the best mixed-teacher novelty (`0.0861`) and improves MOS/collapse versus hard hybrid labels (`-0.1072` MOS delta, `58` identity collapse, `63` files with any collapse), but recall remains `16.7%`. The next step is calibrated teacher supervision, not just replacing hard pseudo labels with one continuous loss.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion
