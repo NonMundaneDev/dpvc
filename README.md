@@ -17,11 +17,11 @@ Canonical research branch:
 
 Current experiment focus on that branch:
 
-- **mixed-data style-space teacher supervision**
+- **per-style mixed-data style-space supervision**
 
 Immediate next queue:
 
-1. calibrate the new style-space distillation objective with teacher-loss weight sweeps, per-style masks, and a curriculum, because the first continuous teacher run preserved novelty and improved naturalness/collapse but did not recover recall
+1. move from global style-teacher weight calibration to per-style masks, confidence weighting, and curriculum, because weights `0.10`, `0.25`, and `0.50` all stayed at `16.7%` recall
 2. keep `mixed_teacher_threshold_balanced` as the best overall mixed-data teacher reference, while treating `mixed_teacher_hybrid_style_distill_balanced` as the strongest novelty/naturalness tradeoff result from the hybrid teacher line
 3. add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
@@ -33,7 +33,7 @@ The dedicated next-step plans live in:
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
-- **[`FINDINGS.md`](FINDINGS.md)** — 25 paper-facing findings with methodology and per-row takeaways.
+- **[`FINDINGS.md`](FINDINGS.md)** — 26 paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 
@@ -82,9 +82,13 @@ gain (`0.0861`), improves MOS delta versus hard hybrid labels (`-0.1072` vs
 `-0.1190`), and reduces identity / mixed / any-collapse counts (`58` / `50` /
 `63`), but recall remains stuck at `16.7%`. That makes style-space
 distillation a better tradeoff than hard hybrid row labels, but not the
-recall breakthrough. The next useful step is calibrated style-space
-supervision with per-style weighting/curriculum, not more hard row-label
-arbitration. The
+recall breakthrough. The follow-up global weight sweep (`0.10`, `0.25`,
+`0.50`) confirmed that scalar teacher-loss calibration is not enough: all three
+weights remain at `16.7%` recall. Weight `0.50` improves WER (`0.0821`) and
+identity/mixed collapse (`56` / `48`), while `0.25` remains the better
+novelty/MOS tradeoff. The next useful step is per-style style-space
+supervision with masks, confidence weighting, or curriculum, not more hard
+row-label arbitration or another global scalar sweep. The
 non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
 the safest default, `7.5` is a useful stronger option for styles like
 `whisper` and `confused`, and `10.0-12.5` look more like high-novelty

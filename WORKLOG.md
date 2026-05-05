@@ -82,7 +82,8 @@ Priority tags:
 - [x] `[DONE]` Test a guarded prototype-teacher variant with pseudo-confidence scaling, lower pseudo row weight, and stronger true-label protection; `mixed_teacher_prototype_guarded` ties the `18.2%` recall ceiling and improves WER versus the unguarded prototype (`0.0920` vs `0.1009`), but gives back the prototype novelty advantage (`0.0761` vs `0.0854`) and worsens identity/mixed collapse, so it does not replace `mixed_teacher_threshold_balanced`
 - [x] `[DONE]` Compare a prototype+emotion2vec multi-teacher rule; `mixed_teacher_hybrid_extra_balanced` produced the best mixed-teacher novelty so far (`0.0860`) and slightly reduced files with any collapse, but dropped recall to `16.7%` and worsened MOS delta, so it is a tradeoff result rather than the new reference
 - [x] `[DONE]` Move from hard row-label teacher mixing to richer style-space supervision, prototype distillation, or a per-style curriculum; the first continuous style-space distillation run preserved the hybrid novelty gain and improved MOS/collapse modestly, but recall stayed fixed at `16.7%`
-- [ ] `[NOW]` Calibrate the style-space distillation objective with per-style curriculum, teacher-loss weight sweeps, or class-specific masks, because the first continuous teacher loss improved the novelty/naturalness tradeoff but did not recover emotion recall
+- [x] `[DONE]` Calibrate the style-space distillation objective with a first teacher-loss weight sweep; global weights `0.10`, `0.25`, and `0.50` all stayed at `16.7%` recall, so the next move is class-specific masks/curriculum rather than another scalar weight tweak
+- [ ] `[NOW]` Add per-style teacher masks, confidence weighting, or curricula for the style-space loss, because the global teacher-weight sweep changed WER/collapse slightly but did not recover target emotion recall
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
 
@@ -1221,11 +1222,65 @@ Interpretation:
 - The next useful move is not another hard pseudo-label arbitration rule; it is a calibrated style-space objective, likely with per-style weighting/curriculum and teacher-confidence masks
 
 Future upgrade to preserve:
-- `[NOW]` Sweep style-teacher weights (`0.10`, `0.50`, and optionally a ramp) to test whether the current `0.25` weight is underpowered for recall or already at the naturalness/novelty sweet spot
+- `[DONE]` Sweep style-teacher weights (`0.10`, `0.50`, and optionally a ramp) to test whether the current `0.25` weight is underpowered for recall or already at the naturalness/novelty sweet spot; first scalar sweep result logged in section 0.25
 - `[NOW]` Add per-style teacher masks/curricula so canonical emotion styles with weak CommonVoice support are not dominated by neutral/sad teacher geometry
 - `[SOON]` Compare teacher targets from the prototype-only teacher versus the hybrid teacher inside the same continuous style-space loss, because hard-label prototype supervision produced broader coverage but worse WER/MOS
 - `[SOON]` Add teacher-confidence weighting to the style-space loss instead of treating all selected CommonVoice teacher rows equally
 - `[SOON]` Inspect per-style failures for the style-distillation model, especially whether `confused`, `enunciated`, and `whisper` preserve novelty while canonical emotions collapse to neutral
+
+---
+
+### 0.25 Style-Space Distillation Weight Sweep (May 5, branch `research/controllable-vae`)
+
+What changed:
+- Added deterministic inference conditions for two calibrated style-teacher weights:
+  - `mixed_teacher_hybrid_style_distill_w010_balanced`
+  - `mixed_teacher_hybrid_style_distill_w050_balanced`
+- Trained both checkpoints from the same hybrid mixed artifact and schedule as the original `0.25` run:
+  - `embeddings/openvoice_mixed_teacher_hybrid_extra_base.pt`
+  - `embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_w010_balanced.pt`
+  - `embeddings/openvoice_vae_mixed_teacher_hybrid_style_distill_w050_balanced.pt`
+- Generated matched deterministic corpora:
+  - `output/mixed_teacher_hybrid_style_distill_w010_balanced_eval/`
+  - `output/mixed_teacher_hybrid_style_distill_w050_balanced_eval/`
+- Evaluated both with the full metric stack:
+  - `results/eval_emotion_mixed_teacher_mixed_teacher_hybrid_style_distill_w010_balanced.csv`
+  - `results/eval_novelty_mixed_teacher_mixed_teacher_hybrid_style_distill_w010_balanced.csv`
+  - `results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_w010_balanced.csv`
+  - `results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_w010_balanced.csv`
+  - `results/eval_emotion_mixed_teacher_mixed_teacher_hybrid_style_distill_w050_balanced.csv`
+  - `results/eval_novelty_mixed_teacher_mixed_teacher_hybrid_style_distill_w050_balanced.csv`
+  - `results/eval_wer_mixed_teacher_mixed_teacher_hybrid_style_distill_w050_balanced.csv`
+  - `results/eval_mos_mixed_teacher_mixed_teacher_hybrid_style_distill_w050_balanced.csv`
+  - `results/eval_mixed_teacher_summary.csv`
+  - `results/eval_mixed_teacher_collapse.csv`
+
+Validation:
+- `Validation`: Both new checkpoints trained from the fixed hybrid artifact with only `--style-teacher-weight` changed (`0.10` and `0.50`)
+- `Validation`: Both new inference conditions generate the same 110-row, 11-speaker evaluation corpus shape as the existing mixed-teacher conditions
+- `Validation`: Both new conditions have a four-metric CSV bundle and regenerated summary/collapse rows
+- `Validation`: The comparison explicitly answers whether a global style-teacher weight change recovers recall
+
+Top-line comparison:
+
+| Condition | Recall | Novelty gain vs baseline | Mean WER | Mean MOS delta | Identity collapse | Style collapse | Mixed collapse | Files with any collapse | Takeaway |
+|-----------|--------|--------------------------|----------|----------------|-------------------|----------------|----------------|-------------------------|----------|
+| `mixed_teacher_threshold_balanced` | `18.2%` | `0.0785` | `0.0829` | `-0.1012` | `62` | `53` | `49` | `66` | Best overall mixed-data teacher reference |
+| `mixed_teacher_hybrid_style_distill_w010_balanced` | `16.7%` | `0.0854` | `0.0924` | `-0.1161` | `62` | `54` | `51` | `65` | Lower teacher weight preserves novelty but gives back MOS/collapse |
+| `mixed_teacher_hybrid_style_distill_balanced` | `16.7%` | `0.0861` | `0.0938` | `-0.1072` | `58` | `55` | `50` | `63` | Best style-distillation novelty/MOS tradeoff so far |
+| `mixed_teacher_hybrid_style_distill_w050_balanced` | `16.7%` | `0.0840` | `0.0821` | `-0.1196` | `56` | `55` | `48` | `63` | Higher teacher weight improves WER and identity/mixed collapse, but not recall or MOS |
+
+Interpretation:
+- A global teacher-weight sweep does **not** recover target-emotion recall; all three tested weights stay at `16.7%`
+- Weight `0.50` improves mean WER (`0.0821`) and identity/mixed collapse (`56` / `48`), but loses novelty and naturalness relative to the `0.25` run
+- Weight `0.25` remains the best style-distillation tradeoff for novelty and MOS, but it still does not replace `mixed_teacher_threshold_balanced` because recall remains lower
+- The bottleneck is probably not "teacher loss too weak" globally; it is more likely per-style imbalance, noisy teacher geometry for canonical emotions, or a decoder/latent mismatch that needs class-specific masks, confidence weighting, or curriculum
+
+Future upgrade to preserve:
+- `[NOW]` Add per-style teacher masks or style-specific loss weights so rare canonical emotions (`anger`, `fear`, `happy`, `sad`) are not trained with the same scalar pressure as high-supply or extra-style rows
+- `[NOW]` Add teacher-confidence weighting to the continuous style loss so low-confidence CommonVoice pseudo-style rows contribute less than high-confidence rows
+- `[SOON]` Test a curriculum that starts with protected true-label reconstruction/style loss, then introduces continuous CommonVoice teacher geometry after the labeled style axes are stable
+- `[SOON]` Compare prototype-only continuous targets against hybrid continuous targets, because the scalar hybrid sweep shows teacher geometry is useful for novelty but not sufficient for recall
 
 ---
 
