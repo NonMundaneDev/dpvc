@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-06 (Finding 32 adds the decoder-prototype pilot family, generated-audio failure mining, and failure-conditioned target selection)
+**Last updated:** 2026-05-06 (Finding 33 adds the failure-conditioned `anger`/`disgust` style-teacher follow-up)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -2378,7 +2378,8 @@ Per-style canonical recall for the decoder-prototype pilot:
    and `disgust` has `6` clean neutral-collapse targets, while `fear` has
    `0/11` clean targets after content/naturalness/novelty/collapse exclusions.
    Fear remains important, but it should not be used as a positive target until
-   its content/naturalness confound is separated.
+   its content/naturalness confound is separated. Finding 33 tests that
+   `anger`/`disgust` follow-up directly.
 
 ### Implication
 
@@ -2394,7 +2395,9 @@ rows for `anger` / `disgust` / `fear`, and do not use high-WER or very-low-MOS
 rows as direct positive style targets unless the objective explicitly repairs
 content. The first selector applies that rule and recommends an
 `anger`/`disgust` target-dim teacher follow-up, leaving `fear` as a blocked
-diagnostic style for now.
+diagnostic style for now. Finding 33 shows that this clean target selection is
+necessary but not sufficient: target-dim teacher pressure still needs an
+explicit anti-neutral or generated-audio-calibrated output signal.
 
 Recommended listening artifacts:
 
@@ -2407,12 +2410,116 @@ Recommended listening artifacts:
 
 ---
 
+## Finding 33: Failure-Conditioned Target-Dim Supervision Is Not Enough to Escape Neutral Collapse
+
+**Branch:** `research/controllable-vae`
+
+**Question.** Once generated-audio failure mining identifies clean
+`anger`/`disgust` rows that miss the target emotion by collapsing to neutral,
+can a conservative target-dim style-teacher objective repair those styles
+without sacrificing the expanded rare-supply guard's WER/MOS tradeoff?
+
+### Setup
+
+Checkpoint trained:
+
+- `embeddings/openvoice_vae_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.pt`
+
+Training recipe:
+
+- Init checkpoint:
+  `embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt`
+- Mixed-data embeddings:
+  `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt`
+- Style teacher:
+  `embeddings/openvoice_vae_combined.pt`
+- Schedule: labeled warmup for `1000` epochs
+- Style-teacher ramp: `0.0 -> 0.25`
+- Target mode: `target_dim`
+- Required labels: enabled
+- Positive style weights:
+  `anger=3`, `disgust=3`, all other styles `0`
+- Teacher-style rows: `129/14195`
+
+Generated-audio evaluation:
+
+- Deterministic 110-row source panel
+- `style_strength=5.0`
+- `noise_level=0.0`
+- seed `42`
+- Listening report:
+  `results/listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html`
+
+### Results
+
+| Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Content collapse | Style-to-neutral collapse | Identity collapse | Mixed collapse | Files with any collapse | Takeaway |
+|-----------|--------|--------------|-----------------|-----------|------------------|---------------------------|-------------------|----------------|-------------------------|----------|
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `2` | `18` | `1` | `1` | `20` | Current quality-balanced reference |
+| `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` | `39.4%` | `0.2960` | `0.2651` | `-0.2072` | `1` | `26` | `1` | `0` | `28` | Better content-collapse count, but worse recall and neutral collapse |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `42.4%` | `0.3008` | `0.2863` | `-0.2148` | `4` | `22` | `1` | `0` | `27` | Decoder-prototype cautionary baseline |
+| `mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup` | `42.4%` | `0.3032` | `0.2782` | `-0.2122` | `3` | `22` | `1` | `0` | `26` | Lower-weight prototype still misses the reference |
+
+Per-style recall for the failure-targeted follow-up:
+
+| Style | Recall |
+|-------|--------|
+| `anger` | `2/11` |
+| `disgust` | `0/11` |
+| `fear` | `1/11` |
+| `happy` | `5/11` |
+| `neutral` | `9/11` |
+| `sad` | `9/11` |
+
+Failure mining after adding the targeted condition:
+
+| Condition | Styled rows | Any failure | Emotion misses | High WER | Low MOS delta | Low novelty | Mean failure score |
+|-----------|-------------|-------------|----------------|----------|---------------|-------------|--------------------|
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `99` | `58` | `35` | `31` | `14` | `1` | `1.9899` |
+| `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` | `99` | `67` | `40` | `33` | `16` | `1` | `2.2929` |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `99` | `65` | `38` | `37` | `17` | `1` | `2.2929` |
+| `mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup` | `99` | `66` | `38` | `36` | `17` | `1` | `2.2525` |
+
+### Interpretation
+
+1. **The selector found real failures, but the loss was too indirect.**
+   `anger` improved relative to the current guard (`2/11` vs `1/11`), but
+   `disgust` fell to `0/11`, and overall recall dropped from `47.0%` to
+   `39.4%`.
+2. **The targeted objective mainly reduced content collapse, not style
+   collapse.** Content collapse improved from `2` to `1`, but
+   style-to-neutral collapse worsened from `18` to `26`.
+3. **The current `sad/enunciated` guard remains the quality-balanced
+   reference.** The targeted run nearly ties MOS delta (`-0.2072` vs
+   `-0.2081`) but loses on recall, WER, and collapse.
+4. **Clean positive rows are not enough if the decoded audio can still sound
+   neutral.** The next objective needs an anti-neutral or generated-audio
+   calibrated signal that penalizes observed neutral-classified output, rather
+   than only pulling latent target dimensions.
+
+### Implication
+
+Finding 33 narrows the research gap again. The problem is no longer just
+"which rows should we target?" The selector answered that. The new problem is
+"what training signal forces the decoder output to leave the neutral basin
+while preserving WER/MOS?" The next best branch should test an explicit
+anti-neutral / generated-audio-calibrated objective, and it should keep the
+current `sad/enunciated` guard as the reference until a training-side method
+beats it.
+
+Recommended listening artifacts:
+
+- `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
+- `results/listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html`
+- `results/eval_mixed_teacher_generated_audio_failure_mining.md`
+
+---
+
 ## Open Questions
 
 1. **What are the formal privacy guarantees?** We need to compute epsilon for each noise level and report privacy-utility curves.
 2. ~~**Does style control generalize across source speakers?**~~ → **Answered in Finding 6.** Brightness generalizes (7/9 styles); F0 does not. Some speaker-style combinations collapse.
 3. ~~**How do we evaluate emotion controllability?**~~ → **Answered in Finding 7.** emotion2vec Recall Rate + emo_sim (per EmoVoice) is the primary metric. Recall is 20% — training gap identified.
-4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Findings 30-32: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain, and the `sad/enunciated` strength guard keeps `47.0%` recall while improving WER/MOS. The decoder-prototype pilots preserve novelty but do not beat that guard, and generated-audio failure mining localizes the remaining hard styles to `disgust`, `fear`, and `anger`. The first failure-conditioned selector marks `anger`/`disgust` ready for targeted follow-up and blocks `fear` as confounded.
+4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Findings 30-33: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain, and the `sad/enunciated` strength guard keeps `47.0%` recall while improving WER/MOS. The decoder-prototype pilots preserve novelty but do not beat that guard, generated-audio failure mining localizes the remaining hard styles to `disgust`, `fear`, and `anger`, and the first failure-conditioned `anger`/`disgust` target-dim follow-up confirms that clean target selection alone does not escape neutral collapse.
 5. **Can we train age/gender and emotion knobs simultaneously?** CommonVoice has age/gender, CREMA-D has emotion. Can a single VAE learn all at once when each training stage only labels a subset? Unknown — Joe flagged this as an open research question.
 6. **Can an independent speaker verifier confirm the novelty signal?** Finding 11 uses OpenVoice's native embedding space. The next step is an external speaker encoder / EER-style check.
 7. **Can an adversary re-identify speakers from F0 alone?** If so, embedding-only DP is insufficient — motivates joint protection.
@@ -2420,7 +2527,7 @@ Recommended listening artifacts:
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Finding 32 shows that the first naive decoder-prototype objective does not learn that repair (`42.4%` recall, `0.2863` WER, `27` collapse files), the same guard repairs only WER/MOS (`0.2592`, `-0.1787`) while recall stays `42.4%`, and lowering the prototype weight to `0.005` still stays at `42.4%` recall with worse WER (`0.2782`). The remaining mixed-data question is now narrower: can a failure-conditioned `anger`/`disgust` objective improve those two clean neutral-collapse styles without sacrificing the current guard's WER/MOS?
+12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Finding 32 shows that the first naive decoder-prototype objective does not learn that repair (`42.4%` recall, `0.2863` WER, `27` collapse files), the same guard repairs only WER/MOS (`0.2592`, `-0.1787`) while recall stays `42.4%`, and lowering the prototype weight to `0.005` still stays at `42.4%` recall with worse WER (`0.2782`). Finding 33 shows that a failure-conditioned `anger`/`disgust` target-dim teacher objective is also insufficient: recall drops to `39.4%` and style-to-neutral collapse rises to `26`. The remaining mixed-data question is now narrower: can an explicit anti-neutral or generated-audio-calibrated output objective escape the neutral basin while preserving the current guard's WER/MOS?
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---
@@ -2474,6 +2581,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 30. Expanded rare-class CommonVoice supply is the first mixed-teacher intervention to produce a large recall jump: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` emotion recall and `0.2995` novelty gain after preserving `anger=50` and `fear=50` selected CommonVoice pseudo rows. The limitation is quality/content cost (`0.2751` mean styled WER, `-0.2640` MOS delta), so the next paper-critical step is decoder-aware or generated-audio style supervision that keeps the recall gain while repairing WER/MOS.
 31. Per-style strength calibration shows that part of the expanded rare-supply quality cost is repairable at inference time: `cvrare_sad_enunc_guard` keeps `47.0%` recall, keeps novelty above the combined baseline (`0.2726` vs `0.2599`), improves WER from `0.2751` to `0.2348`, improves MOS delta from `-0.2640` to `-0.2081`, and lowers files with any collapse from `25` to `20`. The result is useful for demos and paper tables, but should be presented as inference-side calibration rather than the final training method.
 32. The decoder-prototype objective family is a cautionary baseline, not the new reference: the first run reaches `42.4%` recall and `0.3008` novelty but worsens WER/collapse, the guarded readout improves WER/MOS without recovering recall, and the lower-weight `0.005` run still stays at `42.4%` recall with `0.2782` WER. Generated-audio failure mining confirms the current guard still has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`; the failure-conditioned selector narrows the next positive target objective to `anger`/`disgust` while blocking `fear`.
+33. Failure-conditioned target-dim style-teacher supervision is a useful negative result: `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` keeps novelty high (`0.2960`) and slightly reduces content collapse (`1`), but recall drops to `39.4%` and style-to-neutral collapse rises to `26`. Clean target selection alone does not force decoded audio out of the neutral basin, so the next objective needs an explicit anti-neutral or generated-audio-calibrated output signal.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion

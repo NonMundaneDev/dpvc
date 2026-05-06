@@ -291,8 +291,13 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `eval_mos_mixed_teacher_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.csv` | `-0.2122` MOS delta | [`examples/eval_mos.py`](../examples/eval_mos.py) | FINDINGS Finding 32 |
 | `listening_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.html` | browser listening review | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 32 |
 | `eval_mixed_teacher_cvrare_decoder_proto_summary.md` | decoder-prototype pilot comparison | manual summary from checked-in CSVs | FINDINGS Finding 32 |
-| `eval_mixed_teacher_generated_audio_failure_mining.csv` | `396` styled rows joined across four conditions | [`scripts/analyze_generated_audio_failures.py`](../scripts/analyze_generated_audio_failures.py) | FINDINGS Finding 32 |
-| `eval_mixed_teacher_generated_audio_failure_mining.md` | row-level failure readout | [`scripts/analyze_generated_audio_failures.py`](../scripts/analyze_generated_audio_failures.py) | FINDINGS Finding 32 |
+| `eval_emotion_mixed_teacher_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.csv` | `39.4%` recall | [`examples/eval_emotion.py`](../examples/eval_emotion.py) | FINDINGS Finding 33 |
+| `eval_novelty_mixed_teacher_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.csv` | `0.2960` novelty gain | [`examples/eval_novelty.py`](../examples/eval_novelty.py) | FINDINGS Finding 33 |
+| `eval_wer_mixed_teacher_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.csv` | `0.2651` mean styled WER | [`examples/eval_wer.py`](../examples/eval_wer.py) | FINDINGS Finding 33 |
+| `eval_mos_mixed_teacher_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.csv` | `-0.2072` MOS delta | [`examples/eval_mos.py`](../examples/eval_mos.py) | FINDINGS Finding 33 |
+| `listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html` | browser listening review | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 33 |
+| `eval_mixed_teacher_generated_audio_failure_mining.csv` | `396` styled rows joined across four conditions, now including the failure-targeted follow-up | [`scripts/analyze_generated_audio_failures.py`](../scripts/analyze_generated_audio_failures.py) | FINDINGS Findings 32-33 |
+| `eval_mixed_teacher_generated_audio_failure_mining.md` | row-level failure readout | [`scripts/analyze_generated_audio_failures.py`](../scripts/analyze_generated_audio_failures.py) | FINDINGS Findings 32-33 |
 | `eval_mixed_teacher_failure_conditioned_targets.csv` | target decision rows for `anger`/`disgust`/`fear` | [`scripts/select_failure_conditioned_targets.py`](../scripts/select_failure_conditioned_targets.py) | FINDINGS Finding 32 |
 | `eval_mixed_teacher_failure_conditioned_targets.json` | trainer-ready target-plan config | [`scripts/select_failure_conditioned_targets.py`](../scripts/select_failure_conditioned_targets.py) | FINDINGS Finding 32 |
 | `eval_mixed_teacher_failure_conditioned_targets.md` | target-selection readout | [`scripts/select_failure_conditioned_targets.py`](../scripts/select_failure_conditioned_targets.py) | FINDINGS Finding 32 |
@@ -318,6 +323,12 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 - The failure-conditioned target selector narrows the next positive target
   objective to `anger` and `disgust`; `fear` is blocked because the current
   reference has `0/11` clean fear targets after content/naturalness exclusions.
+- The first failure-conditioned target-dim style-teacher follow-up is now a
+  validated negative result: it keeps novelty high (`0.2960`) and reduces
+  content collapse to `1`, but recall drops to `39.4%` and style-to-neutral
+  collapse rises to `26`. The next training objective should use an explicit
+  anti-neutral or generated-audio-calibrated output signal, not just stronger
+  target-dim teacher pressure.
 
 Non-Trump style-strength sweep from 2026-05-03:
 

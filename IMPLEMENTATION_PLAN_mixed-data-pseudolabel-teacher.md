@@ -604,31 +604,36 @@ Immediate next execution steps on this branch:
    `0.2592` / `-0.1787`, and the lower-weight `0.005` run raises novelty to
    `0.3032`, but none beats the expanded rare-supply `sad/enunciated` guard on
    recall/WER/collapse.
-2. Train one conservative failure-conditioned target-dim style-teacher
-   follow-up using the selector output:
-   `--style-teacher-target-mode target_dim --style-teacher-require-label
-   --style-teacher-style-weights
-   anger=3,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0`.
-3. Use
+2. Treat the conservative failure-conditioned target-dim style-teacher
+   follow-up as a validated negative result:
+   `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup`
+   reaches `39.4%` recall, `0.2960` novelty gain, `0.2651` mean styled WER,
+   `-0.2072` MOS delta, and `28` files with any collapse. It reduces content
+   collapse to `1`, but worsens style-to-neutral collapse to `26`, so target
+   selection alone is not enough.
+3. Design the next generated-audio-calibrated objective around an explicit
+   anti-neutral / output-behavior signal for `anger` and `disgust`, rather
+   than another target-dim teacher-weight sweep.
+4. Use
    `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest
    checked-in controllability/novelty reference (`47.0%` recall, `0.2995`
    novelty gain), while keeping `combined` as the cleanest original quality
    baseline.
-4. Prioritize perceptual review from
+5. Prioritize perceptual review from
    `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`,
-   with `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`
-   as the decoder-prototype comparison.
-5. Compare one-clip-per-speaker versus two-clips-per-speaker CommonVoice
+   with `results/listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html`
+   as the failure-targeted comparison.
+6. Compare one-clip-per-speaker versus two-clips-per-speaker CommonVoice
    sampling only after the decoder-aware objective is tested; the current
    selected-pseudo preservation mode already keeps rare selected rows without
    bloating all speakers to three clips.
-6. Compare prototype-only versus hybrid teacher targets inside the same
+7. Compare prototype-only versus hybrid teacher targets inside the same
    decoder-aware objective only after diagnostics confirm whether the failure is
    teacher calibration or decoder/output alignment.
-7. Use `scripts/run_generated_audio_eval_suite.py` as the default closeout path
+8. Use `scripts/run_generated_audio_eval_suite.py` as the default closeout path
    for generated-audio corpora so emotion, novelty, WER, MOS, summary/collapse,
    and listening artifacts are regenerated consistently.
-8. Convert the hand-authored `cvrare_sad_enunc_guard` profile into a small
+9. Convert the hand-authored `cvrare_sad_enunc_guard` profile into a small
    reproducible grid/optimizer only after the decoder-aware objective baseline
    is defined.
 
@@ -675,3 +680,12 @@ Expanded rare-supply gate status:
   `anger`/`disgust`; `fear` is real but blocked for this objective because the
   current reference has `0/11` clean fear targets after filtering out
   content/naturalness/novelty/collapse confounds.
+- The failure-conditioned target-dim style-teacher follow-up is now evaluated:
+  `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` reaches
+  `39.4%` recall, `0.2960` novelty gain, `0.2651` mean styled WER, `-0.2072`
+  MOS delta, and `28` files with any collapse. It proves clean
+  `anger`/`disgust` target selection alone is not enough because
+  style-to-neutral collapse rises to `26`.
+- The next objective should be anti-neutral or generated-audio-calibrated,
+  explicitly penalizing decoded outputs that remain neutral-classified when
+  the target style is `anger` or `disgust`.

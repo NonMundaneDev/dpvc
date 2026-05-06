@@ -154,11 +154,17 @@ generated-audio failure-mining artifact confirms that reference has the lowest
 row-level failure score and localizes the remaining hard styles to `disgust`,
 `fear`, and `anger`. The follow-up failure-conditioned selector marks `anger`
 and `disgust` ready for a positive target objective and blocks `fear` because
-there are no clean fear targets under the current reference. This makes a
-targeted `anger`/`disgust` objective the next training direction. The
-non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
-the safest default, `7.5` is a useful stronger option for styles like
-`whisper` and `confused`, and `10.0-12.5` look more like high-novelty
+there are no clean fear targets under the current reference. That targeted
+`anger`/`disgust` follow-up has now been tested:
+`mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` keeps
+novelty high (`0.2960`) and reduces content collapse to `1`, but recall drops
+to `39.4%` and style-to-neutral collapse rises to `26`. The current
+`sad/enunciated` guard therefore remains the quality-balanced reference, and
+the next training direction should add an explicit anti-neutral or
+generated-audio-calibrated output signal rather than more target-dim teacher
+pressure. The non-Trump strength sweep adds a narrower inference-side result:
+`5.0` remains the safest default, `7.5` is a useful stronger option for styles
+like `whisper` and `confused`, and `10.0-12.5` look more like high-novelty
 specialized settings than new defaults. The main summary artifacts are:
 
 - [`results/eval_ablation_summary_pass4.csv`](results/eval_ablation_summary_pass4.csv)

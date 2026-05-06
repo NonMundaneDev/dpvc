@@ -1360,9 +1360,10 @@ Interpretation:
 - `mixed_teacher_cvrare_decoder_proto_labeled_warmup` is the first decoder-aware training pilot: it preserves high novelty (`0.3008`) but drops recall to `42.4%` and worsens mean styled WER to `0.2863`, so it is a cautionary baseline rather than the new reference
 - applying `cvrare_sad_enunc_guard` to the decoder-prototype checkpoint improves WER/MOS (`0.2592`, `-0.1787`) but leaves recall at `42.4%` and raises files with any collapse to `28`
 - lowering the decoder-prototype final weight to `0.005` keeps novelty high (`0.3032`) and slightly lowers collapse versus the `0.02` pilot (`26` files), but recall remains `42.4%` and WER remains worse than the current guard (`0.2782`)
-- `results/eval_mixed_teacher_generated_audio_failure_mining.md` joins generated-audio failures across the current guard and decoder-prototype family; it confirms the current guard has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`
+- `results/eval_mixed_teacher_generated_audio_failure_mining.md` joins generated-audio failures across the current guard, the failure-targeted follow-up, and decoder-prototype baselines; it confirms the current guard has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`
 - `results/eval_mixed_teacher_failure_conditioned_targets.md` converts that failure table into a conservative target plan: `anger` and `disgust` are ready, while `fear` is blocked because there are no clean fear targets under the current reference
-- the next mixed-data branch should move to an `anger`/`disgust` failure-conditioned objective, because weight-only decoded-embedding prototype matching did not learn the manual `sad/enunciated` guard's quality-balanced repair
+- the first `anger`/`disgust` failure-conditioned target-dim objective is now evaluated as `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup`: it keeps novelty high (`0.2960`) and reduces content collapse to `1`, but recall drops to `39.4%` and style-to-neutral collapse rises to `26`
+- the next mixed-data branch should test an explicit anti-neutral or generated-audio-calibrated output objective, because clean target selection plus target-dim teacher pressure still did not learn the manual `sad/enunciated` guard's quality-balanced repair
 
 Expanded rare-supply mixed artifact and first model run:
 
