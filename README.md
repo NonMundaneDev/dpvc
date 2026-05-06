@@ -17,14 +17,15 @@ Canonical research branch:
 
 Current experiment focus on that branch:
 
-- **mixed-data decoder-aware style supervision and generated-audio calibration**
+- **mixed-data generated-audio calibration and style-specific reranking**
 
 Immediate next queue:
 
 1. use `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` as the current quality-balanced profile, `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest high-novelty result, and `combined` as the cleanest original quality baseline
 2. treat the decoder-prototype, failure-targeted target-dim, and anti-neutral prototype-margin runs as verified cautionary baselines, not as the new reference
-3. run perceptual review from `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`, with `results/listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html` and `results/listening_mixed_teacher_cvrare_antineutral_labeled_warmup.html` as negative-result comparisons
-4. move the next training work beyond embedding-space proxies toward generated-audio-calibrated strength grids / reranking, then add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
+3. run perceptual review from `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`, with the best generated-audio grid cells `results/listening_mixed_teacher_cvrare_strength_grid_anger_s10.html`, `results/listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html`, and `results/listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html` as style-specific candidates
+4. only promote style-specific presets after perceptual review; the grid improves some hard-style rows but is not yet a safe global strength increase
+5. then add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
 
@@ -34,7 +35,7 @@ The dedicated next-step plans live in:
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
-- **[`FINDINGS.md`](FINDINGS.md)** — 34 paper-facing findings with methodology and per-row takeaways.
+- **[`FINDINGS.md`](FINDINGS.md)** — 35 paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 
@@ -167,7 +168,13 @@ pressure. The first anti-neutral prototype-margin follow-up
 embedding space and is also negative: recall reaches only `40.9%`, novelty
 stays high (`0.2962`), WER is `0.2609`, and style-to-neutral collapse remains
 high at `25`. That rules out another tempting proxy and moves the next best
-work toward actual generated-audio strength grids or reranking. The non-Trump
+work toward actual generated-audio strength grids or reranking. The first
+generated-audio style-strength grid is now checked in for `anger`, `disgust`,
+and `fear`: `anger_s10` improves anger recall from `1/11` to `3/11`,
+`fear_s7p5` improves fear recall from `3/11` to `6/11` but with high WER
+(`0.5231`), and `disgust_s10` raises novelty without improving recall while
+severely hurting MOS (`-0.6039`). This makes the grid a useful
+audio-calibrated reranking artifact, not a new universal default. The non-Trump
 strength sweep adds a narrower inference-side result:
 `5.0` remains the safest default, `7.5` is a useful stronger option for styles
 like `whisper` and `confused`, and `10.0-12.5` look more like high-novelty
@@ -188,6 +195,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/eval_mixed_teacher_cvrare_decoder_proto_summary.md`](results/eval_mixed_teacher_cvrare_decoder_proto_summary.md)
 - [`results/eval_mixed_teacher_generated_audio_failure_mining.md`](results/eval_mixed_teacher_generated_audio_failure_mining.md)
 - [`results/eval_mixed_teacher_failure_conditioned_targets.md`](results/eval_mixed_teacher_failure_conditioned_targets.md)
+- [`results/eval_mixed_teacher_cvrare_strength_grid_ranking.md`](results/eval_mixed_teacher_cvrare_strength_grid_ranking.md)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html)
 - [`results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html)
@@ -195,6 +203,9 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/listening_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.html)
 - [`results/listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html)
 - [`results/listening_mixed_teacher_cvrare_antineutral_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_antineutral_labeled_warmup.html)
+- [`results/listening_mixed_teacher_cvrare_strength_grid_anger_s10.html`](results/listening_mixed_teacher_cvrare_strength_grid_anger_s10.html)
+- [`results/listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html`](results/listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html)
+- [`results/listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html`](results/listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html)
 - [`configs/style_strength_profiles/cvrare_sad_enunc_guard.json`](configs/style_strength_profiles/cvrare_sad_enunc_guard.json)
 - [`results/commonvoice_pseudolabel_supply_audit_rare_supply.md`](results/commonvoice_pseudolabel_supply_audit_rare_supply.md)
 - [`results/commonvoice_rare_supply_expansion_preflight.md`](results/commonvoice_rare_supply_expansion_preflight.md)

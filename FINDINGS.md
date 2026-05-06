@@ -2627,12 +2627,102 @@ Recommended listening artifacts:
 
 ---
 
+## Finding 35: Audio-Calibrated Strength Reranking Helps Some Hard Styles, But Does Not Yet Produce a Safe Universal Default
+
+**Branch:** `research/controllable-vae`
+
+**Question.** After failure-conditioned target selection and embedding-space
+anti-neutral margins both failed, can a generated-audio style-strength grid
+identify actual rendered-audio settings that improve the hard `anger`,
+`disgust`, and `fear` rows?
+
+### Setup
+
+Reference checkpoint:
+
+- `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup`
+
+Reference quality-balanced readout:
+
+- `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`
+
+Grid:
+
+- styles: `anger`, `disgust`, `fear`
+- strengths: `3.0`, `5.0`, `7.5`, `10.0`
+- source panel: deterministic 11-speaker panel in `examples/source_speakers/`
+- per-cell corpus: `11` matched baselines + `11` styled outputs
+- evaluation: emotion2vec recall, OpenVoice novelty, Whisper WER, SQUIM MOS,
+  collapse taxonomy, and browser listening reports
+
+Primary artifacts:
+
+- `results/eval_mixed_teacher_strength_grid_summary.csv`
+- `results/eval_mixed_teacher_strength_grid_collapse.csv`
+- `results/eval_mixed_teacher_cvrare_strength_grid_ranking.csv`
+- `results/eval_mixed_teacher_cvrare_strength_grid_ranking.md`
+
+### Results
+
+Best grid cell per style:
+
+| Style | Best strength | Recall | Novelty gain | Mean styled WER | MOS delta | Style-to-neutral collapse | Files with any collapse | Takeaway |
+|-------|---------------|--------|--------------|-----------------|-----------|---------------------------|-------------------------|----------|
+| `anger` | `10.0` | `3/11` | `0.3302` | `0.2081` | `-0.0408` | `7` | `7` | Useful target-recall gain with moderate WER cost |
+| `disgust` | `10.0` | `2/11` | `0.3124` | `0.2831` | `-0.6039` | `8` | `8` | Novelty rises, but recall does not improve and MOS collapses |
+| `fear` | `7.5` | `6/11` | `0.4136` | `0.5231` | `-0.2972` | `1` | `3` | Strongest recall gain, but content preservation is poor |
+
+Same-style comparison against the current `sad/enunciated` guard:
+
+| Style | Guard recall | Grid recall | Guard novelty | Grid novelty | Guard WER | Grid WER | Guard MOS delta | Grid MOS delta |
+|-------|--------------|-------------|---------------|--------------|-----------|----------|-----------------|----------------|
+| `anger` | `1/11` | `3/11` | `0.2962` | `0.3302` | `0.1740` | `0.2081` | `-0.0532` | `-0.0408` |
+| `disgust` | `2/11` | `2/11` | `0.2296` | `0.3124` | `0.1529` | `0.2831` | `-0.2315` | `-0.6039` |
+| `fear` | `3/11` | `6/11` | `0.3485` | `0.4136` | `0.3071` | `0.5231` | `-0.3903` | `-0.2972` |
+
+### Interpretation
+
+1. **Generated-audio calibration is more informative than the proxy losses.**
+   The grid exposes real rendered-audio tradeoffs that the target-dim and
+   anti-neutral embedding losses missed.
+2. **`anger` has a plausible stronger preset candidate.** Strength `10.0`
+   improves target recall and novelty with only moderate WER cost on the
+   checked panel.
+3. **`fear` is controllable but content-fragile.** Strength `7.5` doubles
+   target recall, but the WER penalty is too large to promote without
+   perceptual review or content repair.
+4. **`disgust` is not solved by strength alone.** The best-ranked cell raises
+   novelty but leaves recall tied and severely worsens MOS, so it should stay a
+   diagnostic failure rather than a default.
+5. **The current guard remains the overall quality-balanced reference.** The
+   grid is a style-specific reranking artifact, not a new universal inference
+   profile.
+
+### Implication
+
+Finding 35 gives the first positive evidence for generated-audio-calibrated
+control policy search, but it also prevents overclaiming. Audio-level strength
+reranking can recover target labels for specific hard styles, especially
+`anger` and `fear`, yet the safe next step is perceptual review and
+style-specific preset design, not another embedding-space training objective
+and not a global strength increase.
+
+Recommended listening artifacts:
+
+- `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_anger_s10.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html`
+- `results/eval_mixed_teacher_cvrare_strength_grid_ranking.md`
+
+---
+
 ## Open Questions
 
 1. **What are the formal privacy guarantees?** We need to compute epsilon for each noise level and report privacy-utility curves.
 2. ~~**Does style control generalize across source speakers?**~~ → **Answered in Finding 6.** Brightness generalizes (7/9 styles); F0 does not. Some speaker-style combinations collapse.
 3. ~~**How do we evaluate emotion controllability?**~~ → **Answered in Finding 7.** emotion2vec Recall Rate + emo_sim (per EmoVoice) is the primary metric. Recall is 20% — training gap identified.
-4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Findings 30-34: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain, and the `sad/enunciated` strength guard keeps `47.0%` recall while improving WER/MOS. The decoder-prototype pilots preserve novelty but do not beat that guard, generated-audio failure mining localizes the remaining hard styles to `disgust`, `fear`, and `anger`, and the failure-conditioned plus anti-neutral follow-ups confirm that embedding-space proxies do not escape neutral collapse.
+4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Findings 30-35: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain, and the `sad/enunciated` strength guard keeps `47.0%` recall while improving WER/MOS. The decoder-prototype pilots preserve novelty but do not beat that guard, generated-audio failure mining localizes the remaining hard styles to `disgust`, `fear`, and `anger`, the failure-conditioned plus anti-neutral follow-ups confirm that embedding-space proxies do not escape neutral collapse, and the generated-audio strength grid shows that style-specific audio calibration can improve `anger` / `fear` rows but is not yet a safe global default.
 5. **Can we train age/gender and emotion knobs simultaneously?** CommonVoice has age/gender, CREMA-D has emotion. Can a single VAE learn all at once when each training stage only labels a subset? Unknown — Joe flagged this as an open research question.
 6. **Can an independent speaker verifier confirm the novelty signal?** Finding 11 uses OpenVoice's native embedding space. The next step is an external speaker encoder / EER-style check.
 7. **Can an adversary re-identify speakers from F0 alone?** If so, embedding-only DP is insufficient — motivates joint protection.
@@ -2640,7 +2730,7 @@ Recommended listening artifacts:
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Finding 32 shows that the first naive decoder-prototype objective does not learn that repair (`42.4%` recall, `0.2863` WER, `27` collapse files), the same guard repairs only WER/MOS (`0.2592`, `-0.1787`) while recall stays `42.4%`, and lowering the prototype weight to `0.005` still stays at `42.4%` recall with worse WER (`0.2782`). Finding 33 shows that a failure-conditioned `anger`/`disgust` target-dim teacher objective is insufficient (`39.4%` recall, `26` style-to-neutral collapses). Finding 34 shows that an anti-neutral prototype-margin proxy is also insufficient (`40.9%` recall, `25` style-to-neutral collapses). The remaining mixed-data question is now narrower: can a true generated-audio-calibrated grid, reranker, or objective escape the neutral basin while preserving the current guard's WER/MOS?
+12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Finding 32 shows that the first naive decoder-prototype objective does not learn that repair (`42.4%` recall, `0.2863` WER, `27` collapse files), the same guard repairs only WER/MOS (`0.2592`, `-0.1787`) while recall stays `42.4%`, and lowering the prototype weight to `0.005` still stays at `42.4%` recall with worse WER (`0.2782`). Finding 33 shows that a failure-conditioned `anger`/`disgust` target-dim teacher objective is insufficient (`39.4%` recall, `26` style-to-neutral collapses). Finding 34 shows that an anti-neutral prototype-margin proxy is also insufficient (`40.9%` recall, `25` style-to-neutral collapses). Finding 35 shows that actual generated-audio reranking can improve some hard style rows (`anger` `1/11 -> 3/11`, `fear` `3/11 -> 6/11`) but does not solve `disgust` and creates WER/MOS tradeoffs. The remaining mixed-data question is now narrower: can perceptually validated style-specific presets or an audio-calibrated training loop preserve those row-level gains without breaking content quality?
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---
@@ -2696,6 +2786,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 32. The decoder-prototype objective family is a cautionary baseline, not the new reference: the first run reaches `42.4%` recall and `0.3008` novelty but worsens WER/collapse, the guarded readout improves WER/MOS without recovering recall, and the lower-weight `0.005` run still stays at `42.4%` recall with `0.2782` WER. Generated-audio failure mining confirms the current guard still has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`; the failure-conditioned selector narrows the next positive target objective to `anger`/`disgust` while blocking `fear`.
 33. Failure-conditioned target-dim style-teacher supervision is a useful negative result: `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` keeps novelty high (`0.2960`) and slightly reduces content collapse (`1`), but recall drops to `39.4%` and style-to-neutral collapse rises to `26`. Clean target selection alone does not force decoded audio out of the neutral basin, so the next objective needs an explicit anti-neutral or generated-audio-calibrated output signal.
 34. Anti-neutral prototype-margin supervision is also a useful negative result: `mixed_teacher_cvrare_antineutral_labeled_warmup` slightly improves over the failure-targeted target-dim run (`40.9%` recall, `0.2962` novelty, `0.2609` WER), but still loses to the current `sad/enunciated` guard on recall (`47.0%`), WER (`0.2348`), style-to-neutral collapse (`18` vs `25`), and any-collapse files (`20` vs `27`). Embedding-space anti-neutral proxies are not enough; the next calibration signal must come from generated audio itself.
+35. The first generated-audio style-strength grid confirms that audio-calibrated reranking is the right next lens but not a solved default: `anger_s10` improves anger recall from `1/11` to `3/11` with moderate WER cost, `fear_s7p5` improves fear recall from `3/11` to `6/11` but has high WER (`0.5231`), and `disgust_s10` raises novelty while failing to improve recall and severely hurting MOS (`-0.6039`). This should drive perceptual review and style-specific presets, not a global strength increase.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion

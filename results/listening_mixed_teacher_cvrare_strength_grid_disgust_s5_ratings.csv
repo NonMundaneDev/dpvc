@@ -1,0 +1,12 @@
+source_stem,style,audio_file,emotion_match_1_5,naturalness_1_5,intelligibility_1_5,identity_shift_1_5,notes
+cremad_1003,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/cremad_1003_disgust.wav,,,,,
+cremad_1004,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/cremad_1004_disgust.wav,,,,,
+cremad_1006,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/cremad_1006_disgust.wav,,,,,
+cremad_1007,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/cremad_1007_disgust.wav,,,,,
+cremad_1023,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/cremad_1023_disgust.wav,,,,,
+cremad_1045,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/cremad_1045_disgust.wav,,,,,
+cremad_1076,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/cremad_1076_disgust.wav,,,,,
+female_1_cremad_1002,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/female_1_cremad_1002_disgust.wav,,,,,
+female_2_cremad_1012,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/female_2_cremad_1012_disgust.wav,,,,,
+male_1_cremad_1003,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/male_1_cremad_1003_disgust.wav,,,,,
+male_2_cremad_1051,disgust,/Users/steve/UVM-plaid/dp-vc/output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_disgust_s5/male_2_cremad_1051_disgust.wav,,,,,

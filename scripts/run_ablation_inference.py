@@ -351,6 +351,14 @@ def parse_args():
         ),
     )
     ap.add_argument(
+        "--styles",
+        default=None,
+        help=(
+            "Optional comma-separated style subset to generate. Baseline is "
+            "always generated. Defaults to all styles for the selected condition."
+        ),
+    )
+    ap.add_argument(
         "--noise-level",
         type=float,
         default=0.0,
@@ -422,6 +430,21 @@ def parse_style_strength_map(raw_value, valid_styles):
             raise ValueError(f"Style strength for {style!r} must be non-negative")
         strength_map[style] = strength
     return strength_map
+
+
+def parse_styles(raw_value, valid_styles):
+    if not raw_value:
+        return list(valid_styles)
+    selected = [item.strip() for item in raw_value.split(",") if item.strip()]
+    if not selected:
+        raise ValueError("--styles was provided but no styles were parsed")
+    valid = set(valid_styles)
+    unknown = sorted(set(selected) - valid)
+    if unknown:
+        raise ValueError(
+            f"Unknown style(s) in --styles: {unknown}; valid styles are {sorted(valid)}"
+        )
+    return selected
 
 
 def build_anonymizer(vae_checkpoint, latent_dims):
@@ -501,8 +524,11 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = resolve_manifest_path(out_dir, args.manifest)
     style_strength_map = parse_style_strength_map(args.style_strength_map, cfg["styles"])
+    styles = parse_styles(args.styles, cfg["styles"])
     if style_strength_map:
         print(f"Using per-style strength map: {style_strength_map}")
+    if styles != cfg["styles"]:
+        print(f"Generating style subset: {styles}")
 
     anonymizer = build_anonymizer(vae_checkpoint, args.latent_dims)
     records = []
@@ -537,7 +563,7 @@ def main():
             )
         )
 
-        for style in cfg["styles"]:
+        for style in styles:
             style_index = cfg["style_to_index"][style]
             style_strength = style_strength_map.get(style, args.style_strength)
             if cfg["control_mode"] == "random_free_dims":

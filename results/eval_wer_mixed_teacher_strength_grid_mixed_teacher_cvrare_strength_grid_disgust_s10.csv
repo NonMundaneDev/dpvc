@@ -1,0 +1,23 @@
+speaker,style,wer,ref_source,reference,hypothesis,file
+cremad_1003,baseline,0.0000,self,I think I have a doctor's appointment.,I think I have a doctor's appointment.,cremad_1003_baseline.wav
+cremad_1003,disgust,0.0000,baseline,I think I have a doctor's appointment.,I think I have a doctor's appointment.,cremad_1003_disgust.wav
+cremad_1004,baseline,0.0000,self,I would like a new alarm clock.,I would like a new alarm clock.,cremad_1004_baseline.wav
+cremad_1004,disgust,0.0000,baseline,I would like a new alarm clock.,I would like a new alarm clock.,cremad_1004_disgust.wav
+cremad_1006,baseline,0.0000,self,Maybe tomorrow it will be cold.,Maybe tomorrow it will be cold.,cremad_1006_baseline.wav
+cremad_1006,disgust,0.0000,baseline,Maybe tomorrow it will be cold.,Maybe tomorrow it will be cold.,cremad_1006_disgust.wav
+cremad_1007,baseline,0.0000,self,Don't forget a jacket. It's a leather cloth.,Don't forget a jacket. It's a leather cloth.,cremad_1007_baseline.wav
+cremad_1007,disgust,0.5000,baseline,Don't forget a jacket. It's a leather cloth.,Don't forget that jacket. It's 11th one.,cremad_1007_disgust.wav
+cremad_1023,baseline,0.0000,self,Don't forget a jacket. It's 11 o'clock. I'm on my way to the meeting.,Don't forget a jacket. It's 11 o'clock. I'm on my way to the meeting.,cremad_1023_baseline.wav
+cremad_1023,disgust,0.6429,baseline,Don't forget a jacket. It's 11 o'clock. I'm on my way to the meeting.,Don't forget to check it. And... Tits a lot of the clock. I'm on my way to the meeting.,cremad_1023_disgust.wav
+cremad_1045,baseline,0.0000,self,Don't forget a jacket. It's 11 o'clock. I'm on that way to the meeting.,Don't forget a jacket. It's 11 o'clock. I'm on that way to the meeting.,cremad_1045_baseline.wav
+cremad_1045,disgust,0.1429,baseline,Don't forget a jacket. It's 11 o'clock. I'm on that way to the meeting.,Don't forget a jacket. It's 11 o'clock. I'm on my way to the meaty.,cremad_1045_disgust.wav
+cremad_1076,baseline,0.0000,self,Don't forget a jacket. It's 11 o'clock.,Don't forget a jacket. It's 11 o'clock.,cremad_1076_baseline.wav
+cremad_1076,disgust,0.4286,baseline,Don't forget a jacket. It's 11 o'clock.,Don't forget to eject it. It's 11 o'clock.,cremad_1076_disgust.wav
+female_1_cremad_1002,baseline,0.0000,self,Don't forget a jacket.,Don't forget a jacket.,female_1_cremad_1002_baseline.wav
+female_1_cremad_1002,disgust,0.2500,baseline,Don't forget a jacket.,Don't forget the jacket.,female_1_cremad_1002_disgust.wav
+female_2_cremad_1012,baseline,0.0000,self,Don't forget to jack it.,Don't forget to jack it.,female_2_cremad_1012_baseline.wav
+female_2_cremad_1012,disgust,0.4000,baseline,Don't forget to jack it.,Don't forget to dammit.,female_2_cremad_1012_disgust.wav
+male_1_cremad_1003,baseline,0.0000,self,Don't forget a jacket.,Don't forget a jacket.,male_1_cremad_1003_baseline.wav
+male_1_cremad_1003,disgust,0.0000,baseline,Don't forget a jacket.,Don't forget a jacket.,male_1_cremad_1003_disgust.wav
+male_2_cremad_1051,baseline,0.0000,self,Don't forget a jacket.,Don't forget a jacket.,male_2_cremad_1051_baseline.wav
+male_2_cremad_1051,disgust,0.7500,baseline,Don't forget a jacket.,Don't forget to jack you.,male_2_cremad_1051_disgust.wav

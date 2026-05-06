@@ -43,6 +43,47 @@ Each run writes a JSONL manifest by default. Single-file runs create
 `<out_stem>_manifest.jsonl`; batch runs create
 `<out>/generation_manifest.jsonl`.
 
+Generate only a subset of styles for focused evaluation:
+
+```bash
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup \
+    --out output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_anger_s10 \
+    --styles anger \
+    --style-strength 10.0 \
+    --noise-level 0.0 \
+    --seed 42
+```
+
+Run the generated-audio style-strength grid used for the current hard-style
+calibration result:
+
+```bash
+python scripts/run_style_strength_grid.py \
+    --source-dir examples/source_speakers/ \
+    --styles anger,disgust,fear \
+    --strengths 3.0,5.0,7.5,10.0
+```
+
+This writes one corpus per style/strength pair, evaluates emotion recall,
+novelty, WER, MOS, collapse labels, and listening reports, then writes:
+
+- `results/eval_mixed_teacher_strength_grid_summary.csv`
+- `results/eval_mixed_teacher_strength_grid_collapse.csv`
+- `results/eval_mixed_teacher_cvrare_strength_grid_ranking.csv`
+- `results/eval_mixed_teacher_cvrare_strength_grid_ranking.md`
+
+Current readout: `anger_s10` and `fear_s7p5` improve target recall on their
+own rows, but `fear_s7p5` has high WER and `disgust_s10` hurts MOS without
+improving recall. Treat the grid as a perceptual-review queue, not a new
+global default. Start listening with:
+
+- `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_anger_s10.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html`
+
 ## Full Pipeline
 
 ### 0. Environment Setup

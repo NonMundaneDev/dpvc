@@ -76,7 +76,20 @@ def main():
     run([py, "examples/eval_mos.py", "--input", input_dir, "--out", outputs["mos"]])
 
     if not args.skip_summary:
-        run([py, "scripts/summarize_mixed_teacher_results.py", "--input-tag", args.input_tag])
+        summary_out = results_dir / f"eval_{args.input_tag}_summary.csv"
+        collapse_out = results_dir / f"eval_{args.input_tag}_collapse.csv"
+        run([
+            py,
+            "scripts/summarize_mixed_teacher_results.py",
+            "--results-dir",
+            results_dir,
+            "--input-tag",
+            args.input_tag,
+            "--summary-out",
+            summary_out,
+            "--collapse-out",
+            collapse_out,
+        ])
 
     if not args.skip_listening:
         listening_out = results_dir / f"listening_{args.result_tag}.html"

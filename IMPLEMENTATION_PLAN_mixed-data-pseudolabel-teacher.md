@@ -73,6 +73,19 @@ cautionary baseline:
 - files with any collapse `27`
 - style-to-neutral collapse `25`
 
+The first generated-audio style-strength grid is now evaluated as an
+audio-calibrated reranking artifact:
+- styles: `anger`, `disgust`, `fear`
+- strengths: `3.0`, `5.0`, `7.5`, `10.0`
+- best `anger` cell: `anger_s10`, recall `3/11`, novelty `0.3302`, WER
+  `0.2081`, MOS delta `-0.0408`
+- best `disgust` cell: `disgust_s10`, recall `2/11`, novelty `0.3124`, WER
+  `0.2831`, MOS delta `-0.6039`
+- best `fear` cell: `fear_s7p5`, recall `6/11`, novelty `0.4136`, WER
+  `0.5231`, MOS delta `-0.2972`
+- ranking artifact:
+  `results/eval_mixed_teacher_cvrare_strength_grid_ranking.md`
+
 That answers the first version of the branch question positively: better rare
 pseudo-label supply can move recall well above `18.2%`. The unresolved problem
 is learning the recall/quality tradeoff directly instead of depending on
@@ -82,10 +95,14 @@ clean `emotion_miss + style_to_neutral` rows for `anger` / `disgust`, with
 `fear` held out until its content/naturalness confound is separated.
 The failure-conditioned target-dim objective and anti-neutral prototype-margin
 objective then show that embedding-space proxies alone are still too indirect.
+The generated-audio grid shows why the next move should be perceptual review
+and style-specific presets before more training: `anger` and `fear` can be
+improved by strength reranking, but `fear` pays a content cost and `disgust`
+does not improve recall.
 
 So the next highest-value branch is a **decoder-aware or generated-audio style
 objective** that preserves the expanded rare-supply recall gain while repairing
-WER/MOS during training.
+WER/MOS during training, after the grid candidates are checked perceptually.
 
 ## 2. Branch context
 
@@ -97,6 +114,12 @@ WER/MOS during training.
 **Can a decoder-aware or generated-audio style objective preserve the expanded
 rare-supply recall gain while reducing the WER/MOS cost, and can it do so
 without depending on hand-authored per-style strength profiles?**
+
+Current sub-question after the grid:
+
+**Can perceptually validated, style-specific strength presets preserve the
+`anger` / `fear` row-level gains from generated-audio reranking without
+promoting `disgust_s10` or other metric-only candidates that sound bad?**
 
 ## 4. What stays fixed
 

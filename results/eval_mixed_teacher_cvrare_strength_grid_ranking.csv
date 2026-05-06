@@ -1,0 +1,13 @@
+style,rank,strength,condition,recommendation,styles_present,sources_count,rows_total,emotion_recall,mean_novelty_gain_vs_baseline,mean_wer,mean_mos_delta_vs_baseline,content_collapse_count,style_collapse_to_neutral_count,identity_collapse_to_baseline_count,mixed_collapse_count,files_with_any_collapse
+anger,1,10,mixed_teacher_cvrare_strength_grid_anger_s10,best_for_style,anger,11,22,0.2727,0.3302,0.2081,-0.0408,0,7,0,0,7
+anger,2,7.5,mixed_teacher_cvrare_strength_grid_anger_s7p5,,anger,11,22,0.1818,0.3306,0.2563,-0.0016,0,7,0,0,7
+anger,3,5,mixed_teacher_cvrare_strength_grid_anger_s5,,anger,11,22,0.0909,0.2962,0.1740,-0.0532,0,7,0,0,7
+anger,4,3,mixed_teacher_cvrare_strength_grid_anger_s3,,anger,11,22,0.0909,0.1994,0.1843,-0.1862,0,10,0,0,10
+disgust,1,10,mixed_teacher_cvrare_strength_grid_disgust_s10,best_for_style,disgust,11,22,0.1818,0.3124,0.2831,-0.6039,0,8,0,0,8
+disgust,2,5,mixed_teacher_cvrare_strength_grid_disgust_s5,,disgust,11,22,0.1818,0.2296,0.1529,-0.2315,0,9,0,0,9
+disgust,3,7.5,mixed_teacher_cvrare_strength_grid_disgust_s7p5,,disgust,11,22,0.1818,0.2859,0.3364,-0.4440,0,9,0,0,9
+disgust,4,3,mixed_teacher_cvrare_strength_grid_disgust_s3,,disgust,11,22,0.0000,0.1498,0.1607,-0.0042,0,11,0,0,11
+fear,1,7.5,mixed_teacher_cvrare_strength_grid_fear_s7p5,best_for_style,fear,11,22,0.5455,0.4136,0.5231,-0.2972,2,1,0,0,3
+fear,2,5,mixed_teacher_cvrare_strength_grid_fear_s5,,fear,11,22,0.2727,0.3485,0.3331,-0.3903,0,0,0,0,0
+fear,3,10,mixed_teacher_cvrare_strength_grid_fear_s10,,fear,11,22,0.2727,0.4496,0.4873,-0.3532,1,2,0,0,3
+fear,4,3,mixed_teacher_cvrare_strength_grid_fear_s3,,fear,11,22,0.0909,0.2579,0.1935,-0.4154,0,5,0,0,5

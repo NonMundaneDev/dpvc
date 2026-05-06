@@ -96,11 +96,13 @@ Priority tags:
 - [x] `[DONE]` Build the failure-conditioned target selector; it emits clean target decisions from the generated-audio failure table and marks `anger` / `disgust` as ready while blocking `fear` because the current guard has `0/11` clean fear targets
 - [x] `[DONE]` Run one conservative failure-conditioned style-teacher follow-up using only ready styles (`anger`, `disgust`) with `target_dim` teacher supervision; it is a useful negative result because recall drops to `39.4%`, style-to-neutral collapse rises to `26`, and the current `sad/enunciated` guard remains the reference
 - [x] `[DONE]` Test an explicit anti-neutral prototype-margin objective for `anger`/`disgust`; result: the embedding-space proxy is a useful negative result because recall reaches only `40.9%`, style-to-neutral collapse remains `25`, and the current `sad/enunciated` guard remains the quality-balanced reference
-- [ ] `[NOW]` Move beyond embedding-space proxies toward a true generated-audio-calibrated intervention: start with a reproducible style-strength grid / generated-audio reranking loop over the current guard and hard styles, then only turn it into training supervision if actual audio metrics improve
+- [x] `[DONE]` Move beyond embedding-space proxies toward a true generated-audio-calibrated intervention; the first generated-audio style-strength grid over `anger`, `disgust`, and `fear` is now checked in, with ranking/listening artifacts showing style-specific candidates but no safe universal default
+- [ ] `[NOW]` Perceptually review the best grid cells (`anger_s10`, `disgust_s10`, `fear_s7p5`) against the current `sad/enunciated` guard before promoting any style-specific inference preset
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
-- [ ] `[SOON]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths, because the `sad/enunciated` guard is promising but should not become a hidden manual tuning step
+- [x] `[DONE]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths; the first grid is intentionally narrow and should be expanded only after perceptual review confirms the ranked cells sound useful
+- [ ] `[SOON]` Add a browser index for grid listening reports, because the grid now produces many per-cell HTML/rating files and manual link-hunting is error-prone
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
 
 ### Phase 2: Evaluation (Joe: emotion eval is #1 priority)
@@ -2913,16 +2915,120 @@ Listening artifacts:
 
 Future upgrade to preserve:
 
-- `[NOW]` Build a true generated-audio-calibrated grid/reranking artifact over
-  hard styles (`anger`, `disgust`, `fear`) and current reference checkpoints,
-  using emotion recall, WER, MOS, novelty, and collapse labels from actual
-  generated WAVs.
+- `[DONE]` Build a true generated-audio-calibrated grid/reranking artifact over
+  hard styles (`anger`, `disgust`, `fear`) and current reference checkpoints;
+  completed in section 0.42 with actual generated-audio emotion recall, WER,
+  MOS, novelty, collapse labels, and listening reports.
 - `[SOON]` If the grid finds a consistently better audio-level choice, convert
   it into a training-time objective or selection rule; do not promote another
   embedding-only proxy unless it predicts generated-audio metrics.
 - `[SOON]` Keep the failed `teacher_margin` diagnostic in mind: frozen-teacher
   margin satisfaction in decoded embedding space was not calibrated to
   generated-audio emotion recognition.
+
+---
+
+### 0.42 Generated-Audio Style-Strength Grid / Reranking (2026-05-06, branch `research/controllable-vae`)
+
+What changed:
+
+- Added `--styles` to `scripts/run_ablation_inference.py` so a deterministic
+  corpus can generate only the target style under test while still keeping the
+  matched baseline rows.
+- Fixed `scripts/run_generated_audio_eval_suite.py` so non-default
+  `--input-tag` runs write their own summary/collapse files instead of
+  overwriting `results/eval_mixed_teacher_summary.csv`.
+- Added `scripts/run_style_strength_grid.py`, a one-command generated-audio
+  grid runner for style subsets and strength values.
+- Added `scripts/summarize_style_strength_grid.py`, which ranks each style by
+  generated-audio metrics: recall first, then fewer collapse rows, lower WER,
+  higher MOS delta, and novelty.
+- Ran the first narrow grid over the hard styles identified by failure mining:
+  `anger`, `disgust`, and `fear` at strengths `3.0`, `5.0`, `7.5`, and `10.0`.
+
+Command:
+
+```bash
+.venv/bin/python scripts/run_style_strength_grid.py \
+  --source-dir examples/source_speakers/ \
+  --styles anger,disgust,fear \
+  --strengths 3.0,5.0,7.5,10.0
+```
+
+Validation:
+
+- `Validation`: `py_compile` passed for
+  `scripts/run_ablation_inference.py`,
+  `scripts/run_generated_audio_eval_suite.py`,
+  `scripts/run_style_strength_grid.py`, and
+  `scripts/summarize_style_strength_grid.py`.
+- `Validation`: CLI help checks passed for the new `--styles`,
+  `--style-strength-map`, grid-runner, and grid-summarizer interfaces.
+- `Validation`: a smoke generation run with `--styles anger` wrote the
+  expected 2-row manifest for one source file.
+- `Validation`: the full grid produced `12` corpora, each with a `22`-row
+  manifest (`11` baselines + `11` styled outputs).
+- `Validation`: every grid cell wrote emotion, novelty, WER, MOS, listening
+  HTML, and rating-template artifacts.
+- `Validation`: the summary/ranking files were generated:
+  `results/eval_mixed_teacher_strength_grid_summary.csv`,
+  `results/eval_mixed_teacher_strength_grid_collapse.csv`,
+  `results/eval_mixed_teacher_cvrare_strength_grid_ranking.csv`, and
+  `results/eval_mixed_teacher_cvrare_strength_grid_ranking.md`.
+- `Validation`: `git diff --check` passed before commit.
+
+Best per-style grid cells:
+
+| Style | Best strength | Recall | Novelty gain | Mean styled WER | MOS delta | Style-to-neutral | Any collapse | Readout |
+|-------|---------------|--------|--------------|-----------------|-----------|------------------|--------------|---------|
+| `anger` | `10.0` | `3/11` | `0.3302` | `0.2081` | `-0.0408` | `7` | `7` | Improves target recall over the guard's `1/11` anger row with modest WER cost |
+| `disgust` | `10.0` | `2/11` | `0.3124` | `0.2831` | `-0.6039` | `8` | `8` | Does not improve recall over the guard and badly hurts MOS; not a safe preset |
+| `fear` | `7.5` | `6/11` | `0.4136` | `0.5231` | `-0.2972` | `1` | `3` | Doubles target recall over the guard's `3/11` fear row, but WER is high |
+
+Important comparison note:
+
+- The grid cells are **single-style targeted corpora**, so their recall values
+  should not be compared directly to the 110-row overall recall of the current
+  `sad/enunciated` guard.
+- Against the guard on the same style rows:
+  - `anger_s10` improves recall (`1/11 -> 3/11`) and novelty
+    (`0.2962 -> 0.3302`), while WER rises moderately (`0.1740 -> 0.2081`).
+  - `disgust_s10` ties recall (`2/11 -> 2/11`) but worsens WER
+    (`0.1529 -> 0.2831`) and MOS delta (`-0.2315 -> -0.6039`).
+  - `fear_s7p5` improves recall (`3/11 -> 6/11`) and novelty
+    (`0.3485 -> 0.4136`), but WER worsens sharply (`0.3071 -> 0.5231`).
+
+Readout:
+
+- This is the first true generated-audio-calibrated reranking artifact after
+  the failure-conditioned and anti-neutral proxy negative results.
+- It confirms that style strength can recover some hard-style target labels,
+  especially `anger` and `fear`, but the gains are not uniformly quality-safe.
+- `disgust` remains a hard failure: the ranked high-strength cell improves
+  novelty but not target recall, and it damages MOS enough that it should not
+  become a default.
+- The next move should be perceptual review of the best cells before adding
+  style-specific presets or turning the grid into training supervision.
+
+Listening artifacts:
+
+- `results/listening_mixed_teacher_cvrare_strength_grid_anger_s10.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html`
+- reference: `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
+
+Future upgrade to preserve:
+
+- `[NOW]` Perceptually review the top-ranked grid cells against the current
+  guard before promoting any style-specific inference preset.
+- `[SOON]` Add a browser index or combined listening dashboard for grid reports,
+  because a grid run creates many HTML/rating artifacts.
+- `[SOON]` Expand the grid only where perceptual review supports it; candidate
+  next axes are speaker-specific reranking and style-specific strength maps,
+  not another global strength sweep.
+- `[SOON]` If a grid cell is perceptually strong and metric-stable, convert it
+  into a checked-in style-strength profile or training target; otherwise keep
+  it as diagnostic evidence.
 
 ---
 

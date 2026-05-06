@@ -306,6 +306,13 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `eval_mixed_teacher_failure_conditioned_targets.csv` | target decision rows for `anger`/`disgust`/`fear` | [`scripts/select_failure_conditioned_targets.py`](../scripts/select_failure_conditioned_targets.py) | FINDINGS Finding 32 |
 | `eval_mixed_teacher_failure_conditioned_targets.json` | trainer-ready target-plan config | [`scripts/select_failure_conditioned_targets.py`](../scripts/select_failure_conditioned_targets.py) | FINDINGS Finding 32 |
 | `eval_mixed_teacher_failure_conditioned_targets.md` | target-selection readout | [`scripts/select_failure_conditioned_targets.py`](../scripts/select_failure_conditioned_targets.py) | FINDINGS Finding 32 |
+| `eval_mixed_teacher_strength_grid_summary.csv` | `12` generated-audio grid conditions | [`scripts/run_style_strength_grid.py`](../scripts/run_style_strength_grid.py) | FINDINGS Finding 35 |
+| `eval_mixed_teacher_strength_grid_collapse.csv` | per-row collapse labels for the grid | [`scripts/run_style_strength_grid.py`](../scripts/run_style_strength_grid.py) | FINDINGS Finding 35 |
+| `eval_mixed_teacher_cvrare_strength_grid_ranking.csv` | per-style ranked grid cells | [`scripts/summarize_style_strength_grid.py`](../scripts/summarize_style_strength_grid.py) | FINDINGS Finding 35 |
+| `eval_mixed_teacher_cvrare_strength_grid_ranking.md` | grid readout and best-cell table | [`scripts/summarize_style_strength_grid.py`](../scripts/summarize_style_strength_grid.py) | FINDINGS Finding 35 |
+| `listening_mixed_teacher_cvrare_strength_grid_anger_s10.html` | best ranked `anger` grid cell | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 35 |
+| `listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html` | best ranked `disgust` grid cell | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 35 |
+| `listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html` | best ranked `fear` grid cell | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 35 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.
@@ -339,6 +346,12 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
   current guard on recall/WER/collapse and leaves `25` style-to-neutral
   collapses. The next calibration signal should come from actual generated
   audio, such as a reproducible style-strength grid or reranking artifact.
+- The generated-audio style-strength grid is now the first audio-calibrated
+  reranking artifact for the hard styles. Best cells are `anger_s10`
+  (`3/11` recall, `0.2081` WER), `disgust_s10` (`2/11` recall, `0.2831` WER,
+  `-0.6039` MOS delta), and `fear_s7p5` (`6/11` recall, `0.5231` WER). This
+  supports perceptual review and style-specific preset design, not a global
+  strength increase.
 
 Non-Trump style-strength sweep from 2026-05-03:
 
