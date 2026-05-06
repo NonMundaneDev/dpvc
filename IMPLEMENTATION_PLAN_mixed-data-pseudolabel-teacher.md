@@ -85,6 +85,10 @@ audio-calibrated reranking artifact:
   `0.5231`, MOS delta `-0.2972`
 - ranking artifact:
   `results/eval_mixed_teacher_cvrare_strength_grid_ranking.md`
+- A/B perceptual-review dashboard:
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`
+- 33-row rating template:
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv`
 
 That answers the first version of the branch question positively: better rare
 pseudo-label supply can move recall well above `18.2%`. The unresolved problem
@@ -115,7 +119,7 @@ WER/MOS during training, after the grid candidates are checked perceptually.
 rare-supply recall gain while reducing the WER/MOS cost, and can it do so
 without depending on hand-authored per-style strength profiles?**
 
-Current sub-question after the grid:
+Current sub-question after the grid and A/B dashboard:
 
 **Can perceptually validated, style-specific strength presets preserve the
 `anger` / `fear` row-level gains from generated-audio reranking without

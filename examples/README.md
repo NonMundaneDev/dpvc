@@ -79,10 +79,22 @@ own rows, but `fear_s7p5` has high WER and `disgust_s10` hurts MOS without
 improving recall. Treat the grid as a perceptual-review queue, not a new
 global default. Start listening with:
 
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`
 - `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_anger_s10.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html`
+
+To rebuild the A/B review dashboard:
+
+```bash
+python scripts/build_style_grid_review.py
+```
+
+This compares the current guard against `anger_s10`, `disgust_s10`, and
+`fear_s7p5` for the same source/style rows and writes a matched rating
+template at
+`results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv`.
 
 ## Full Pipeline
 

@@ -23,7 +23,7 @@ Immediate next queue:
 
 1. use `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` as the current quality-balanced profile, `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest high-novelty result, and `combined` as the cleanest original quality baseline
 2. treat the decoder-prototype, failure-targeted target-dim, and anti-neutral prototype-margin runs as verified cautionary baselines, not as the new reference
-3. run perceptual review from `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`, with the best generated-audio grid cells `results/listening_mixed_teacher_cvrare_strength_grid_anger_s10.html`, `results/listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html`, and `results/listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html` as style-specific candidates
+3. run perceptual review from the A/B dashboard `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`, which compares the current guard against `anger_s10`, `disgust_s10`, and `fear_s7p5` on matched source/style rows
 4. only promote style-specific presets after perceptual review; the grid improves some hard-style rows but is not yet a safe global strength increase
 5. then add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
@@ -196,6 +196,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/eval_mixed_teacher_generated_audio_failure_mining.md`](results/eval_mixed_teacher_generated_audio_failure_mining.md)
 - [`results/eval_mixed_teacher_failure_conditioned_targets.md`](results/eval_mixed_teacher_failure_conditioned_targets.md)
 - [`results/eval_mixed_teacher_cvrare_strength_grid_ranking.md`](results/eval_mixed_teacher_cvrare_strength_grid_ranking.md)
+- [`results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`](results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html)
 - [`results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html)

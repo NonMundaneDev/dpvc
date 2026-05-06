@@ -97,7 +97,8 @@ Priority tags:
 - [x] `[DONE]` Run one conservative failure-conditioned style-teacher follow-up using only ready styles (`anger`, `disgust`) with `target_dim` teacher supervision; it is a useful negative result because recall drops to `39.4%`, style-to-neutral collapse rises to `26`, and the current `sad/enunciated` guard remains the reference
 - [x] `[DONE]` Test an explicit anti-neutral prototype-margin objective for `anger`/`disgust`; result: the embedding-space proxy is a useful negative result because recall reaches only `40.9%`, style-to-neutral collapse remains `25`, and the current `sad/enunciated` guard remains the quality-balanced reference
 - [x] `[DONE]` Move beyond embedding-space proxies toward a true generated-audio-calibrated intervention; the first generated-audio style-strength grid over `anger`, `disgust`, and `fear` is now checked in, with ranking/listening artifacts showing style-specific candidates but no safe universal default
-- [ ] `[NOW]` Perceptually review the best grid cells (`anger_s10`, `disgust_s10`, `fear_s7p5`) against the current `sad/enunciated` guard before promoting any style-specific inference preset
+- [x] `[DONE]` Build a single A/B perceptual-review dashboard for the best grid cells (`anger_s10`, `disgust_s10`, `fear_s7p5`) against the current `sad/enunciated` guard
+- [ ] `[NOW]` Complete human/perceptual ratings from the A/B review dashboard before promoting any style-specific inference preset
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
@@ -3021,14 +3022,77 @@ Future upgrade to preserve:
 
 - `[NOW]` Perceptually review the top-ranked grid cells against the current
   guard before promoting any style-specific inference preset.
-- `[SOON]` Add a browser index or combined listening dashboard for grid reports,
-  because a grid run creates many HTML/rating artifacts.
+- `[DONE]` Add a combined listening dashboard for the top grid candidates; see
+  section 0.43 and
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`.
 - `[SOON]` Expand the grid only where perceptual review supports it; candidate
   next axes are speaker-specific reranking and style-specific strength maps,
   not another global strength sweep.
 - `[SOON]` If a grid cell is perceptually strong and metric-stable, convert it
   into a checked-in style-strength profile or training target; otherwise keep
   it as diagnostic evidence.
+
+---
+
+### 0.43 Style-Strength A/B Perceptual Review Dashboard (2026-05-06, branch `research/controllable-vae`)
+
+What changed:
+
+- Added `scripts/build_style_grid_review.py`, which builds a single A/B
+  listening dashboard from a reference manifest plus one grid candidate per
+  style.
+- Generated a matched perceptual-review artifact for the current guard versus
+  the top-ranked grid candidates:
+  - reference: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`
+  - candidate `anger`: `mixed_teacher_cvrare_strength_grid_anger_s10`
+  - candidate `disgust`: `mixed_teacher_cvrare_strength_grid_disgust_s10`
+  - candidate `fear`: `mixed_teacher_cvrare_strength_grid_fear_s7p5`
+- The dashboard places source, baseline, reference guard, candidate, and the
+  objective metrics side by side for the same source/style row.
+
+Command:
+
+```bash
+.venv/bin/python scripts/build_style_grid_review.py
+```
+
+Validation:
+
+- `Validation`: `scripts/build_style_grid_review.py` compiled with
+  `py_compile`.
+- `Validation`: CLI help exposes `--reference-manifest`, `--reference-tag`,
+  `--candidate`, `--candidate-input-tag`, and `--rating-template`.
+- `Validation`: the default run produced `33` matched A/B pairs:
+  `11` sources x `3` candidate styles.
+- `Validation`: the HTML uses repo-relative audio links when served from the
+  repo root, so it works with `python -m http.server 8000`.
+- `Validation`: the rating template has one row per A/B pair and columns for
+  preference, target match, intelligibility, naturalness, identity shift, and
+  notes.
+- `Validation`: `git diff --check` passed before commit.
+
+Artifacts:
+
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv`
+
+FINDINGS.md review:
+
+- Reviewed after building the perceptual dashboard. No new paper-facing
+  finding was added because this is a review interface, not a completed human
+  perceptual result. Finding 35 remains the current evidence statement until
+  the rating template is filled and summarized.
+
+Future upgrade to preserve:
+
+- `[NOW]` Fill or collect ratings in
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv`
+  before promoting any candidate preset.
+- `[SOON]` Add a small summarizer for the A/B ratings CSV once scores exist,
+  so perceptual preference can be reported beside recall/WER/MOS.
+- `[SOON]` If `anger_s10` or `fear_s7p5` wins perceptually, create a
+  candidate style-strength profile; keep `disgust_s10` diagnostic unless
+  listening contradicts the MOS warning.
 
 ---
 

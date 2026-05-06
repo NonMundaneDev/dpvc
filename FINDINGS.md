@@ -2709,6 +2709,7 @@ and not a global strength increase.
 
 Recommended listening artifacts:
 
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`
 - `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_anger_s10.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html`
