@@ -117,6 +117,18 @@ def parse_style_strengths(raw, supported_styles, default_strength):
     return strengths
 
 
+def parse_style_names(raw, supported_styles, default_styles=None):
+    raw = (raw or "").strip()
+    if not raw:
+        selected = list(default_styles or supported_styles)
+    else:
+        selected = [item.strip() for item in raw.split(',') if item.strip()]
+    unknown = set(selected) - set(supported_styles)
+    if unknown:
+        raise ValueError(f"Unknown style(s): {sorted(unknown)}")
+    return selected
+
+
 def parse_label_sources(raw):
     raw = (raw or "true").strip()
     if raw.lower() in {"all", "all_labeled", "true,pseudo", "pseudo,true"}:
@@ -235,6 +247,35 @@ def build_style_teacher_row_weights(
         row_weights = row_weights * torch.pow(confidence, confidence_power)
 
     return row_weights.view(-1, 1), style_weights
+
+
+def build_selected_style_row_weights(
+    style_targets,
+    style_label_mask,
+    style_label_confidence,
+    supported_styles,
+    selected_styles,
+    raw_style_weights,
+    confidence_power,
+):
+    row_weights, style_weights = build_style_teacher_row_weights(
+        style_targets,
+        style_label_mask,
+        style_label_confidence,
+        supported_styles,
+        raw_style_weights,
+        confidence_power,
+        require_label=True,
+    )
+    style_indices = torch.argmax(style_targets, dim=1)
+    selected_indices = torch.tensor(
+        [supported_styles.index(style) for style in selected_styles],
+        dtype=torch.long,
+        device=style_targets.device,
+    )
+    selected_mask = torch.isin(style_indices, selected_indices)
+    row_weights = row_weights * selected_mask.float().view(-1, 1)
+    return row_weights, style_weights
 
 
 def main():
@@ -436,6 +477,90 @@ def main():
         ),
     )
     ap.add_argument(
+        "--anti-neutral-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "Decoded-teacher anti-neutral margin loss weight. This decodes a "
+            "style-controlled latent, re-encodes it with the frozen style "
+            "teacher, and penalizes neutral beating the target style "
+            "(default: 0.0, disabled)"
+        ),
+    )
+    ap.add_argument(
+        "--anti-neutral-weight-final",
+        type=float,
+        default=None,
+        help="Optional final anti-neutral loss weight for schedule interpolation",
+    )
+    ap.add_argument(
+        "--anti-neutral-mode",
+        default="teacher_margin",
+        choices=["teacher_margin", "prototype_margin"],
+        help=(
+            "Anti-neutral loss mode. teacher_margin re-encodes decoded embeddings "
+            "with the frozen style teacher; prototype_margin makes decoded "
+            "embeddings closer to the target style prototype than the neutral "
+            "prototype (default: teacher_margin)"
+        ),
+    )
+    ap.add_argument(
+        "--anti-neutral-datasets",
+        default="CommonVoice",
+        help=(
+            "Datasets receiving anti-neutral loss, comma-separated or 'all' "
+            "(default: CommonVoice)"
+        ),
+    )
+    ap.add_argument(
+        "--anti-neutral-styles",
+        default="anger,disgust",
+        help=(
+            "Comma-separated target styles for anti-neutral loss "
+            "(default: anger,disgust)"
+        ),
+    )
+    ap.add_argument(
+        "--anti-neutral-style-weights",
+        default="",
+        help=(
+            "Optional per-style row weights for anti-neutral loss, e.g. "
+            "anger=3,disgust=3"
+        ),
+    )
+    ap.add_argument(
+        "--anti-neutral-margin",
+        type=float,
+        default=0.5,
+        help=(
+            "Margin requiring target style teacher dim to beat neutral dim "
+            "after decoding (default: 0.5)"
+        ),
+    )
+    ap.add_argument(
+        "--anti-neutral-strength",
+        type=float,
+        default=5.0,
+        help="Default style strength used inside anti-neutral loss (default: 5.0)",
+    )
+    ap.add_argument(
+        "--anti-neutral-style-strengths",
+        default="",
+        help=(
+            "Optional per-style strengths for anti-neutral loss, e.g. "
+            "anger=5,disgust=5"
+        ),
+    )
+    ap.add_argument(
+        "--anti-neutral-control-mode",
+        default="target_only",
+        choices=["target_only", "all_style_dims"],
+        help=(
+            "How to apply style controls before decoding for anti-neutral loss "
+            "(default: target_only)"
+        ),
+    )
+    ap.add_argument(
         "--schedule",
         default="static_balanced",
         choices=DEFAULT_SCHEDULES,
@@ -463,18 +588,35 @@ def main():
         help="Optional dataset masses at the end of a non-static schedule",
     )
     args = ap.parse_args()
+    anti_neutral_requested = (
+        args.anti_neutral_weight > 0
+        or (args.anti_neutral_weight_final or 0.0) > 0
+    )
 
     if args.freeze_encoder and args.freeze_decoder:
         ap.error("Refusing to freeze both encoder and decoder; nothing would remain trainable")
     if (
-        (args.style_teacher_weight > 0 or (args.style_teacher_weight_final or 0.0) > 0)
+        (
+            args.style_teacher_weight > 0
+            or (args.style_teacher_weight_final or 0.0) > 0
+            or (anti_neutral_requested and args.anti_neutral_mode == "teacher_margin")
+        )
         and not args.style_teacher_checkpoint
     ):
-        ap.error("--style-teacher-weight > 0 or --style-teacher-weight-final > 0 requires --style-teacher-checkpoint")
+        ap.error(
+            "--style-teacher-weight, --style-teacher-weight-final, "
+            "or teacher-margin anti-neutral loss requires --style-teacher-checkpoint"
+        )
     if args.decoder_prototype_weight < 0 or (args.decoder_prototype_weight_final or 0.0) < 0:
         ap.error("Decoder-prototype weights must be non-negative")
+    if args.anti_neutral_weight < 0 or (args.anti_neutral_weight_final or 0.0) < 0:
+        ap.error("Anti-neutral weights must be non-negative")
     if args.decoder_prototype_strength < 0:
         ap.error("--decoder-prototype-strength must be non-negative")
+    if args.anti_neutral_strength < 0:
+        ap.error("--anti-neutral-strength must be non-negative")
+    if args.anti_neutral_margin < 0:
+        ap.error("--anti-neutral-margin must be non-negative")
     if args.decoder_prototype_min_count < 1:
         ap.error("--decoder-prototype-min-count must be >= 1")
 
@@ -527,7 +669,11 @@ def main():
         raise ValueError("Mixed artifact is missing source_dataset")
     teacher_requested = (
         args.style_teacher_checkpoint
-        and (args.style_teacher_weight > 0 or (args.style_teacher_weight_final or 0.0) > 0)
+        and (
+            args.style_teacher_weight > 0
+            or (args.style_teacher_weight_final or 0.0) > 0
+            or (anti_neutral_requested and args.anti_neutral_mode == "teacher_margin")
+        )
     )
     style_teacher_mask = None
     if teacher_requested:
@@ -557,9 +703,52 @@ def main():
             args.style_teacher_require_label,
         )
 
+    anti_neutral_mask = None
+    anti_neutral_row_weights = None
+    anti_neutral_strengths = None
+    anti_neutral_strength_map = None
+    anti_neutral_styles = []
+    anti_neutral_neutral_index = None
+    if anti_neutral_requested:
+        if "neutral" not in supported_styles:
+            raise ValueError("Anti-neutral loss requires a 'neutral' supported style")
+        anti_neutral_neutral_index = supported_styles.index("neutral")
+        anti_neutral_styles = parse_style_names(
+            args.anti_neutral_styles,
+            supported_styles,
+            default_styles=["anger", "disgust"],
+        )
+        if "neutral" in anti_neutral_styles:
+            raise ValueError("--anti-neutral-styles cannot include neutral")
+        anti_neutral_mask = build_dataset_mask(
+            source_datasets,
+            args.anti_neutral_datasets,
+            device,
+        )
+        anti_neutral_row_weights, anti_neutral_style_weights = build_selected_style_row_weights(
+            style_targets,
+            style_label_mask,
+            style_label_confidence,
+            supported_styles,
+            anti_neutral_styles,
+            args.anti_neutral_style_weights,
+            confidence_power=0.0,
+        )
+        anti_neutral_strength_map = parse_style_strengths(
+            args.anti_neutral_style_strengths,
+            supported_styles,
+            args.anti_neutral_strength,
+        )
+        anti_neutral_strengths = torch.tensor(
+            [anti_neutral_strength_map[style] for style in supported_styles],
+            dtype=torch.float32,
+            device=device,
+        )
+
     decoder_prototype_requested = (
         args.decoder_prototype_weight > 0
         or (args.decoder_prototype_weight_final or 0.0) > 0
+        or (anti_neutral_requested and args.anti_neutral_mode == "prototype_margin")
     )
     decoder_prototype_targets = None
     decoder_prototype_mask = None
@@ -644,6 +833,17 @@ def main():
             print(f"Style teacher style weights: {style_teacher_style_weights}")
         if args.style_teacher_confidence_power > 0:
             print(f"Style teacher confidence power: {args.style_teacher_confidence_power}")
+    if anti_neutral_requested:
+        print(f"Anti-neutral datasets: {args.anti_neutral_datasets}")
+        print(f"Anti-neutral styles: {anti_neutral_styles}")
+        print(f"Anti-neutral mode: {args.anti_neutral_mode}")
+        print(f"Anti-neutral margin: {args.anti_neutral_margin}")
+        print(f"Anti-neutral control mode: {args.anti_neutral_control_mode}")
+        print(f"Anti-neutral strengths: {anti_neutral_strength_map}")
+        if args.anti_neutral_weight_final is not None:
+            print(f"Anti-neutral weight final: {args.anti_neutral_weight_final}")
+        if args.anti_neutral_style_weights:
+            print(f"Anti-neutral style weights: {anti_neutral_style_weights}")
     if decoder_prototype_requested:
         print(f"Decoder prototype source: {args.decoder_prototype_source}")
         print(f"Decoder prototype counts: {decoder_prototype_counts}")
@@ -698,6 +898,18 @@ def main():
         decoder_prototype_row_weights=decoder_prototype_row_weights,
         decoder_prototype_strengths=decoder_prototype_strengths,
         decoder_prototype_control_mode=args.decoder_prototype_control_mode,
+        anti_neutral_weight=args.anti_neutral_weight,
+        anti_neutral_weight_final=args.anti_neutral_weight_final,
+        anti_neutral_mask=anti_neutral_mask,
+        anti_neutral_row_weights=anti_neutral_row_weights,
+        anti_neutral_strengths=anti_neutral_strengths,
+        anti_neutral_margin=args.anti_neutral_margin,
+        anti_neutral_neutral_index=anti_neutral_neutral_index,
+        anti_neutral_control_mode=args.anti_neutral_control_mode,
+        anti_neutral_mode=args.anti_neutral_mode,
+        anti_neutral_prototype_targets=(
+            decoder_prototype_targets if args.anti_neutral_mode == "prototype_margin" else None
+        ),
     )
 
     torch.save(model.state_dict(), args.output)

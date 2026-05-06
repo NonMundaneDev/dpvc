@@ -296,8 +296,13 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `eval_wer_mixed_teacher_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.csv` | `0.2651` mean styled WER | [`examples/eval_wer.py`](../examples/eval_wer.py) | FINDINGS Finding 33 |
 | `eval_mos_mixed_teacher_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.csv` | `-0.2072` MOS delta | [`examples/eval_mos.py`](../examples/eval_mos.py) | FINDINGS Finding 33 |
 | `listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html` | browser listening review | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 33 |
-| `eval_mixed_teacher_generated_audio_failure_mining.csv` | `396` styled rows joined across four conditions, now including the failure-targeted follow-up | [`scripts/analyze_generated_audio_failures.py`](../scripts/analyze_generated_audio_failures.py) | FINDINGS Findings 32-33 |
-| `eval_mixed_teacher_generated_audio_failure_mining.md` | row-level failure readout | [`scripts/analyze_generated_audio_failures.py`](../scripts/analyze_generated_audio_failures.py) | FINDINGS Findings 32-33 |
+| `eval_emotion_mixed_teacher_mixed_teacher_cvrare_antineutral_labeled_warmup.csv` | `40.9%` recall | [`examples/eval_emotion.py`](../examples/eval_emotion.py) | FINDINGS Finding 34 |
+| `eval_novelty_mixed_teacher_mixed_teacher_cvrare_antineutral_labeled_warmup.csv` | `0.2962` novelty gain | [`examples/eval_novelty.py`](../examples/eval_novelty.py) | FINDINGS Finding 34 |
+| `eval_wer_mixed_teacher_mixed_teacher_cvrare_antineutral_labeled_warmup.csv` | `0.2609` mean styled WER | [`examples/eval_wer.py`](../examples/eval_wer.py) | FINDINGS Finding 34 |
+| `eval_mos_mixed_teacher_mixed_teacher_cvrare_antineutral_labeled_warmup.csv` | `-0.2065` MOS delta | [`examples/eval_mos.py`](../examples/eval_mos.py) | FINDINGS Finding 34 |
+| `listening_mixed_teacher_cvrare_antineutral_labeled_warmup.html` | browser listening review | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 34 |
+| `eval_mixed_teacher_generated_audio_failure_mining.csv` | `495` styled rows joined across five conditions, now including the failure-targeted and anti-neutral follow-ups | [`scripts/analyze_generated_audio_failures.py`](../scripts/analyze_generated_audio_failures.py) | FINDINGS Findings 32-34 |
+| `eval_mixed_teacher_generated_audio_failure_mining.md` | row-level failure readout | [`scripts/analyze_generated_audio_failures.py`](../scripts/analyze_generated_audio_failures.py) | FINDINGS Findings 32-34 |
 | `eval_mixed_teacher_failure_conditioned_targets.csv` | target decision rows for `anger`/`disgust`/`fear` | [`scripts/select_failure_conditioned_targets.py`](../scripts/select_failure_conditioned_targets.py) | FINDINGS Finding 32 |
 | `eval_mixed_teacher_failure_conditioned_targets.json` | trainer-ready target-plan config | [`scripts/select_failure_conditioned_targets.py`](../scripts/select_failure_conditioned_targets.py) | FINDINGS Finding 32 |
 | `eval_mixed_teacher_failure_conditioned_targets.md` | target-selection readout | [`scripts/select_failure_conditioned_targets.py`](../scripts/select_failure_conditioned_targets.py) | FINDINGS Finding 32 |
@@ -326,9 +331,14 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 - The first failure-conditioned target-dim style-teacher follow-up is now a
   validated negative result: it keeps novelty high (`0.2960`) and reduces
   content collapse to `1`, but recall drops to `39.4%` and style-to-neutral
-  collapse rises to `26`. The next training objective should use an explicit
-  anti-neutral or generated-audio-calibrated output signal, not just stronger
-  target-dim teacher pressure.
+  collapse rises to `26`. This ruled out stronger target-dim teacher pressure
+  as the next main path.
+- The first anti-neutral prototype-margin follow-up is also a validated
+  negative result: it improves slightly over the target-dim follow-up
+  (`40.9%` recall, `0.2962` novelty, `0.2609` WER), but still loses to the
+  current guard on recall/WER/collapse and leaves `25` style-to-neutral
+  collapses. The next calibration signal should come from actual generated
+  audio, such as a reproducible style-strength grid or reranking artifact.
 
 Non-Trump style-strength sweep from 2026-05-03:
 

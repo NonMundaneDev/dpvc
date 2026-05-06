@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Listening Report: mixed_teacher_cvrare_antineutral_labeled_warmup</title>
+<style>
+:root { color-scheme: light; --ink:#172016; --muted:#66705f; --line:#d7ddcc; --bg:#f7f4ea; --card:#fffdf6; --accent:#315c3a; }
+body { margin:0; font:15px/1.45 Georgia, 'Times New Roman', serif; color:var(--ink); background:linear-gradient(120deg,#f7f4ea,#edf3df); }
+main { max-width:1180px; margin:0 auto; padding:32px 20px 60px; }
+header { border-bottom:2px solid var(--ink); padding-bottom:18px; margin-bottom:22px; }
+h1 { font-size:34px; margin:0 0 8px; letter-spacing:-0.03em; }
+h2 { font-size:22px; margin:34px 0 10px; }
+.meta { color:var(--muted); }
+.panel { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:0 8px 24px rgba(42,51,31,.08); }
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th,td { border-bottom:1px solid var(--line); padding:8px; vertical-align:top; text-align:left; }
+th { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+audio { width:210px; max-width:100%; }
+.style { font-weight:700; color:var(--accent); }
+.checklist li { margin:5px 0; }
+.small { font-size:13px; color:var(--muted); }
+@media (max-width:760px) { table,thead,tbody,tr,th,td { display:block; } th { display:none; } td { border-bottom:0; padding:5px 0; } tr { border-bottom:1px solid var(--line); padding:10px 0; } audio { width:100%; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Listening Report: mixed_teacher_cvrare_antineutral_labeled_warmup</h1>
+<div class="meta">Condition: <code>mixed_teacher_cvrare_antineutral_labeled_warmup</code> · rows: 110 · sources: 11</div>
+</header>
+<section class="panel">
+<h2>How To Listen</h2>
+<ol class="checklist">
+<li>For each speaker, play the source and baseline first.</li>
+<li>Then compare each styled output against the baseline for target emotion, intelligibility, naturalness, and identity shift.</li>
+<li>Use headphones if possible; whisper/confused often trade novelty for quality.</li>
+<li>Record subjective scores in the rating template CSV linked below.</li>
+</ol>
+<p class="small">Rating template: <code>results/listening_mixed_teacher_cvrare_antineutral_labeled_warmup_ratings.csv</code></p>
+<p class="small">Metric CSVs: emotion=<code>results/eval_emotion_mixed_teacher_mixed_teacher_cvrare_antineutral_labeled_warmup.csv</code>, novelty=<code>results/eval_novelty_mixed_teacher_mixed_teacher_cvrare_antineutral_labeled_warmup.csv</code>, wer=<code>results/eval_wer_mixed_teacher_mixed_teacher_cvrare_antineutral_labeled_warmup.csv</code>, mos=<code>results/eval_mos_mixed_teacher_mixed_teacher_cvrare_antineutral_labeled_warmup.csv</code></p>
+</section>
+<h2>cremad_1003</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/cremad_1003.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1003_baseline.wav"></audio><div class="small">cremad_1003_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.9853</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1003_anger.wav"></audio><div class="small">cremad_1003_anger.wav</div></td><td>angry</td><td>angry</td><td>1</td><td>0.2231</td><td>0.0000</td><td>3.9606</td><td>-0.0247</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1003_confused.wav"></audio><div class="small">cremad_1003_confused.wav</div></td><td>sad</td><td></td><td></td><td>0.2593</td><td>0.2857</td><td>3.9608</td><td>-0.0245</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1003_disgust.wav"></audio><div class="small">cremad_1003_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.2469</td><td>0.0000</td><td>3.1083</td><td>-0.8770</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1003_enunciated.wav"></audio><div class="small">cremad_1003_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.4230</td><td>1.0000</td><td>2.7084</td><td>-1.2769</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1003_fear.wav"></audio><div class="small">cremad_1003_fear.wav</div></td><td>sad</td><td>fearful</td><td>0</td><td>0.3640</td><td>0.2857</td><td>3.4963</td><td>-0.4890</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1003_happy.wav"></audio><div class="small">cremad_1003_happy.wav</div></td><td>happy</td><td>happy</td><td>1</td><td>0.1941</td><td>0.0000</td><td>3.9692</td><td>-0.0161</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1003_neutral.wav"></audio><div class="small">cremad_1003_neutral.wav</div></td><td>neutral</td><td>neutral</td><td>1</td><td>0.2308</td><td>0.0000</td><td>3.9866</td><td>+0.0013</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1003_sad.wav"></audio><div class="small">cremad_1003_sad.wav</div></td><td>sad</td><td>sad</td><td>1</td><td>0.1685</td><td>0.1429</td><td>3.9575</td><td>-0.0278</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1003_whisper.wav"></audio><div class="small">cremad_1003_whisper.wav</div></td><td>sad</td><td></td><td></td><td>0.6616</td><td>0.0000</td><td>3.9796</td><td>-0.0057</td></tr>
+</tbody>
+</table>
+</div>
+<h2>cremad_1004</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/cremad_1004.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1004_baseline.wav"></audio><div class="small">cremad_1004_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.9357</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1004_anger.wav"></audio><div class="small">cremad_1004_anger.wav</div></td><td>angry</td><td>angry</td><td>1</td><td>0.2882</td><td>0.0000</td><td>3.9325</td><td>-0.0032</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1004_confused.wav"></audio><div class="small">cremad_1004_confused.wav</div></td><td>sad</td><td></td><td></td><td>0.3620</td><td>0.0000</td><td>3.7017</td><td>-0.2340</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1004_disgust.wav"></audio><div class="small">cremad_1004_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.2825</td><td>0.0000</td><td>2.7031</td><td>-1.2326</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1004_enunciated.wav"></audio><div class="small">cremad_1004_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.4135</td><td>0.0000</td><td>2.2837</td><td>-1.6520</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1004_fear.wav"></audio><div class="small">cremad_1004_fear.wav</div></td><td>sad</td><td>fearful</td><td>0</td><td>0.4024</td><td>0.0000</td><td>3.4799</td><td>-0.4558</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1004_happy.wav"></audio><div class="small">cremad_1004_happy.wav</div></td><td>happy</td><td>happy</td><td>1</td><td>0.2315</td><td>0.0000</td><td>3.9501</td><td>+0.0144</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1004_neutral.wav"></audio><div class="small">cremad_1004_neutral.wav</div></td><td>neutral</td><td>neutral</td><td>1</td><td>0.2727</td><td>0.1429</td><td>3.9456</td><td>+0.0099</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1004_sad.wav"></audio><div class="small">cremad_1004_sad.wav</div></td><td>sad</td><td>sad</td><td>1</td><td>0.1632</td><td>0.1429</td><td>3.9057</td><td>-0.0300</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1004_whisper.wav"></audio><div class="small">cremad_1004_whisper.wav</div></td><td>disgusted</td><td></td><td></td><td>0.6914</td><td>0.0000</td><td>3.8959</td><td>-0.0398</td></tr>
+</tbody>
+</table>
+</div>
+<h2>cremad_1006</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/cremad_1006.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1006_baseline.wav"></audio><div class="small">cremad_1006_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.9306</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1006_anger.wav"></audio><div class="small">cremad_1006_anger.wav</div></td><td>neutral</td><td>angry</td><td>0</td><td>0.3188</td><td>0.1667</td><td>3.5615</td><td>-0.3691</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1006_confused.wav"></audio><div class="small">cremad_1006_confused.wav</div></td><td>sad</td><td></td><td></td><td>0.3971</td><td>0.0000</td><td>3.2738</td><td>-0.6568</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1006_disgust.wav"></audio><div class="small">cremad_1006_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.2595</td><td>0.0000</td><td>3.9718</td><td>+0.0412</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1006_enunciated.wav"></audio><div class="small">cremad_1006_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.3886</td><td>0.0000</td><td>3.7848</td><td>-0.1458</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1006_fear.wav"></audio><div class="small">cremad_1006_fear.wav</div></td><td>neutral</td><td>fearful</td><td>0</td><td>0.3241</td><td>0.0000</td><td>3.9403</td><td>+0.0097</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1006_happy.wav"></audio><div class="small">cremad_1006_happy.wav</div></td><td>surprised</td><td>happy</td><td>0</td><td>0.2869</td><td>0.1667</td><td>3.9364</td><td>+0.0058</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1006_neutral.wav"></audio><div class="small">cremad_1006_neutral.wav</div></td><td>neutral</td><td>neutral</td><td>1</td><td>0.3114</td><td>0.0000</td><td>3.9196</td><td>-0.0110</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1006_sad.wav"></audio><div class="small">cremad_1006_sad.wav</div></td><td>neutral</td><td>sad</td><td>0</td><td>0.0498</td><td>0.0000</td><td>3.8713</td><td>-0.0593</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1006_whisper.wav"></audio><div class="small">cremad_1006_whisper.wav</div></td><td>disgusted</td><td></td><td></td><td>0.6978</td><td>0.5000</td><td>3.3425</td><td>-0.5881</td></tr>
+</tbody>
+</table>
+</div>
+<h2>cremad_1007</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/cremad_1007.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1007_baseline.wav"></audio><div class="small">cremad_1007_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.8897</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1007_anger.wav"></audio><div class="small">cremad_1007_anger.wav</div></td><td>neutral</td><td>angry</td><td>0</td><td>0.3383</td><td>0.0000</td><td>3.9252</td><td>+0.0355</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1007_confused.wav"></audio><div class="small">cremad_1007_confused.wav</div></td><td>sad</td><td></td><td></td><td>0.3260</td><td>0.2500</td><td>3.9643</td><td>+0.0746</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1007_disgust.wav"></audio><div class="small">cremad_1007_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.1669</td><td>0.3750</td><td>3.9675</td><td>+0.0778</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1007_enunciated.wav"></audio><div class="small">cremad_1007_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.2536</td><td>0.7500</td><td>3.7748</td><td>-0.1149</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1007_fear.wav"></audio><div class="small">cremad_1007_fear.wav</div></td><td>sad</td><td>fearful</td><td>0</td><td>0.3375</td><td>0.6250</td><td>3.9602</td><td>+0.0705</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1007_happy.wav"></audio><div class="small">cremad_1007_happy.wav</div></td><td>happy</td><td>happy</td><td>1</td><td>0.1629</td><td>0.7500</td><td>3.8952</td><td>+0.0055</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1007_neutral.wav"></audio><div class="small">cremad_1007_neutral.wav</div></td><td>sad</td><td>neutral</td><td>0</td><td>0.2500</td><td>0.3750</td><td>3.9629</td><td>+0.0732</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1007_sad.wav"></audio><div class="small">cremad_1007_sad.wav</div></td><td>sad</td><td>sad</td><td>1</td><td>0.0601</td><td>0.6250</td><td>3.9032</td><td>+0.0135</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1007_whisper.wav"></audio><div class="small">cremad_1007_whisper.wav</div></td><td>sad</td><td></td><td></td><td>0.6507</td><td>0.1250</td><td>3.3995</td><td>-0.4902</td></tr>
+</tbody>
+</table>
+</div>
+<h2>cremad_1023</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/cremad_1023.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1023_baseline.wav"></audio><div class="small">cremad_1023_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.9399</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1023_anger.wav"></audio><div class="small">cremad_1023_anger.wav</div></td><td>neutral</td><td>angry</td><td>0</td><td>0.2303</td><td>0.0714</td><td>3.9658</td><td>+0.0259</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1023_confused.wav"></audio><div class="small">cremad_1023_confused.wav</div></td><td>sad</td><td></td><td></td><td>0.3161</td><td>0.3571</td><td>3.9739</td><td>+0.0340</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1023_disgust.wav"></audio><div class="small">cremad_1023_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.1760</td><td>0.4286</td><td>3.9696</td><td>+0.0297</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1023_enunciated.wav"></audio><div class="small">cremad_1023_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.2741</td><td>0.4286</td><td>2.4384</td><td>-1.5015</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1023_fear.wav"></audio><div class="small">cremad_1023_fear.wav</div></td><td>sad</td><td>fearful</td><td>0</td><td>0.2976</td><td>0.0714</td><td>3.9659</td><td>+0.0260</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1023_happy.wav"></audio><div class="small">cremad_1023_happy.wav</div></td><td>sad</td><td>happy</td><td>0</td><td>0.1228</td><td>0.2143</td><td>3.9420</td><td>+0.0021</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1023_neutral.wav"></audio><div class="small">cremad_1023_neutral.wav</div></td><td>neutral</td><td>neutral</td><td>1</td><td>0.1502</td><td>0.0714</td><td>3.7109</td><td>-0.2290</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1023_sad.wav"></audio><div class="small">cremad_1023_sad.wav</div></td><td>sad</td><td>sad</td><td>1</td><td>0.0927</td><td>0.2143</td><td>3.8982</td><td>-0.0417</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1023_whisper.wav"></audio><div class="small">cremad_1023_whisper.wav</div></td><td>fearful</td><td></td><td></td><td>0.6646</td><td>0.7143</td><td>3.9745</td><td>+0.0346</td></tr>
+</tbody>
+</table>
+</div>
+<h2>cremad_1045</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/cremad_1045.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1045_baseline.wav"></audio><div class="small">cremad_1045_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.9299</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1045_anger.wav"></audio><div class="small">cremad_1045_anger.wav</div></td><td>neutral</td><td>angry</td><td>0</td><td>0.2744</td><td>0.1429</td><td>3.9663</td><td>+0.0364</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1045_confused.wav"></audio><div class="small">cremad_1045_confused.wav</div></td><td>sad</td><td></td><td></td><td>0.3481</td><td>0.5714</td><td>3.9054</td><td>-0.0245</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1045_disgust.wav"></audio><div class="small">cremad_1045_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.1433</td><td>0.2143</td><td>3.9579</td><td>+0.0280</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1045_enunciated.wav"></audio><div class="small">cremad_1045_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.3014</td><td>0.4286</td><td>3.7225</td><td>-0.2074</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1045_fear.wav"></audio><div class="small">cremad_1045_fear.wav</div></td><td>sad</td><td>fearful</td><td>0</td><td>0.3315</td><td>0.6429</td><td>3.9544</td><td>+0.0245</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1045_happy.wav"></audio><div class="small">cremad_1045_happy.wav</div></td><td>sad</td><td>happy</td><td>0</td><td>0.1631</td><td>0.2857</td><td>3.9475</td><td>+0.0176</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1045_neutral.wav"></audio><div class="small">cremad_1045_neutral.wav</div></td><td>neutral</td><td>neutral</td><td>1</td><td>0.1620</td><td>0.2143</td><td>3.8315</td><td>-0.0984</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1045_sad.wav"></audio><div class="small">cremad_1045_sad.wav</div></td><td>sad</td><td>sad</td><td>1</td><td>0.1088</td><td>0.5000</td><td>3.9065</td><td>-0.0234</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1045_whisper.wav"></audio><div class="small">cremad_1045_whisper.wav</div></td><td>sad</td><td></td><td></td><td>0.6513</td><td>0.1429</td><td>3.9513</td><td>+0.0214</td></tr>
+</tbody>
+</table>
+</div>
+<h2>cremad_1076</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/cremad_1076.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1076_baseline.wav"></audio><div class="small">cremad_1076_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.9091</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1076_anger.wav"></audio><div class="small">cremad_1076_anger.wav</div></td><td>neutral</td><td>angry</td><td>0</td><td>0.2736</td><td>0.0000</td><td>3.9146</td><td>+0.0055</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1076_confused.wav"></audio><div class="small">cremad_1076_confused.wav</div></td><td>neutral</td><td></td><td></td><td>0.3594</td><td>0.0000</td><td>3.9661</td><td>+0.0570</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1076_disgust.wav"></audio><div class="small">cremad_1076_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.3073</td><td>0.0000</td><td>3.9700</td><td>+0.0609</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1076_enunciated.wav"></audio><div class="small">cremad_1076_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.4604</td><td>0.0000</td><td>3.6702</td><td>-0.2389</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1076_fear.wav"></audio><div class="small">cremad_1076_fear.wav</div></td><td>neutral</td><td>fearful</td><td>0</td><td>0.2723</td><td>0.0000</td><td>3.9505</td><td>+0.0414</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1076_happy.wav"></audio><div class="small">cremad_1076_happy.wav</div></td><td>happy</td><td>happy</td><td>1</td><td>0.1490</td><td>0.4286</td><td>3.9185</td><td>+0.0094</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1076_neutral.wav"></audio><div class="small">cremad_1076_neutral.wav</div></td><td>neutral</td><td>neutral</td><td>1</td><td>0.2729</td><td>0.0000</td><td>3.9642</td><td>+0.0551</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1076_sad.wav"></audio><div class="small">cremad_1076_sad.wav</div></td><td>sad</td><td>sad</td><td>1</td><td>0.1154</td><td>0.4286</td><td>3.9163</td><td>+0.0072</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/cremad_1076_whisper.wav"></audio><div class="small">cremad_1076_whisper.wav</div></td><td>disgusted</td><td></td><td></td><td>0.7087</td><td>0.0000</td><td>3.8156</td><td>-0.0935</td></tr>
+</tbody>
+</table>
+</div>
+<h2>female_1_cremad_1002</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/female_1_cremad_1002.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_1_cremad_1002_baseline.wav"></audio><div class="small">female_1_cremad_1002_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.9771</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_1_cremad_1002_anger.wav"></audio><div class="small">female_1_cremad_1002_anger.wav</div></td><td>neutral</td><td>angry</td><td>0</td><td>0.1638</td><td>0.0000</td><td>3.9448</td><td>-0.0323</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_1_cremad_1002_confused.wav"></audio><div class="small">female_1_cremad_1002_confused.wav</div></td><td>sad</td><td></td><td></td><td>0.3050</td><td>0.7500</td><td>3.7488</td><td>-0.2283</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_1_cremad_1002_disgust.wav"></audio><div class="small">female_1_cremad_1002_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.2718</td><td>0.0000</td><td>3.9808</td><td>+0.0037</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_1_cremad_1002_enunciated.wav"></audio><div class="small">female_1_cremad_1002_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.4299</td><td>0.7500</td><td>3.2067</td><td>-0.7704</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_1_cremad_1002_fear.wav"></audio><div class="small">female_1_cremad_1002_fear.wav</div></td><td>sad</td><td>fearful</td><td>0</td><td>0.2366</td><td>0.5000</td><td>3.9783</td><td>+0.0012</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_1_cremad_1002_happy.wav"></audio><div class="small">female_1_cremad_1002_happy.wav</div></td><td>sad</td><td>happy</td><td>0</td><td>0.1442</td><td>0.7500</td><td>3.9485</td><td>-0.0286</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_1_cremad_1002_neutral.wav"></audio><div class="small">female_1_cremad_1002_neutral.wav</div></td><td>neutral</td><td>neutral</td><td>1</td><td>0.1791</td><td>0.0000</td><td>3.9718</td><td>-0.0053</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_1_cremad_1002_sad.wav"></audio><div class="small">female_1_cremad_1002_sad.wav</div></td><td>sad</td><td>sad</td><td>1</td><td>0.0359</td><td>0.7500</td><td>3.9536</td><td>-0.0235</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_1_cremad_1002_whisper.wav"></audio><div class="small">female_1_cremad_1002_whisper.wav</div></td><td>fearful</td><td></td><td></td><td>0.5471</td><td>0.7500</td><td>3.8463</td><td>-0.1308</td></tr>
+</tbody>
+</table>
+</div>
+<h2>female_2_cremad_1012</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/female_2_cremad_1012.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_2_cremad_1012_baseline.wav"></audio><div class="small">female_2_cremad_1012_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.8771</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_2_cremad_1012_anger.wav"></audio><div class="small">female_2_cremad_1012_anger.wav</div></td><td>neutral</td><td>angry</td><td>0</td><td>0.2226</td><td>0.2000</td><td>3.9314</td><td>+0.0543</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_2_cremad_1012_confused.wav"></audio><div class="small">female_2_cremad_1012_confused.wav</div></td><td>neutral</td><td></td><td></td><td>0.3871</td><td>0.2000</td><td>2.1489</td><td>-1.7282</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_2_cremad_1012_disgust.wav"></audio><div class="small">female_2_cremad_1012_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.3747</td><td>0.2000</td><td>2.4912</td><td>-1.3859</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_2_cremad_1012_enunciated.wav"></audio><div class="small">female_2_cremad_1012_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.5556</td><td>0.2000</td><td>1.9679</td><td>-1.9092</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_2_cremad_1012_fear.wav"></audio><div class="small">female_2_cremad_1012_fear.wav</div></td><td>sad</td><td>fearful</td><td>0</td><td>0.2984</td><td>0.2000</td><td>2.9598</td><td>-0.9173</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_2_cremad_1012_happy.wav"></audio><div class="small">female_2_cremad_1012_happy.wav</div></td><td>happy</td><td>happy</td><td>1</td><td>0.1568</td><td>0.2000</td><td>3.9539</td><td>+0.0768</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_2_cremad_1012_neutral.wav"></audio><div class="small">female_2_cremad_1012_neutral.wav</div></td><td>neutral</td><td>neutral</td><td>1</td><td>0.2186</td><td>0.2000</td><td>3.9675</td><td>+0.0904</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_2_cremad_1012_sad.wav"></audio><div class="small">female_2_cremad_1012_sad.wav</div></td><td>sad</td><td>sad</td><td>1</td><td>0.1447</td><td>0.2000</td><td>3.8691</td><td>-0.0080</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/female_2_cremad_1012_whisper.wav"></audio><div class="small">female_2_cremad_1012_whisper.wav</div></td><td>fearful</td><td></td><td></td><td>0.6333</td><td>0.2000</td><td>3.9449</td><td>+0.0678</td></tr>
+</tbody>
+</table>
+</div>
+<h2>male_1_cremad_1003</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/male_1_cremad_1003.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_1_cremad_1003_baseline.wav"></audio><div class="small">male_1_cremad_1003_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.9851</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_1_cremad_1003_anger.wav"></audio><div class="small">male_1_cremad_1003_anger.wav</div></td><td>disgusted</td><td>angry</td><td>0</td><td>0.2085</td><td>0.0000</td><td>3.9728</td><td>-0.0123</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_1_cremad_1003_confused.wav"></audio><div class="small">male_1_cremad_1003_confused.wav</div></td><td>neutral</td><td></td><td></td><td>0.2259</td><td>0.0000</td><td>3.9431</td><td>-0.0420</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_1_cremad_1003_disgust.wav"></audio><div class="small">male_1_cremad_1003_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.2774</td><td>0.0000</td><td>3.8798</td><td>-0.1053</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_1_cremad_1003_enunciated.wav"></audio><div class="small">male_1_cremad_1003_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.3916</td><td>0.0000</td><td>3.9552</td><td>-0.0299</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_1_cremad_1003_fear.wav"></audio><div class="small">male_1_cremad_1003_fear.wav</div></td><td>neutral</td><td>fearful</td><td>0</td><td>0.3646</td><td>0.0000</td><td>3.3318</td><td>-0.6533</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_1_cremad_1003_happy.wav"></audio><div class="small">male_1_cremad_1003_happy.wav</div></td><td>sad</td><td>happy</td><td>0</td><td>0.2010</td><td>0.2500</td><td>3.9849</td><td>-0.0002</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_1_cremad_1003_neutral.wav"></audio><div class="small">male_1_cremad_1003_neutral.wav</div></td><td>neutral</td><td>neutral</td><td>1</td><td>0.1919</td><td>0.0000</td><td>3.9875</td><td>+0.0024</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_1_cremad_1003_sad.wav"></audio><div class="small">male_1_cremad_1003_sad.wav</div></td><td>sad</td><td>sad</td><td>1</td><td>0.1369</td><td>0.2500</td><td>3.9545</td><td>-0.0306</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_1_cremad_1003_whisper.wav"></audio><div class="small">male_1_cremad_1003_whisper.wav</div></td><td>fearful</td><td></td><td></td><td>0.5906</td><td>0.2500</td><td>3.9382</td><td>-0.0469</td></tr>
+</tbody>
+</table>
+</div>
+<h2>male_2_cremad_1051</h2>
+<div class="panel">
+<div><strong>Source</strong></div>
+<audio controls preload="none" src="../examples/source_speakers/male_2_cremad_1051.wav"></audio>
+<table>
+<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>
+<tbody>
+<tr><td class="style">baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_2_cremad_1051_baseline.wav"></audio><div class="small">male_2_cremad_1051_baseline.wav</div></td><td>neutral</td><td></td><td></td><td>0.0000</td><td>0.0000</td><td>3.9772</td><td></td></tr>
+<tr><td class="style">anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_2_cremad_1051_anger.wav"></audio><div class="small">male_2_cremad_1051_anger.wav</div></td><td>neutral</td><td>angry</td><td>0</td><td>0.2176</td><td>0.7500</td><td>3.9777</td><td>+0.0005</td></tr>
+<tr><td class="style">confused</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_2_cremad_1051_confused.wav"></audio><div class="small">male_2_cremad_1051_confused.wav</div></td><td>neutral</td><td></td><td></td><td>0.3407</td><td>0.7500</td><td>3.9686</td><td>-0.0086</td></tr>
+<tr><td class="style">disgust</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_2_cremad_1051_disgust.wav"></audio><div class="small">male_2_cremad_1051_disgust.wav</div></td><td>neutral</td><td>disgusted</td><td>0</td><td>0.1424</td><td>0.7500</td><td>3.9002</td><td>-0.0770</td></tr>
+<tr><td class="style">enunciated</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_2_cremad_1051_enunciated.wav"></audio><div class="small">male_2_cremad_1051_enunciated.wav</div></td><td>neutral</td><td></td><td></td><td>0.2455</td><td>0.0000</td><td>3.3008</td><td>-0.6764</td></tr>
+<tr><td class="style">fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_2_cremad_1051_fear.wav"></audio><div class="small">male_2_cremad_1051_fear.wav</div></td><td>neutral</td><td>fearful</td><td>0</td><td>0.2921</td><td>0.7500</td><td>2.9551</td><td>-1.0221</td></tr>
+<tr><td class="style">happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_2_cremad_1051_happy.wav"></audio><div class="small">male_2_cremad_1051_happy.wav</div></td><td>neutral</td><td>happy</td><td>0</td><td>0.1712</td><td>0.7500</td><td>3.9757</td><td>-0.0015</td></tr>
+<tr><td class="style">neutral</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_2_cremad_1051_neutral.wav"></audio><div class="small">male_2_cremad_1051_neutral.wav</div></td><td>neutral</td><td>neutral</td><td>1</td><td>0.1688</td><td>0.7500</td><td>3.4952</td><td>-0.4820</td></tr>
+<tr><td class="style">sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_2_cremad_1051_sad.wav"></audio><div class="small">male_2_cremad_1051_sad.wav</div></td><td>sad</td><td>sad</td><td>1</td><td>0.1109</td><td>0.5000</td><td>3.9240</td><td>-0.0532</td></tr>
+<tr><td class="style">whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/male_2_cremad_1051_whisper.wav"></audio><div class="small">male_2_cremad_1051_whisper.wav</div></td><td>fearful</td><td></td><td></td><td>0.5545</td><td>0.7500</td><td>3.9815</td><td>+0.0043</td></tr>
+</tbody>
+</table>
+</div>
+</main>
+</body>
+</html>

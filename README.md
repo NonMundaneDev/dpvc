@@ -22,9 +22,9 @@ Current experiment focus on that branch:
 Immediate next queue:
 
 1. use `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` as the current quality-balanced profile, `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest high-novelty result, and `combined` as the cleanest original quality baseline
-2. treat the decoder-prototype training pilots (`mixed_teacher_cvrare_decoder_proto_labeled_warmup`, guarded readout, and lower-weight `mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup`) as verified cautionary baselines, not as the new reference
-3. run perceptual review from `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`, with `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html` and `results/listening_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.html` as decoder-prototype comparisons
-4. move the next training work toward generated-audio failure mining / teacher-calibrated objectives, then add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
+2. treat the decoder-prototype, failure-targeted target-dim, and anti-neutral prototype-margin runs as verified cautionary baselines, not as the new reference
+3. run perceptual review from `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`, with `results/listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html` and `results/listening_mixed_teacher_cvrare_antineutral_labeled_warmup.html` as negative-result comparisons
+4. move the next training work beyond embedding-space proxies toward generated-audio-calibrated strength grids / reranking, then add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
 
@@ -34,7 +34,7 @@ The dedicated next-step plans live in:
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
-- **[`FINDINGS.md`](FINDINGS.md)** — 32 paper-facing findings with methodology and per-row takeaways.
+- **[`FINDINGS.md`](FINDINGS.md)** — 34 paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 
@@ -162,7 +162,13 @@ to `39.4%` and style-to-neutral collapse rises to `26`. The current
 `sad/enunciated` guard therefore remains the quality-balanced reference, and
 the next training direction should add an explicit anti-neutral or
 generated-audio-calibrated output signal rather than more target-dim teacher
-pressure. The non-Trump strength sweep adds a narrower inference-side result:
+pressure. The first anti-neutral prototype-margin follow-up
+(`mixed_teacher_cvrare_antineutral_labeled_warmup`) tests that hypothesis in
+embedding space and is also negative: recall reaches only `40.9%`, novelty
+stays high (`0.2962`), WER is `0.2609`, and style-to-neutral collapse remains
+high at `25`. That rules out another tempting proxy and moves the next best
+work toward actual generated-audio strength grids or reranking. The non-Trump
+strength sweep adds a narrower inference-side result:
 `5.0` remains the safest default, `7.5` is a useful stronger option for styles
 like `whisper` and `confused`, and `10.0-12.5` look more like high-novelty
 specialized settings than new defaults. The main summary artifacts are:
@@ -187,6 +193,8 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html)
 - [`results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html`](results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html)
 - [`results/listening_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.html)
+- [`results/listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html)
+- [`results/listening_mixed_teacher_cvrare_antineutral_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_antineutral_labeled_warmup.html)
 - [`configs/style_strength_profiles/cvrare_sad_enunc_guard.json`](configs/style_strength_profiles/cvrare_sad_enunc_guard.json)
 - [`results/commonvoice_pseudolabel_supply_audit_rare_supply.md`](results/commonvoice_pseudolabel_supply_audit_rare_supply.md)
 - [`results/commonvoice_rare_supply_expansion_preflight.md`](results/commonvoice_rare_supply_expansion_preflight.md)

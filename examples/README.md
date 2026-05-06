@@ -1363,7 +1363,8 @@ Interpretation:
 - `results/eval_mixed_teacher_generated_audio_failure_mining.md` joins generated-audio failures across the current guard, the failure-targeted follow-up, and decoder-prototype baselines; it confirms the current guard has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`
 - `results/eval_mixed_teacher_failure_conditioned_targets.md` converts that failure table into a conservative target plan: `anger` and `disgust` are ready, while `fear` is blocked because there are no clean fear targets under the current reference
 - the first `anger`/`disgust` failure-conditioned target-dim objective is now evaluated as `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup`: it keeps novelty high (`0.2960`) and reduces content collapse to `1`, but recall drops to `39.4%` and style-to-neutral collapse rises to `26`
-- the next mixed-data branch should test an explicit anti-neutral or generated-audio-calibrated output objective, because clean target selection plus target-dim teacher pressure still did not learn the manual `sad/enunciated` guard's quality-balanced repair
+- the first anti-neutral prototype-margin objective is now evaluated as `mixed_teacher_cvrare_antineutral_labeled_warmup`: it slightly improves over the failure-targeted run (`40.9%` recall, `0.2962` novelty, `0.2609` WER), but still loses to the current guard on recall/WER/collapse and leaves `25` style-to-neutral collapses
+- the next mixed-data branch should move beyond embedding-space proxies toward a generated-audio-calibrated style-strength grid or reranking loop, because clean target selection, target-dim teacher pressure, and prototype-margin anti-neutral pressure all failed to learn the manual `sad/enunciated` guard's quality-balanced repair
 
 Expanded rare-supply mixed artifact and first model run:
 
@@ -1567,6 +1568,55 @@ Failure-conditioned target selector recommendation:
 --style-teacher-style-weights anger=3,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0
 ```
 
+Anti-neutral prototype-margin follow-up:
+
+```bash
+python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_cvrare_antineutral_labeled_warmup.pt \
+    --init-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt \
+    --epochs 1000 \
+    --schedule labeled_warmup \
+    --schedule-epochs 1000 \
+    --anti-neutral-weight 0.0 \
+    --anti-neutral-weight-final 0.02 \
+    --anti-neutral-mode prototype_margin \
+    --anti-neutral-datasets CommonVoice \
+    --anti-neutral-styles anger,disgust \
+    --anti-neutral-style-weights anger=3,disgust=3 \
+    --anti-neutral-margin 10.0 \
+    --anti-neutral-strength 5.0 \
+    --decoder-prototype-source true \
+    --decoder-prototype-min-count 5
+
+python scripts/run_ablation_inference.py \
+    --source-dir examples/source_speakers/ \
+    --condition mixed_teacher_cvrare_antineutral_labeled_warmup \
+    --out output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval \
+    --style-strength 5.0 \
+    --noise-level 0.0 \
+    --seed 42
+
+python scripts/run_generated_audio_eval_suite.py \
+    --input output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval \
+    --result-tag mixed_teacher_cvrare_antineutral_labeled_warmup \
+    --input-tag mixed_teacher
+```
+
+Anti-neutral public CLI notes:
+
+- `--anti-neutral-mode teacher_margin` re-encodes decoded controlled embeddings
+  with the frozen style teacher and requires the target style score to beat the
+  neutral score by `--anti-neutral-margin`; smoke diagnostics showed this proxy
+  can be falsely satisfied, so do not use it without calibration.
+- `--anti-neutral-mode prototype_margin` compares decoded controlled
+  embeddings against target and neutral style prototypes; this is the checked
+  follow-up above, but it still does not beat generated-audio calibration.
+- `--anti-neutral-styles`, `--anti-neutral-style-weights`, and
+  `--anti-neutral-datasets` select which labeled rows contribute to the loss.
+- `--anti-neutral-weight-final` ramps the loss under non-static schedules in
+  the same way as the style-teacher and decoder-prototype objectives.
+
 Decoder-prototype result readout:
 
 | Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Files with any collapse | Listening report |
@@ -1575,6 +1625,8 @@ Decoder-prototype result readout:
 | `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `42.4%` | `0.3008` | `0.2863` | `-0.2148` | `27` | `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html` |
 | `mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard` | `42.4%` | `0.2718` | `0.2592` | `-0.1787` | `28` | `results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard.html` |
 | `mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup` | `42.4%` | `0.3032` | `0.2782` | `-0.2122` | `26` | `results/listening_mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup.html` |
+| `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` | `39.4%` | `0.2960` | `0.2651` | `-0.2072` | `28` | `results/listening_mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup.html` |
+| `mixed_teacher_cvrare_antineutral_labeled_warmup` | `40.9%` | `0.2962` | `0.2609` | `-0.2065` | `27` | `results/listening_mixed_teacher_cvrare_antineutral_labeled_warmup.html` |
 
 Per-style canonical recall for the `sad/enunciated` guard:
 

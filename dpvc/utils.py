@@ -302,7 +302,17 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                             decoder_prototype_mask=None,
                             decoder_prototype_row_weights=None,
                             decoder_prototype_strengths=None,
-                            decoder_prototype_control_mode="target_only"):
+                            decoder_prototype_control_mode="target_only",
+                            anti_neutral_weight=0.0,
+                            anti_neutral_weight_final=None,
+                            anti_neutral_mask=None,
+                            anti_neutral_row_weights=None,
+                            anti_neutral_strengths=None,
+                            anti_neutral_margin=0.5,
+                            anti_neutral_neutral_index=None,
+                            anti_neutral_control_mode="target_only",
+                            anti_neutral_mode="teacher_margin",
+                            anti_neutral_prototype_targets=None):
     BATCH_SIZE = min(256, len(embeddings))
     trainable_params = [param for param in model.parameters() if param.requires_grad]
     if not trainable_params:
@@ -313,6 +323,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
         schedule != "static_balanced"
         or style_teacher_weight_final is not None
         or decoder_prototype_weight_final is not None
+        or anti_neutral_weight_final is not None
     ):
         schedule_epochs = epochs
 
@@ -330,6 +341,8 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
           + (f" -> {style_teacher_weight_final}" if style_teacher_weight_final is not None else ""))
     print(f"  decoder-prototype weight: {decoder_prototype_weight}"
           + (f" -> {decoder_prototype_weight_final}" if decoder_prototype_weight_final is not None else ""))
+    print(f"  anti-neutral weight: {anti_neutral_weight}"
+          + (f" -> {anti_neutral_weight_final}" if anti_neutral_weight_final is not None else ""))
     print(f"  schedule     : {schedule}")
     if schedule != "static_balanced":
         print(f"  schedule epochs: {schedule_epochs}")
@@ -380,6 +393,13 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
             )
         )
     )
+    anti_neutral_enabled = (
+        anti_neutral_weight > 0
+        or (
+            anti_neutral_weight_final is not None
+            and anti_neutral_weight_final > 0
+        )
+    )
     if decoder_prototype_enabled:
         if decoder_prototype_targets.shape[0] != style_targets.shape[1]:
             raise ValueError(
@@ -413,6 +433,49 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                     f"min={nonzero_weights.min().item():.3f} "
                     f"max={nonzero_weights.max().item():.3f}"
                 )
+    if anti_neutral_enabled:
+        if anti_neutral_neutral_index is None:
+            raise ValueError(
+                "anti_neutral_neutral_index is required when anti-neutral is enabled"
+            )
+        if anti_neutral_mode == "teacher_margin" and style_teacher_model is None:
+            raise ValueError("teacher_margin anti-neutral mode requires style_teacher_model")
+        if anti_neutral_mode == "prototype_margin" and anti_neutral_prototype_targets is None:
+            raise ValueError(
+                "prototype_margin anti-neutral mode requires anti_neutral_prototype_targets"
+            )
+        if anti_neutral_mode not in {"teacher_margin", "prototype_margin"}:
+            raise ValueError(f"Unsupported anti_neutral_mode: {anti_neutral_mode}")
+        if anti_neutral_strengths is None:
+            anti_neutral_strengths = torch.ones(
+                style_targets.shape[1],
+                dtype=embeddings.dtype,
+                device=embeddings.device,
+            )
+        anti_active = style_label_mask.view(-1) > 0
+        if anti_neutral_mask is not None:
+            anti_active = anti_active & (anti_neutral_mask.view(-1) > 0)
+        if anti_neutral_row_weights is not None:
+            anti_active = anti_active & (anti_neutral_row_weights.view(-1) > 0)
+        anti_rows = int(anti_active.sum().item())
+        nonzero_strengths = anti_neutral_strengths.detach().cpu().tolist()
+        print(f"  anti-neutral rows: {anti_rows}/{len(embeddings)}")
+        print(f"  anti-neutral mode: {anti_neutral_mode}")
+        print(f"  anti-neutral neutral index: {anti_neutral_neutral_index}")
+        print(f"  anti-neutral margin: {anti_neutral_margin}")
+        print(f"  anti-neutral control mode: {anti_neutral_control_mode}")
+        print(f"  anti-neutral strengths: {[round(float(v), 4) for v in nonzero_strengths]}")
+        if anti_neutral_row_weights is not None:
+            nonzero_weights = anti_neutral_row_weights.view(-1)[
+                anti_neutral_row_weights.view(-1) > 0
+            ]
+            if nonzero_weights.numel() > 0:
+                print(
+                    "  anti-neutral row weights: "
+                    f"mean={nonzero_weights.mean().item():.3f} "
+                    f"min={nonzero_weights.min().item():.3f} "
+                    f"max={nonzero_weights.max().item():.3f}"
+                )
 
     print(f"Training mixed-data autoencoder for {epochs} epochs...")
     for epoch in tqdm(range(epochs)):
@@ -425,6 +488,12 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
         current_decoder_prototype_weight = _interpolate_weight(
             decoder_prototype_weight,
             decoder_prototype_weight_final,
+            epoch,
+            schedule_epochs,
+        )
+        current_anti_neutral_weight = _interpolate_weight(
+            anti_neutral_weight,
+            anti_neutral_weight_final,
             epoch,
             schedule_epochs,
         )
@@ -459,6 +528,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
             kl_loss = model.kl
             teacher_style_loss = embeddings_b.new_tensor(0.0)
             decoder_prototype_loss = embeddings_b.new_tensor(0.0)
+            anti_neutral_loss = embeddings_b.new_tensor(0.0)
 
             batch_mask = style_label_mask[batch_indexes].view(-1) > 0
             if batch_mask.any():
@@ -545,12 +615,71 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                         decoder_row_loss = decoder_row_loss * row_weights
                     decoder_prototype_loss = decoder_row_loss.sum()
 
+            if anti_neutral_enabled and current_anti_neutral_weight > 0:
+                anti_batch_mask = style_label_mask[batch_indexes].view(-1) > 0
+                if anti_neutral_mask is not None:
+                    anti_batch_mask = (
+                        anti_batch_mask
+                        & (anti_neutral_mask[batch_indexes].view(-1) > 0)
+                    )
+                if anti_neutral_row_weights is not None:
+                    anti_batch_mask = (
+                        anti_batch_mask
+                        & (anti_neutral_row_weights[batch_indexes].view(-1) > 0)
+                    )
+                if anti_batch_mask.any():
+                    anti_targets_b = style_targets[batch_indexes][anti_batch_mask]
+                    controlled_latents = _apply_style_controls_to_latents(
+                        model.last_mu[anti_batch_mask],
+                        anti_targets_b,
+                        anti_neutral_strengths,
+                        anti_neutral_control_mode,
+                    )
+                    decoded_style_embeddings = model.decoder(controlled_latents)
+                    target_indexes = torch.argmax(anti_targets_b, dim=1)
+                    row_indexes = torch.arange(
+                        target_indexes.shape[0],
+                        device=target_indexes.device,
+                    )
+                    if anti_neutral_mode == "teacher_margin":
+                        teacher_decoded_mu, _ = style_teacher_model.encoder(
+                            decoded_style_embeddings
+                        )
+                        target_scores = teacher_decoded_mu[row_indexes, target_indexes]
+                        neutral_scores = teacher_decoded_mu[:, anti_neutral_neutral_index]
+                        anti_row_loss = torch.relu(
+                            neutral_scores - target_scores + anti_neutral_margin
+                        )
+                    elif anti_neutral_mode == "prototype_margin":
+                        target_prototypes = anti_neutral_prototype_targets[target_indexes]
+                        neutral_prototypes = anti_neutral_prototype_targets[
+                            anti_neutral_neutral_index
+                        ].view(1, -1)
+                        target_dist = (
+                            (decoded_style_embeddings - target_prototypes) ** 2
+                        ).sum(dim=1)
+                        neutral_dist = (
+                            (decoded_style_embeddings - neutral_prototypes) ** 2
+                        ).sum(dim=1)
+                        anti_row_loss = torch.relu(
+                            target_dist - neutral_dist + anti_neutral_margin
+                        )
+                    else:
+                        raise ValueError(f"Unsupported anti_neutral_mode: {anti_neutral_mode}")
+                    if anti_neutral_row_weights is not None:
+                        row_weights = anti_neutral_row_weights[batch_indexes].view(-1)[
+                            anti_batch_mask
+                        ]
+                        anti_row_loss = anti_row_loss * row_weights
+                    anti_neutral_loss = anti_row_loss.sum()
+
             loss = (
                 recon_weight * recon_loss
                 + kl_weight * kl_loss
                 + label_weight * label_loss
                 + current_style_teacher_weight * teacher_style_loss
                 + current_decoder_prototype_weight * decoder_prototype_loss
+                + current_anti_neutral_weight * anti_neutral_loss
             )
             loss.backward()
             optimizer.step()
@@ -567,6 +696,8 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                 f"teacher: {teacher_style_loss.item():.2f} (w={current_style_teacher_weight:.2f})  "
                 f"decoder_proto: {decoder_prototype_loss.item():.2f} "
                 f"(w={current_decoder_prototype_weight:.4f})  "
+                f"anti_neutral: {anti_neutral_loss.item():.2f} "
+                f"(w={current_anti_neutral_weight:.4f})  "
                 f"mix: {masses_str}"
             )
 

@@ -95,8 +95,10 @@ Priority tags:
 - [x] `[DONE]` Build a generated-audio calibration / failure-mining artifact that scores pilot generations with emotion2vec, WER, MOS, novelty, and collapse labels; it confirms the current `sad/enunciated` guard has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`
 - [x] `[DONE]` Build the failure-conditioned target selector; it emits clean target decisions from the generated-audio failure table and marks `anger` / `disgust` as ready while blocking `fear` because the current guard has `0/11` clean fear targets
 - [x] `[DONE]` Run one conservative failure-conditioned style-teacher follow-up using only ready styles (`anger`, `disgust`) with `target_dim` teacher supervision; it is a useful negative result because recall drops to `39.4%`, style-to-neutral collapse rises to `26`, and the current `sad/enunciated` guard remains the reference
-- [ ] `[NOW]` Design the next generated-audio-calibrated objective around an explicit anti-neutral / output-behavior signal rather than more target-dim teacher pressure, because clean `anger`/`disgust` row selection alone did not prevent neutral collapse
+- [x] `[DONE]` Test an explicit anti-neutral prototype-margin objective for `anger`/`disgust`; result: the embedding-space proxy is a useful negative result because recall reaches only `40.9%`, style-to-neutral collapse remains `25`, and the current `sad/enunciated` guard remains the quality-balanced reference
+- [ ] `[NOW]` Move beyond embedding-space proxies toward a true generated-audio-calibrated intervention: start with a reproducible style-strength grid / generated-audio reranking loop over the current guard and hard styles, then only turn it into training supervision if actual audio metrics improve
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
+- [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [ ] `[SOON]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths, because the `sad/enunciated` guard is promising but should not become a hidden manual tuning step
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
@@ -2756,14 +2758,171 @@ Listening artifacts:
 
 Future upgrade to preserve:
 
-- `[NOW]` Design an anti-neutral generated-audio objective for
-  `anger`/`disgust` that penalizes target-style rows when the decoded output is
-  classified as neutral, instead of only pulling target latent dimensions.
+- `[DONE]` Test a first anti-neutral objective for `anger`/`disgust`; the
+  prototype-margin run is logged in section 0.41 and shows that
+  embedding-space anti-neutral margins are still too indirect.
 - `[SOON]` Run a small style-strength grid for the expanded rare-supply
   checkpoint so the current hand-authored `sad/enunciated` guard becomes a
   reproducible calibration result rather than a hidden manual profile.
 - `[SOON]` Keep fear separate until a diagnostic can distinguish fear-style
   failure from content/MOS failure; the selector blocked fear correctly.
+
+---
+
+### 0.41 Anti-Neutral Prototype-Margin Objective (2026-05-06, branch `research/controllable-vae`)
+
+What changed:
+
+- Added anti-neutral training support to `dpvc.utils.train_mixed_autoencoder`.
+- Added anti-neutral CLI controls to
+  `examples/openvoice_train_vae_mixed.py`, including:
+  `--anti-neutral-weight`, `--anti-neutral-weight-final`,
+  `--anti-neutral-mode`, `--anti-neutral-datasets`,
+  `--anti-neutral-styles`, `--anti-neutral-style-weights`,
+  `--anti-neutral-margin`, `--anti-neutral-strength`,
+  `--anti-neutral-style-strengths`, and `--anti-neutral-control-mode`.
+- Added the deterministic ablation condition
+  `mixed_teacher_cvrare_antineutral_labeled_warmup` to
+  `scripts/run_ablation_inference.py`.
+- Tested two anti-neutral proxies:
+  - `teacher_margin`: decoded controlled embeddings are re-encoded by the
+    frozen combined VAE and penalized if target style score does not beat
+    neutral.
+  - `prototype_margin`: decoded controlled embeddings are penalized if they
+    are not closer to the target style prototype than to the neutral prototype.
+- Rejected `teacher_margin` after smoke diagnostics because it produced zero
+  loss on the selected CommonVoice `anger`/`disgust` rows even though
+  generated audio still collapsed toward neutral.
+- Trained and evaluated the stronger `prototype_margin` variant from the
+  expanded rare-supply labeled-warmup checkpoint.
+
+Training command:
+
+```bash
+.venv/bin/python examples/openvoice_train_vae_mixed.py \
+  --embeddings embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
+  --output embeddings/openvoice_vae_mixed_teacher_cvrare_antineutral_labeled_warmup.pt \
+  --init-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt \
+  --epochs 1000 \
+  --schedule labeled_warmup \
+  --schedule-epochs 1000 \
+  --anti-neutral-weight 0.0 \
+  --anti-neutral-weight-final 0.02 \
+  --anti-neutral-mode prototype_margin \
+  --anti-neutral-datasets CommonVoice \
+  --anti-neutral-styles anger,disgust \
+  --anti-neutral-style-weights anger=3,disgust=3 \
+  --anti-neutral-margin 10.0 \
+  --anti-neutral-strength 5.0 \
+  --decoder-prototype-source true \
+  --decoder-prototype-min-count 5
+```
+
+Generation and evaluation commands:
+
+```bash
+.venv/bin/python scripts/run_ablation_inference.py \
+  --source-dir examples/source_speakers/ \
+  --condition mixed_teacher_cvrare_antineutral_labeled_warmup \
+  --out output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval \
+  --style-strength 5.0 \
+  --noise-level 0.0 \
+  --seed 42
+
+.venv/bin/python scripts/run_generated_audio_eval_suite.py \
+  --input output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval \
+  --result-tag mixed_teacher_cvrare_antineutral_labeled_warmup \
+  --input-tag mixed_teacher
+
+.venv/bin/python scripts/analyze_generated_audio_failures.py \
+  --conditions \
+    mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard \
+    mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup \
+    mixed_teacher_cvrare_antineutral_labeled_warmup \
+    mixed_teacher_cvrare_decoder_proto_labeled_warmup \
+    mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup
+```
+
+Validation:
+
+- `Validation`: `py_compile` passed for
+  `examples/openvoice_train_vae_mixed.py`, `dpvc/utils.py`, and
+  `scripts/run_ablation_inference.py` before training.
+- `Validation`: the training CLI help exposes `--anti-neutral-mode`,
+  `teacher_margin`, and `prototype_margin`.
+- `Validation`: the ablation inference CLI exposes
+  `mixed_teacher_cvrare_antineutral_labeled_warmup`.
+- `Validation`: `teacher_margin` smoke diagnostics activated the intended
+  selected rows but produced `0.00` anti-neutral loss, so it was rejected as an
+  uncalibrated proxy.
+- `Validation`: the `prototype_margin` preflight found `129` selected
+  CommonVoice `anger`/`disgust` rows and showed margin `10.0` produced
+  `65/129` violations before training, making it a real optimization signal.
+- `Validation`: training loaded `14195 x 256` embeddings, including `13370`
+  CommonVoice, `546` CREMA-D, and `279` Expresso rows, then saved
+  `embeddings/openvoice_vae_mixed_teacher_cvrare_antineutral_labeled_warmup.pt`.
+- `Validation`: generated audio wrote the expected `110`-row manifest to
+  `output/mixed_teacher_cvrare_antineutral_labeled_warmup_eval/generation_manifest.jsonl`.
+- `Validation`: the generated-audio eval suite wrote emotion, novelty, WER,
+  MOS, summary/collapse, listening HTML, and rating-template outputs.
+- `Validation`: generated-audio failure mining was rerun across five
+  conditions, now including the anti-neutral prototype-margin follow-up.
+
+Comparison:
+
+| Condition | Recall | Novelty gain | Mean styled WER | MOS delta | Content collapse | Style-to-neutral collapse | Identity collapse | Mixed collapse | Files with any collapse |
+|-----------|--------|--------------|-----------------|-----------|------------------|---------------------------|-------------------|----------------|-------------------------|
+| `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` | `47.0%` | `0.2726` | `0.2348` | `-0.2081` | `2` | `18` | `1` | `1` | `20` |
+| `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` | `39.4%` | `0.2960` | `0.2651` | `-0.2072` | `1` | `26` | `1` | `0` | `28` |
+| `mixed_teacher_cvrare_antineutral_labeled_warmup` | `40.9%` | `0.2962` | `0.2609` | `-0.2065` | `1` | `25` | `2` | `1` | `27` |
+| `mixed_teacher_cvrare_decoder_proto_labeled_warmup` | `42.4%` | `0.3008` | `0.2863` | `-0.2148` | `4` | `22` | `1` | `0` | `27` |
+| `mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup` | `42.4%` | `0.3032` | `0.2782` | `-0.2122` | `3` | `22` | `1` | `0` | `26` |
+
+Per-style recall for the anti-neutral prototype-margin follow-up:
+
+| Style | Recall |
+|-------|--------|
+| `anger` | `2/11` |
+| `disgust` | `0/11` |
+| `fear` | `0/11` |
+| `happy` | `5/11` |
+| `neutral` | `10/11` |
+| `sad` | `10/11` |
+
+Readout:
+
+- This is a validated negative result. The anti-neutral prototype-margin proxy
+  does not replace the current `sad/enunciated` guard.
+- It slightly improves over the failure-conditioned target-dim run, but still
+  loses to the guard on recall (`40.9%` vs `47.0%`), WER (`0.2609` vs
+  `0.2348`), style-to-neutral collapse (`25` vs `18`), and any-collapse files
+  (`27` vs `20`).
+- The result is important because it rules out another tempting
+  embedding-space shortcut: decoded embeddings can be closer to target
+  prototypes than neutral prototypes without producing generated audio that
+  emotion2vec recognizes as the target style.
+- The next intervention should use actual generated-audio behavior as the
+  calibration signal, starting with a reproducible style-strength grid or
+  generated-audio reranking loop before turning that signal into a training
+  objective.
+
+Listening artifacts:
+
+- `results/listening_mixed_teacher_cvrare_antineutral_labeled_warmup.html`
+- `results/listening_mixed_teacher_cvrare_antineutral_labeled_warmup_ratings.csv`
+
+Future upgrade to preserve:
+
+- `[NOW]` Build a true generated-audio-calibrated grid/reranking artifact over
+  hard styles (`anger`, `disgust`, `fear`) and current reference checkpoints,
+  using emotion recall, WER, MOS, novelty, and collapse labels from actual
+  generated WAVs.
+- `[SOON]` If the grid finds a consistently better audio-level choice, convert
+  it into a training-time objective or selection rule; do not promote another
+  embedding-only proxy unless it predicts generated-audio metrics.
+- `[SOON]` Keep the failed `teacher_margin` diagnostic in mind: frozen-teacher
+  margin satisfaction in decoded embedding space was not calibrated to
+  generated-audio emotion recognition.
 
 ---
 
