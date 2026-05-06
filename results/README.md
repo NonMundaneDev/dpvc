@@ -315,6 +315,8 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html` | best ranked `fear` grid cell | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 35 |
 | `listening_mixed_teacher_cvrare_strength_grid_ab_review.html` | guard-vs-candidate A/B perceptual review dashboard | [`scripts/build_style_grid_review.py`](../scripts/build_style_grid_review.py) | perceptual review queue for Finding 35 |
 | `listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv` | 33-row subjective rating template | [`scripts/build_style_grid_review.py`](../scripts/build_style_grid_review.py) | perceptual review queue for Finding 35 |
+| `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.csv` | objective-assisted A/B listening triage | [`scripts/summarize_style_grid_review.py`](../scripts/summarize_style_grid_review.py) | perceptual review queue for Finding 35 |
+| `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md` | five-row listen-first summary plus metric traps | [`scripts/summarize_style_grid_review.py`](../scripts/summarize_style_grid_review.py) | perceptual review queue for Finding 35 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.
@@ -357,6 +359,9 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 - The A/B perceptual review dashboard puts the current guard and those top
   grid cells side by side for the same `33` source/style pairs. Use it before
   converting any grid cell into a checked-in style-strength profile.
+- The A/B priority sheet narrows first listening to five rows: two clean target
+  gains and three target gains with quality risk. It also confirms
+  `disgust_s10` has no target-gain rows in this panel.
 
 Non-Trump style-strength sweep from 2026-05-03:
 

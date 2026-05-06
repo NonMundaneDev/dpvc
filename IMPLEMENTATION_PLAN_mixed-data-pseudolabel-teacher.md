@@ -89,6 +89,8 @@ audio-calibrated reranking artifact:
   `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`
 - 33-row rating template:
   `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv`
+- A/B priority summary:
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md`
 
 That answers the first version of the branch question positively: better rare
 pseudo-label supply can move recall well above `18.2%`. The unresolved problem
@@ -124,6 +126,13 @@ Current sub-question after the grid and A/B dashboard:
 **Can perceptually validated, style-specific strength presets preserve the
 `anger` / `fear` row-level gains from generated-audio reranking without
 promoting `disgust_s10` or other metric-only candidates that sound bad?**
+
+The immediate practical queue is now:
+- listen to the five priority A/B rows first
+- fill the rating CSV for those rows
+- rerun `scripts/summarize_style_grid_review.py`
+- only then decide whether `anger_s10` or `fear_s7p5` deserves a candidate
+  style-strength profile
 
 ## 4. What stays fixed
 

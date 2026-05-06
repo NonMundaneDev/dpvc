@@ -96,6 +96,20 @@ This compares the current guard against `anger_s10`, `disgust_s10`, and
 template at
 `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv`.
 
+To rebuild the objective-assisted listening priority sheet:
+
+```bash
+python scripts/summarize_style_grid_review.py
+```
+
+This writes:
+
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.csv`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md`
+
+Use the priority sheet to listen to the most informative rows first. After the
+ratings CSV is filled, rerun the same command to summarize human preferences.
+
 ## Full Pipeline
 
 ### 0. Environment Setup

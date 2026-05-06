@@ -98,6 +98,7 @@ Priority tags:
 - [x] `[DONE]` Test an explicit anti-neutral prototype-margin objective for `anger`/`disgust`; result: the embedding-space proxy is a useful negative result because recall reaches only `40.9%`, style-to-neutral collapse remains `25`, and the current `sad/enunciated` guard remains the quality-balanced reference
 - [x] `[DONE]` Move beyond embedding-space proxies toward a true generated-audio-calibrated intervention; the first generated-audio style-strength grid over `anger`, `disgust`, and `fear` is now checked in, with ranking/listening artifacts showing style-specific candidates but no safe universal default
 - [x] `[DONE]` Build a single A/B perceptual-review dashboard for the best grid cells (`anger_s10`, `disgust_s10`, `fear_s7p5`) against the current `sad/enunciated` guard
+- [x] `[DONE]` Add an objective-assisted A/B triage sheet so perceptual review starts with the most informative rows instead of all 33 pairs
 - [ ] `[NOW]` Complete human/perceptual ratings from the A/B review dashboard before promoting any style-specific inference preset
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
@@ -3088,11 +3089,82 @@ Future upgrade to preserve:
 - `[NOW]` Fill or collect ratings in
   `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv`
   before promoting any candidate preset.
-- `[SOON]` Add a small summarizer for the A/B ratings CSV once scores exist,
-  so perceptual preference can be reported beside recall/WER/MOS.
+- `[DONE]` Add a small summarizer/triage script for the A/B ratings CSV; see
+  section 0.44 and
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md`.
 - `[SOON]` If `anger_s10` or `fear_s7p5` wins perceptually, create a
   candidate style-strength profile; keep `disgust_s10` diagnostic unless
   listening contradicts the MOS warning.
+
+---
+
+### 0.44 Objective-Assisted A/B Review Triage (2026-05-06, branch `research/controllable-vae`)
+
+What changed:
+
+- Added `scripts/summarize_style_grid_review.py`, which summarizes the A/B
+  review dashboard before and after human ratings are filled.
+- Generated an objective-assisted priority sheet that classifies each matched
+  guard-vs-candidate pair as:
+  - `clean_target_gain`
+  - `target_gain_quality_risk`
+  - `novelty_gain_no_recall_gain`
+  - `metric_trap`
+  - `candidate_regression`
+  - `tie_or_minor_change`
+- The script also reads
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv`
+  and will summarize human preferences once ratings are entered.
+
+Command:
+
+```bash
+.venv/bin/python scripts/summarize_style_grid_review.py
+```
+
+Validation:
+
+- `Validation`: `scripts/summarize_style_grid_review.py` compiled with
+  `py_compile`.
+- `Validation`: CLI help exposes `--ratings`, `--out-csv`, `--candidate`, and
+  the reference/candidate input controls.
+- `Validation`: default run summarized `33` matched A/B pairs and wrote both
+  CSV and Markdown outputs.
+- `Validation`: the script correctly reports that no filled human ratings are
+  present yet, so this is triage rather than a perceptual result.
+- `Validation`: `git diff --check` passed before commit.
+
+Artifacts:
+
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.csv`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md`
+
+Triage result:
+
+- Priority rows to listen first: `5`.
+- Clean target gains: `2` rows (`anger` / `cremad_1006`,
+  `fear` / `male_1_cremad_1003`).
+- Target gains with quality risk: `3` rows (`anger` /
+  `female_1_cremad_1002`, `fear` / `cremad_1003`, and `fear` /
+  `female_1_cremad_1002`).
+- `disgust_s10` has no target-gain rows; it is mostly novelty gain without
+  recall gain or metric-trap behavior.
+
+FINDINGS.md review:
+
+- Reviewed after triage generation. No new finding was added because this is
+  objective-assisted review prioritization. It supports Finding 35, but does
+  not replace perceptual scoring.
+
+Future upgrade to preserve:
+
+- `[NOW]` Listen to the five priority rows first in
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`.
+- `[NOW]` Fill the ratings CSV for those rows, then rerun
+  `scripts/summarize_style_grid_review.py` to generate a human-preference
+  summary.
+- `[SOON]` If the filled ratings support `anger_s10` or `fear_s7p5`, add a
+  candidate style-strength profile and rerun the generated-audio eval suite.
 
 ---
 
