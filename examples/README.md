@@ -1361,7 +1361,8 @@ Interpretation:
 - applying `cvrare_sad_enunc_guard` to the decoder-prototype checkpoint improves WER/MOS (`0.2592`, `-0.1787`) but leaves recall at `42.4%` and raises files with any collapse to `28`
 - lowering the decoder-prototype final weight to `0.005` keeps novelty high (`0.3032`) and slightly lowers collapse versus the `0.02` pilot (`26` files), but recall remains `42.4%` and WER remains worse than the current guard (`0.2782`)
 - `results/eval_mixed_teacher_generated_audio_failure_mining.md` joins generated-audio failures across the current guard and decoder-prototype family; it confirms the current guard has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`
-- the next mixed-data branch should move to a failure-conditioned objective, because weight-only decoded-embedding prototype matching did not learn the manual `sad/enunciated` guard's quality-balanced repair
+- `results/eval_mixed_teacher_failure_conditioned_targets.md` converts that failure table into a conservative target plan: `anger` and `disgust` are ready, while `fear` is blocked because there are no clean fear targets under the current reference
+- the next mixed-data branch should move to an `anger`/`disgust` failure-conditioned objective, because weight-only decoded-embedding prototype matching did not learn the manual `sad/enunciated` guard's quality-balanced repair
 
 Expanded rare-supply mixed artifact and first model run:
 
@@ -1553,6 +1554,16 @@ python scripts/run_generated_audio_eval_suite.py \
     --input-tag mixed_teacher
 
 python scripts/analyze_generated_audio_failures.py
+
+python scripts/select_failure_conditioned_targets.py
+```
+
+Failure-conditioned target selector recommendation:
+
+```bash
+--style-teacher-target-mode target_dim \
+--style-teacher-require-label \
+--style-teacher-style-weights anger=3,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0
 ```
 
 Decoder-prototype result readout:

@@ -57,14 +57,20 @@ The generated-audio failure-mining artifact:
 - confirms the current guard has the lowest row-level failure score (`1.9899`)
 - localizes persistent failures to `disgust`, `fear`, and `anger`
 
+The failure-conditioned target selector:
+- `results/eval_mixed_teacher_failure_conditioned_targets.md`
+- selects clean `emotion_miss + style_to_neutral` rows while excluding
+  content/naturalness/novelty/collapse confounds
+- marks `anger` (`5/11`) and `disgust` (`6/11`) ready under the current guard
+- blocks `fear` (`0/11`) for this positive-target objective
+
 That answers the first version of the branch question positively: better rare
 pseudo-label supply can move recall well above `18.2%`. The unresolved problem
 is learning the recall/quality tradeoff directly instead of depending on
 manual per-style inference calibration. The simple decoder-prototype weight
 family did not solve that problem, and failure mining now shows where to aim:
-`emotion_miss + style_to_neutral` rows for `anger` / `disgust` / `fear`, with
-high-WER or very-low-MOS rows excluded from direct positive targets unless the
-objective explicitly repairs content.
+clean `emotion_miss + style_to_neutral` rows for `anger` / `disgust`, with
+`fear` held out until its content/naturalness confound is separated.
 
 So the next highest-value branch is a **decoder-aware or generated-audio style
 objective** that preserves the expanded rare-supply recall gain while repairing
@@ -598,10 +604,11 @@ Immediate next execution steps on this branch:
    `0.2592` / `-0.1787`, and the lower-weight `0.005` run raises novelty to
    `0.3032`, but none beats the expanded rare-supply `sad/enunciated` guard on
    recall/WER/collapse.
-2. Use the generated-audio failure-mining artifact to choose style-specific or
-   true-labeled-only target supervision: prioritize `anger` / `disgust` /
-   `fear` rows that miss by collapsing to neutral, and avoid turning
-   high-WER/low-MOS rows into positive style targets.
+2. Train one conservative failure-conditioned target-dim style-teacher
+   follow-up using the selector output:
+   `--style-teacher-target-mode target_dim --style-teacher-require-label
+   --style-teacher-style-weights
+   anger=3,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0`.
 3. Use
    `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest
    checked-in controllability/novelty reference (`47.0%` recall, `0.2995`
@@ -664,3 +671,7 @@ Expanded rare-supply gate status:
   `sad/enunciated` guard is still the row-level reference (`58/99` any-failure
   rows, mean failure score `1.9899`) and that persistent hard failures are
   concentrated in `disgust`, `fear`, and `anger`.
+- The failure-conditioned target selector narrows the next training run to
+  `anger`/`disgust`; `fear` is real but blocked for this objective because the
+  current reference has `0/11` clean fear targets after filtering out
+  content/naturalness/novelty/collapse confounds.

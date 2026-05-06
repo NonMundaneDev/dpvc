@@ -1,0 +1,153 @@
+{
+  "blocked_styles": [
+    {
+      "selected": 0,
+      "style": "fear",
+      "total": 11
+    }
+  ],
+  "condition_counts": {
+    "mixed_teacher_cvrare_decoder_proto_labeled_warmup": {
+      "reject_confounded_failure": 11,
+      "reject_missing_required_modes": 11,
+      "select_positive_style_target": 11,
+      "total": 33
+    },
+    "mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard": {
+      "reject_confounded_failure": 11,
+      "reject_missing_required_modes": 11,
+      "select_positive_style_target": 11,
+      "total": 33
+    },
+    "mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup": {
+      "reject_confounded_failure": 10,
+      "reject_missing_required_modes": 11,
+      "select_positive_style_target": 12,
+      "total": 33
+    },
+    "mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard": {
+      "reject_confounded_failure": 5,
+      "reject_missing_required_modes": 17,
+      "select_positive_style_target": 11,
+      "total": 33
+    }
+  },
+  "condition_style_counts": {
+    "mixed_teacher_cvrare_decoder_proto_labeled_warmup": {
+      "anger": {
+        "reject_confounded_failure": 3,
+        "reject_missing_required_modes": 3,
+        "select_positive_style_target": 5,
+        "total": 11
+      },
+      "disgust": {
+        "reject_confounded_failure": 6,
+        "select_positive_style_target": 5,
+        "total": 11
+      },
+      "fear": {
+        "reject_confounded_failure": 2,
+        "reject_missing_required_modes": 8,
+        "select_positive_style_target": 1,
+        "total": 11
+      }
+    },
+    "mixed_teacher_cvrare_decoder_proto_labeled_warmup_sad_enunc_guard": {
+      "anger": {
+        "reject_confounded_failure": 3,
+        "reject_missing_required_modes": 3,
+        "select_positive_style_target": 5,
+        "total": 11
+      },
+      "disgust": {
+        "reject_confounded_failure": 6,
+        "select_positive_style_target": 5,
+        "total": 11
+      },
+      "fear": {
+        "reject_confounded_failure": 2,
+        "reject_missing_required_modes": 8,
+        "select_positive_style_target": 1,
+        "total": 11
+      }
+    },
+    "mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup": {
+      "anger": {
+        "reject_confounded_failure": 2,
+        "reject_missing_required_modes": 3,
+        "select_positive_style_target": 6,
+        "total": 11
+      },
+      "disgust": {
+        "reject_confounded_failure": 6,
+        "select_positive_style_target": 5,
+        "total": 11
+      },
+      "fear": {
+        "reject_confounded_failure": 2,
+        "reject_missing_required_modes": 8,
+        "select_positive_style_target": 1,
+        "total": 11
+      }
+    },
+    "mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard": {
+      "anger": {
+        "reject_confounded_failure": 2,
+        "reject_missing_required_modes": 4,
+        "select_positive_style_target": 5,
+        "total": 11
+      },
+      "disgust": {
+        "reject_confounded_failure": 3,
+        "reject_missing_required_modes": 2,
+        "select_positive_style_target": 6,
+        "total": 11
+      },
+      "fear": {
+        "reject_missing_required_modes": 11,
+        "total": 11
+      }
+    }
+  },
+  "exclude_modes": [
+    "content_collapse",
+    "high_wer",
+    "low_mos_delta",
+    "identity_collapse",
+    "mixed_collapse",
+    "low_novelty"
+  ],
+  "min_selected_per_style": 3,
+  "ready_styles": [
+    "anger",
+    "disgust"
+  ],
+  "recommended_decoder_prototype_style_strengths_arg": "anger=5.0,confused=0.0,disgust=5.0,enunciated=0.0,fear=0.0,happy=0.0,neutral=0.0,sad=0.0,whisper=0.0",
+  "recommended_style_teacher_style_weights": {
+    "anger": 3.0,
+    "confused": 0.0,
+    "disgust": 3.0,
+    "enunciated": 0.0,
+    "fear": 0.0,
+    "happy": 0.0,
+    "neutral": 0.0,
+    "sad": 0.0,
+    "whisper": 0.0
+  },
+  "recommended_style_teacher_style_weights_arg": "anger=3,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0",
+  "recommended_training_notes": [
+    "Use ready styles for the first failure-conditioned positive target objective.",
+    "Keep blocked styles diagnostic until style failure can be separated from content/naturalness failure.",
+    "Use target-dim teacher/prototype supervision for ready styles; do not globally increase all style losses."
+  ],
+  "reference_condition": "mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard",
+  "required_modes": [
+    "emotion_miss",
+    "style_to_neutral"
+  ],
+  "target_styles": [
+    "anger",
+    "disgust",
+    "fear"
+  ]
+}

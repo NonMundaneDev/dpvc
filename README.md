@@ -152,8 +152,10 @@ a useful negative/cautionary result and keeps the expanded rare-supply
 `sad/enunciated` guard as the current quality-balanced reference. The new
 generated-audio failure-mining artifact confirms that reference has the lowest
 row-level failure score and localizes the remaining hard styles to `disgust`,
-`fear`, and `anger`, which makes failure-conditioned objectives the next
-training direction. The
+`fear`, and `anger`. The follow-up failure-conditioned selector marks `anger`
+and `disgust` ready for a positive target objective and blocks `fear` because
+there are no clean fear targets under the current reference. This makes a
+targeted `anger`/`disgust` objective the next training direction. The
 non-Trump strength sweep adds a narrower inference-side result: `5.0` remains
 the safest default, `7.5` is a useful stronger option for styles like
 `whisper` and `confused`, and `10.0-12.5` look more like high-novelty
@@ -173,6 +175,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/eval_mixed_teacher_cvrare_strength_profiles_summary.md`](results/eval_mixed_teacher_cvrare_strength_profiles_summary.md)
 - [`results/eval_mixed_teacher_cvrare_decoder_proto_summary.md`](results/eval_mixed_teacher_cvrare_decoder_proto_summary.md)
 - [`results/eval_mixed_teacher_generated_audio_failure_mining.md`](results/eval_mixed_teacher_generated_audio_failure_mining.md)
+- [`results/eval_mixed_teacher_failure_conditioned_targets.md`](results/eval_mixed_teacher_failure_conditioned_targets.md)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html)
 - [`results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html)

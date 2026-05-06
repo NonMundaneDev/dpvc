@@ -93,8 +93,9 @@ Priority tags:
 - [x] `[DONE]` Evaluate the decoder-prototype checkpoint with the existing `cvrare_sad_enunc_guard` style-strength map; the guard improves WER/MOS (`0.2592`, `-0.1787`) but does not recover recall (`42.4%`) or collapse (`28` files), so the decoder-prototype checkpoint remains diagnostic rather than a reference
 - [x] `[DONE]` Try a lower-weight decoder-prototype variant before abandoning the simple weight family; `mixed_teacher_cvrare_decoder_proto_w005_labeled_warmup` keeps recall at `42.4%`, improves novelty to `0.3032`, and lowers any-collapse to `26`, but still misses the `sad/enunciated` guard on recall/WER/MOS/collapse
 - [x] `[DONE]` Build a generated-audio calibration / failure-mining artifact that scores pilot generations with emotion2vec, WER, MOS, novelty, and collapse labels; it confirms the current `sad/enunciated` guard has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`
-- [ ] `[NOW]` Design the next failure-conditioned objective around generated-audio evidence: target `emotion_miss + style_to_neutral` rows for `anger`/`disgust`/`fear`, while excluding high-WER or very-low-MOS rows from direct positive targets unless explicitly repairing content
-- [ ] `[SOON]` Test a true-labeled-only or style-specific decoder-aware objective after failure mining, because the lower-weight prototype result shows that scalar weight reduction alone is too blunt
+- [x] `[DONE]` Build the failure-conditioned target selector; it emits clean target decisions from the generated-audio failure table and marks `anger` / `disgust` as ready while blocking `fear` because the current guard has `0/11` clean fear targets
+- [ ] `[NOW]` Run one conservative failure-conditioned style-teacher follow-up using only ready styles (`anger`, `disgust`) with `target_dim` teacher supervision; do not include `fear` as a positive target until its content/naturalness confound is separated
+- [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [ ] `[SOON]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths, because the `sad/enunciated` guard is promising but should not become a hidden manual tuning step
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
@@ -2539,6 +2540,88 @@ Future upgrade to preserve:
 - `[SOON]` Use that selector to run one targeted objective against
   `anger`/`disgust`/`fear`, then evaluate against the current guard rather
   than against the weaker decoder-prototype rows.
+
+---
+
+### 0.39 Failure-Conditioned Target Selector (2026-05-06, branch `research/controllable-vae`)
+
+What changed:
+
+- Added `scripts/select_failure_conditioned_targets.py`.
+- Converted the generated-audio failure-mining CSV into conservative target
+  decisions for the current hard canonical styles.
+- Wrote:
+  - `results/eval_mixed_teacher_failure_conditioned_targets.csv`
+  - `results/eval_mixed_teacher_failure_conditioned_targets.json`
+  - `results/eval_mixed_teacher_failure_conditioned_targets.md`
+
+Command:
+
+```bash
+.venv/bin/python scripts/select_failure_conditioned_targets.py
+```
+
+Selection rule:
+
+- Target styles: `anger`, `disgust`, `fear`
+- Required modes: `emotion_miss`, `style_to_neutral`
+- Exclude modes: `content_collapse`, `high_wer`, `low_mos_delta`,
+  `identity_collapse`, `mixed_collapse`, `low_novelty`
+- Ready threshold: at least `3` clean selected rows in the reference condition
+  `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`
+
+Validation:
+
+- `Validation`: `.venv/bin/python -m py_compile scripts/select_failure_conditioned_targets.py scripts/analyze_generated_audio_failures.py examples/openvoice_train_vae_mixed.py dpvc/utils.py`
+- `Validation`: `.venv/bin/python scripts/select_failure_conditioned_targets.py --help`
+- `Validation`: selector ran against
+  `results/eval_mixed_teacher_generated_audio_failure_mining.csv` and wrote
+  CSV/JSON/Markdown outputs.
+- `Validation`: reference readout has `33` target rows and `11` selected clean
+  targets.
+- `Validation`: rerun to `/private/tmp` produced `132` target-style decision
+  rows, `45` selected rows across all compared conditions, ready styles
+  `anger`/`disgust`, and blocked style `fear`.
+- `Validation`: generated JSON includes trainer-ready argument strings for
+  style-teacher and decoder-prototype follow-ups.
+- `Validation`: `git diff --check`
+
+Reference readout:
+
+| Style | Target rows | Selected clean targets | Status |
+|-------|-------------|------------------------|--------|
+| `anger` | `11` | `5` | ready |
+| `disgust` | `11` | `6` | ready |
+| `fear` | `11` | `0` | blocked |
+
+Recommended first follow-up:
+
+```bash
+--style-teacher-target-mode target_dim \
+--style-teacher-require-label \
+--style-teacher-style-weights anger=3,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0
+```
+
+Readout:
+
+- `anger` and `disgust` have enough clean style-control failures to justify a
+  conservative positive target objective.
+- `fear` is still a hard style, but it is blocked for this objective because
+  the current reference has no clean fear rows after excluding content,
+  naturalness, identity, mixed-collapse, and low-novelty confounds.
+- The next experiment should not globally increase all style losses. It should
+  apply target-dim teacher supervision only to the ready styles and compare
+  directly against the current `sad/enunciated` guard.
+
+Future upgrade to preserve:
+
+- `[NOW]` Train
+  `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` from
+  the current expanded rare-supply checkpoint using the selector's
+  `anger`/`disgust` target-dim style-teacher weights.
+- `[SOON]` Add a separate fear diagnostic that distinguishes fear-as-style
+  failure from content/naturalness failure before using fear rows as positive
+  style targets.
 
 ---
 
