@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-06 (Finding 34 adds the anti-neutral prototype-margin follow-up)
+**Last updated:** 2026-05-08 (Finding 35 adds generated-audio style-strength grid reranking; the priority-only A/B dashboard is a review artifact, not a new finding)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -2709,6 +2709,8 @@ and not a global strength increase.
 
 Recommended listening artifacts:
 
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md`
 - `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`

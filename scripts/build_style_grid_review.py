@@ -61,6 +61,20 @@ def parse_args():
         default="results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv",
     )
     ap.add_argument(
+        "--priority-csv",
+        default=None,
+        help=(
+            "Optional triage CSV from summarize_style_grid_review.py. "
+            "When set, only matching style/source_stem rows are included."
+        ),
+    )
+    ap.add_argument(
+        "--max-priority",
+        type=int,
+        default=None,
+        help="Optional maximum priority rank to keep from --priority-csv.",
+    )
+    ap.add_argument(
         "--title",
         default="Generated-Audio Strength Grid A/B Review",
     )
@@ -103,6 +117,31 @@ def load_metrics(results_dir, input_tag, result_tag):
                 continue
             by_file.setdefault(file_name, {})[metric] = row
     return by_file, paths
+
+
+def load_priority_keys(path, max_priority=None):
+    keys = {}
+    for order, row in enumerate(read_csv(path)):
+        if max_priority is not None:
+            try:
+                priority = int(row.get("priority", ""))
+            except ValueError:
+                continue
+            if priority > max_priority:
+                continue
+        else:
+            try:
+                priority = int(row.get("priority", ""))
+            except ValueError:
+                priority = order + 1
+        style = (row.get("style") or "").strip()
+        source = (row.get("source_stem") or "").strip()
+        if style and source:
+            keys[(style, source)] = (priority, order)
+    if not keys:
+        limit = f" with priority <= {max_priority}" if max_priority is not None else ""
+        raise ValueError(f"No priority rows found in {path}{limit}")
+    return keys
 
 
 def parse_candidate_spec(raw):
@@ -268,10 +307,24 @@ def write_rating_template(path, pairs):
             )
 
 
-def write_html(path, pairs, title, rating_template, reference_metric_paths, candidate_metric_paths):
-    grouped = {}
-    for pair in pairs:
-        grouped.setdefault(pair["style"], []).append(pair)
+def write_html(
+    path,
+    pairs,
+    title,
+    rating_template,
+    reference_metric_paths,
+    candidate_metric_paths,
+    preserve_pair_order=False,
+):
+    if preserve_pair_order:
+        grouped_items = [("Priority Rows", pairs)]
+        styles = sorted({pair["style"] for pair in pairs})
+    else:
+        grouped = {}
+        for pair in pairs:
+            grouped.setdefault(pair["style"], []).append(pair)
+        grouped_items = sorted(grouped.items())
+        styles = sorted(grouped)
 
     lines = [
         "<!doctype html>",
@@ -306,7 +359,7 @@ def write_html(path, pairs, title, rating_template, reference_metric_paths, cand
         "<main>",
         "<header>",
         f"<h1>{html.escape(title)}</h1>",
-        f"<div class=\"meta\">Pairs: {len(pairs)} · Styles: {', '.join(html.escape(style) for style in sorted(grouped))}</div>",
+        f"<div class=\"meta\">Pairs: {len(pairs)} · Styles: {', '.join(html.escape(style) for style in styles)}</div>",
         "</header>",
         "<section class=\"panel\">",
         "<h2>Review Protocol</h2>",
@@ -337,18 +390,18 @@ def write_html(path, pairs, title, rating_template, reference_metric_paths, cand
         "</section>",
     ]
 
-    for style, style_pairs in sorted(grouped.items()):
+    for style, style_pairs in grouped_items:
         lines.extend([
             f"<h2>{html.escape(style)}</h2>",
             "<div class=\"panel\">",
             "<table>",
-            "<thead><tr><th>Source</th><th>Source / Baseline</th><th>Reference Guard</th><th>Reference Metrics</th><th>Candidate</th><th>Candidate Metrics</th></tr></thead>",
+            "<thead><tr><th>Style / Source</th><th>Source / Baseline</th><th>Reference Guard</th><th>Reference Metrics</th><th>Candidate</th><th>Candidate Metrics</th></tr></thead>",
             "<tbody>",
         ])
         for pair in style_pairs:
             lines.append(
                 "<tr>"
-                f"<td><span class=\"style\">{html.escape(pair['source'])}</span></td>"
+                f"<td><span class=\"style\">{html.escape(pair['style'])}</span><div>{html.escape(pair['source'])}</div></td>"
                 f"<td><div>Source</div>{render_audio(pair['source_file'], path)}<div>Baseline</div>{render_audio(pair['baseline_file'], path)}</td>"
                 f"<td><div class=\"small\">{html.escape(pair['reference_tag'])} · strength {html.escape(fmt(pair['reference_strength']))}</div>{render_audio(pair['reference_file'], path)}</td>"
                 f"<td>{metric_table(pair['reference_metrics'])}</td>"
@@ -378,6 +431,14 @@ def main():
         reference_tag=args.reference_tag,
         candidate_input_tag=args.candidate_input_tag,
     )
+    if args.priority_csv:
+        priority_keys = load_priority_keys(args.priority_csv, args.max_priority)
+        pairs = [
+            pair
+            for pair in pairs
+            if (pair["style"], pair["source"]) in priority_keys
+        ]
+        pairs.sort(key=lambda pair: priority_keys[(pair["style"], pair["source"])])
     if not pairs:
         raise SystemExit("No matched reference/candidate pairs found")
 
@@ -391,6 +452,7 @@ def main():
         rating_template=args.rating_template,
         reference_metric_paths=reference_metric_paths,
         candidate_metric_paths=candidate_metric_paths,
+        preserve_pair_order=bool(args.priority_csv),
     )
     print(f"Wrote A/B listening review to {args.out}")
     print(f"Wrote rating template to {args.rating_template}")

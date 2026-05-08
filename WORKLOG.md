@@ -1,6 +1,6 @@
 # Controllable DP Voice Conversion — Work Log
 
-**Last updated:** 2026-05-06
+**Last updated:** 2026-05-08
 **Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
@@ -99,6 +99,7 @@ Priority tags:
 - [x] `[DONE]` Move beyond embedding-space proxies toward a true generated-audio-calibrated intervention; the first generated-audio style-strength grid over `anger`, `disgust`, and `fear` is now checked in, with ranking/listening artifacts showing style-specific candidates but no safe universal default
 - [x] `[DONE]` Build a single A/B perceptual-review dashboard for the best grid cells (`anger_s10`, `disgust_s10`, `fear_s7p5`) against the current `sad/enunciated` guard
 - [x] `[DONE]` Add an objective-assisted A/B triage sheet so perceptual review starts with the most informative rows instead of all 33 pairs
+- [x] `[DONE]` Build a priority-only A/B listening dashboard from the five triaged rows so perceptual review can start with the cleanest target-gain candidates
 - [ ] `[NOW]` Complete human/perceptual ratings from the A/B review dashboard before promoting any style-specific inference preset
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
@@ -3159,12 +3160,74 @@ FINDINGS.md review:
 Future upgrade to preserve:
 
 - `[NOW]` Listen to the five priority rows first in
-  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`.
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`.
 - `[NOW]` Fill the ratings CSV for those rows, then rerun
   `scripts/summarize_style_grid_review.py` to generate a human-preference
   summary.
 - `[SOON]` If the filled ratings support `anger_s10` or `fear_s7p5`, add a
   candidate style-strength profile and rerun the generated-audio eval suite.
+
+---
+
+### 0.45 Priority-Only Style-Strength A/B Review Dashboard (2026-05-08, branch `research/controllable-vae`)
+
+What changed:
+
+- Extended `scripts/build_style_grid_review.py` with optional
+  `--priority-csv` and `--max-priority` filters.
+- Preserved the default 33-row dashboard behavior; priority filtering is
+  opt-in and keyed by `(style, source_stem)` from the triage CSV.
+- Generated a five-row dashboard and rating template for the first perceptual
+  review pass:
+  - two clean target-gain rows
+  - three target-gain rows with quality risk
+
+Command:
+
+```bash
+.venv/bin/python scripts/build_style_grid_review.py \
+  --priority-csv results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.csv \
+  --max-priority 2 \
+  --out results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html \
+  --rating-template results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv \
+  --title "Generated-Audio Strength Grid Priority A/B Review"
+```
+
+Validation:
+
+- `Validation`: the priority dashboard build produced exactly `5` matched A/B
+  pairs from the `priority <= 2` rows.
+- `Validation`: the default dashboard build still produced `33` matched A/B
+  pairs in a `/tmp` smoke run, so full-review behavior was preserved.
+- `Validation`: `scripts/build_style_grid_review.py` compiled with
+  `py_compile`.
+- `Validation`: CLI help exposes `--priority-csv`, `--max-priority`, and
+  `--rating-template`.
+- `Validation`: `scripts/summarize_style_grid_review.py --ratings` accepts
+  the five-row priority ratings template in a `/tmp` smoke run.
+- `Validation`: `git diff --check` passed before commit.
+
+Artifacts:
+
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv`
+
+FINDINGS.md review:
+
+- Reviewed after generating the priority-only dashboard. No new paper-facing
+  finding was added because no human/perceptual scores have been collected
+  yet. Finding 35 remains the current paper-facing evidence statement.
+
+Future upgrade to preserve:
+
+- `[NOW]` Listen to the priority-only dashboard first and fill
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv`.
+- `[NOW]` After ratings are filled, rerun
+  `scripts/summarize_style_grid_review.py` with the filled ratings and decide
+  whether `anger_s10` or `fear_s7p5` deserves a checked-in style profile.
+- `[SOON]` If none of the five priority rows wins perceptually, keep the grid
+  as a diagnostic artifact and move next to fear/content repair rather than
+  preset promotion.
 
 ---
 

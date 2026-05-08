@@ -79,6 +79,7 @@ own rows, but `fear_s7p5` has high WER and `disgust_s10` hurts MOS without
 improving recall. Treat the grid as a perceptual-review queue, not a new
 global default. Start listening with:
 
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`
 - `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_anger_s10.html`
@@ -95,6 +96,17 @@ This compares the current guard against `anger_s10`, `disgust_s10`, and
 `fear_s7p5` for the same source/style rows and writes a matched rating
 template at
 `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv`.
+
+To rebuild the five-row priority-only A/B dashboard:
+
+```bash
+python scripts/build_style_grid_review.py \
+    --priority-csv results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.csv \
+    --max-priority 2 \
+    --out results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html \
+    --rating-template results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv \
+    --title "Generated-Audio Strength Grid Priority A/B Review"
+```
 
 To rebuild the objective-assisted listening priority sheet:
 

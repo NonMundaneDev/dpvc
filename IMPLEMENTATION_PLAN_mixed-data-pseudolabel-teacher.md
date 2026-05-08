@@ -91,6 +91,10 @@ audio-calibrated reranking artifact:
   `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_ratings.csv`
 - A/B priority summary:
   `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md`
+- Priority-only A/B perceptual-review dashboard:
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`
+- Five-row priority rating template:
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv`
 
 That answers the first version of the branch question positively: better rare
 pseudo-label supply can move recall well above `18.2%`. The unresolved problem
@@ -128,8 +132,10 @@ Current sub-question after the grid and A/B dashboard:
 promoting `disgust_s10` or other metric-only candidates that sound bad?**
 
 The immediate practical queue is now:
-- listen to the five priority A/B rows first
-- fill the rating CSV for those rows
+- listen to the five priority A/B rows first in
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`
+- fill the priority rating CSV for those rows:
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv`
 - rerun `scripts/summarize_style_grid_review.py`
 - only then decide whether `anger_s10` or `fear_s7p5` deserves a candidate
   style-strength profile

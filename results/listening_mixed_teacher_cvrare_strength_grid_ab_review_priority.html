@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generated-Audio Strength Grid Priority A/B Review</title>
+<style>
+:root { color-scheme: light; --ink:#181713; --muted:#726f64; --line:#ddd5c4; --bg:#faf6eb; --card:#fffdf7; --accent:#8a3f25; --good:#2f6846; --warn:#946f1c; }
+body { margin:0; font:15px/1.45 Georgia, 'Times New Roman', serif; background:radial-gradient(circle at 10% 0%, #fff5dd 0, transparent 34%), linear-gradient(135deg,#faf6eb,#eef2df); color:var(--ink); }
+main { max-width:1240px; margin:0 auto; padding:34px 20px 64px; }
+header { border-bottom:2px solid var(--ink); margin-bottom:20px; padding-bottom:18px; }
+h1 { font-size:36px; letter-spacing:-0.035em; margin:0 0 8px; }
+h2 { font-size:24px; margin:34px 0 12px; }
+.panel { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:0 12px 30px rgba(42,33,21,.08); }
+.small, .meta { color:var(--muted); font-size:13px; }
+table { width:100%; border-collapse:collapse; margin-top:12px; }
+th, td { border-bottom:1px solid var(--line); padding:9px; vertical-align:top; text-align:left; }
+th { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+audio { width:190px; max-width:100%; }
+dl { display:grid; grid-template-columns:auto 1fr; gap:2px 8px; margin:0; font-size:13px; }
+dt { color:var(--muted); }
+dd { margin:0; font-variant-numeric:tabular-nums; }
+.style { color:var(--accent); font-weight:700; }
+.missing { color:var(--warn); font-weight:700; }
+.steps li { margin:5px 0; }
+@media (max-width:820px) { table,thead,tbody,tr,th,td { display:block; } th { display:none; } tr { border-bottom:1px solid var(--line); padding:12px 0; } td { border:0; padding:5px 0; } audio { width:100%; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>Generated-Audio Strength Grid Priority A/B Review</h1>
+<div class="meta">Pairs: 5 · Styles: anger, fear</div>
+</header>
+<section class="panel">
+<h2>Review Protocol</h2>
+<ol class="steps">
+<li>For each row, listen to the source and baseline first.</li>
+<li>Compare the reference guard against the candidate without looking only at the objective metrics.</li>
+<li>Prefer the candidate only if target style is audibly stronger and speech remains intelligible/natural.</li>
+<li>Record scores in the rating CSV; the candidate should not become a preset without perceptual support.</li>
+</ol>
+<p class="small">Rating template: <code>results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv</code></p>
+<p class="small">Reference metric CSVs: emotion=<code>results/eval_emotion_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.csv</code>, novelty=<code>results/eval_novelty_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.csv</code>, wer=<code>results/eval_wer_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.csv</code>, mos=<code>results/eval_mos_mixed_teacher_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.csv</code></p>
+<p class="small">Candidate metric CSVs: mixed_teacher_cvrare_strength_grid_anger_s10 [emotion=<code>results/eval_emotion_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_anger_s10.csv</code>, novelty=<code>results/eval_novelty_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_anger_s10.csv</code>, wer=<code>results/eval_wer_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_anger_s10.csv</code>, mos=<code>results/eval_mos_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_anger_s10.csv</code>]; mixed_teacher_cvrare_strength_grid_disgust_s10 [emotion=<code>results/eval_emotion_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_disgust_s10.csv</code>, novelty=<code>results/eval_novelty_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_disgust_s10.csv</code>, wer=<code>results/eval_wer_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_disgust_s10.csv</code>, mos=<code>results/eval_mos_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_disgust_s10.csv</code>]; mixed_teacher_cvrare_strength_grid_fear_s7p5 [emotion=<code>results/eval_emotion_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_fear_s7p5.csv</code>, novelty=<code>results/eval_novelty_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_fear_s7p5.csv</code>, wer=<code>results/eval_wer_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_fear_s7p5.csv</code>, mos=<code>results/eval_mos_mixed_teacher_strength_grid_mixed_teacher_cvrare_strength_grid_fear_s7p5.csv</code>]</p>
+</section>
+<h2>Priority Rows</h2>
+<div class="panel">
+<table>
+<thead><tr><th>Style / Source</th><th>Source / Baseline</th><th>Reference Guard</th><th>Reference Metrics</th><th>Candidate</th><th>Candidate Metrics</th></tr></thead>
+<tbody>
+<tr><td><span class="style">anger</span><div>cremad_1006</div></td><td><div>Source</div><audio controls preload="none" src="../examples/source_speakers/cremad_1006.wav"></audio><div class="small">cremad_1006.wav</div><div>Baseline</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1006_baseline.wav"></audio><div class="small">cremad_1006_baseline.wav</div></td><td><div class="small">mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard · strength 5.0</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1006_anger.wav"></audio><div class="small">cremad_1006_anger.wav</div></td><td><dl><dt>pred</dt><dd>neutral</dd><dt>match</dt><dd>0</dd><dt>score</dt><dd>0.8834</dd><dt>novelty</dt><dd>0.3805</dd><dt>WER</dt><dd>0.0000</dd><dt>MOS Δ</dt><dd>-0.6623</dd></dl></td><td><div class="small">mixed_teacher_cvrare_strength_grid_anger_s10 · strength 10.0</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_anger_s10/cremad_1006_anger.wav"></audio><div class="small">cremad_1006_anger.wav</div></td><td><dl><dt>pred</dt><dd>angry</dd><dt>match</dt><dd>1</dd><dt>score</dt><dd>0.9628</dd><dt>novelty</dt><dd>0.3930</dd><dt>WER</dt><dd>0.0000</dd><dt>MOS Δ</dt><dd>-0.5494</dd></dl></td></tr>
+<tr><td><span class="style">fear</span><div>male_1_cremad_1003</div></td><td><div>Source</div><audio controls preload="none" src="../examples/source_speakers/male_1_cremad_1003.wav"></audio><div class="small">male_1_cremad_1003.wav</div><div>Baseline</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/male_1_cremad_1003_baseline.wav"></audio><div class="small">male_1_cremad_1003_baseline.wav</div></td><td><div class="small">mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard · strength 5.0</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/male_1_cremad_1003_fear.wav"></audio><div class="small">male_1_cremad_1003_fear.wav</div></td><td><dl><dt>pred</dt><dd>sad</dd><dt>match</dt><dd>0</dd><dt>score</dt><dd>0.6620</dd><dt>novelty</dt><dd>0.4044</dd><dt>WER</dt><dd>0.0000</dd><dt>MOS Δ</dt><dd>-0.7188</dd></dl></td><td><div class="small">mixed_teacher_cvrare_strength_grid_fear_s7p5 · strength 7.5</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_fear_s7p5/male_1_cremad_1003_fear.wav"></audio><div class="small">male_1_cremad_1003_fear.wav</div></td><td><dl><dt>pred</dt><dd>fearful</dd><dt>match</dt><dd>1</dd><dt>score</dt><dd>0.5898</dd><dt>novelty</dt><dd>0.4731</dd><dt>WER</dt><dd>0.0000</dd><dt>MOS Δ</dt><dd>-0.6636</dd></dl></td></tr>
+<tr><td><span class="style">anger</span><div>female_1_cremad_1002</div></td><td><div>Source</div><audio controls preload="none" src="../examples/source_speakers/female_1_cremad_1002.wav"></audio><div class="small">female_1_cremad_1002.wav</div><div>Baseline</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/female_1_cremad_1002_baseline.wav"></audio><div class="small">female_1_cremad_1002_baseline.wav</div></td><td><div class="small">mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard · strength 5.0</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/female_1_cremad_1002_anger.wav"></audio><div class="small">female_1_cremad_1002_anger.wav</div></td><td><dl><dt>pred</dt><dd>fearful</dd><dt>match</dt><dd>0</dd><dt>score</dt><dd>0.6471</dd><dt>novelty</dt><dd>0.2090</dd><dt>WER</dt><dd>0.0000</dd><dt>MOS Δ</dt><dd>-0.0247</dd></dl></td><td><div class="small">mixed_teacher_cvrare_strength_grid_anger_s10 · strength 10.0</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_anger_s10/female_1_cremad_1002_anger.wav"></audio><div class="small">female_1_cremad_1002_anger.wav</div></td><td><dl><dt>pred</dt><dd>angry</dd><dt>match</dt><dd>1</dd><dt>score</dt><dd>0.8111</dd><dt>novelty</dt><dd>0.2796</dd><dt>WER</dt><dd>0.7500</dd><dt>MOS Δ</dt><dd>-0.0111</dd></dl></td></tr>
+<tr><td><span class="style">fear</span><div>cremad_1003</div></td><td><div>Source</div><audio controls preload="none" src="../examples/source_speakers/cremad_1003.wav"></audio><div class="small">cremad_1003.wav</div><div>Baseline</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1003_baseline.wav"></audio><div class="small">cremad_1003_baseline.wav</div></td><td><div class="small">mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard · strength 5.0</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1003_fear.wav"></audio><div class="small">cremad_1003_fear.wav</div></td><td><dl><dt>pred</dt><dd>sad</dd><dt>match</dt><dd>0</dd><dt>score</dt><dd>0.9740</dd><dt>novelty</dt><dd>0.3985</dd><dt>WER</dt><dd>0.4286</dd><dt>MOS Δ</dt><dd>-0.5571</dd></dl></td><td><div class="small">mixed_teacher_cvrare_strength_grid_fear_s7p5 · strength 7.5</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_fear_s7p5/cremad_1003_fear.wav"></audio><div class="small">cremad_1003_fear.wav</div></td><td><dl><dt>pred</dt><dd>fearful</dd><dt>match</dt><dd>1</dd><dt>score</dt><dd>0.8082</dd><dt>novelty</dt><dd>0.4685</dd><dt>WER</dt><dd>1.1429</dd><dt>MOS Δ</dt><dd>-0.3900</dd></dl></td></tr>
+<tr><td><span class="style">fear</span><div>female_1_cremad_1002</div></td><td><div>Source</div><audio controls preload="none" src="../examples/source_speakers/female_1_cremad_1002.wav"></audio><div class="small">female_1_cremad_1002.wav</div><div>Baseline</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/female_1_cremad_1002_baseline.wav"></audio><div class="small">female_1_cremad_1002_baseline.wav</div></td><td><div class="small">mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard · strength 5.0</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/female_1_cremad_1002_fear.wav"></audio><div class="small">female_1_cremad_1002_fear.wav</div></td><td><dl><dt>pred</dt><dd>sad</dd><dt>match</dt><dd>0</dd><dt>score</dt><dd>0.5557</dd><dt>novelty</dt><dd>0.2735</dd><dt>WER</dt><dd>0.5000</dd><dt>MOS Δ</dt><dd>-0.8640</dd></dl></td><td><div class="small">mixed_teacher_cvrare_strength_grid_fear_s7p5 · strength 7.5</div><audio controls preload="none" src="../output/mixed_teacher_cvrare_strength_grid/mixed_teacher_cvrare_strength_grid_fear_s7p5/female_1_cremad_1002_fear.wav"></audio><div class="small">female_1_cremad_1002_fear.wav</div></td><td><dl><dt>pred</dt><dd>fearful</dd><dt>match</dt><dd>1</dd><dt>score</dt><dd>0.7964</dd><dt>novelty</dt><dd>0.3408</dd><dt>WER</dt><dd>0.7500</dd><dt>MOS Δ</dt><dd>-0.0063</dd></dl></td></tr>
+</tbody>
+</table>
+</div>
+</main>
+</body>
+</html>
