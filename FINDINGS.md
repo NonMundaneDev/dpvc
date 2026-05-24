@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-08 (Finding 35 adds generated-audio style-strength grid reranking; the priority-only A/B dashboard is a review artifact, not a new finding)
+**Last updated:** 2026-05-24 (Finding 35 now includes Joe's first priority A/B listening review)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -2698,19 +2698,48 @@ Same-style comparison against the current `sad/enunciated` guard:
    grid is a style-specific reranking artifact, not a new universal inference
    profile.
 
+### Human Perceptual Check (Joe, May 19, 2026)
+
+Joe reviewed the five priority A/B rows from the priority-only dashboard:
+
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`
+
+Result:
+
+| Preference | Count |
+|------------|-------|
+| `candidate` | `0` |
+| `reference` | `1` |
+| `tie / indistinguishable` | `4` |
+
+The single reference win was the `fear / male_1_cremad_1003` row, where Joe
+reported that the candidate had an unnatural pitch change. He also noted that
+even that difference was small.
+
+This closes the first perceptual gate negatively: the objective metric-selected
+high-strength candidates did not produce a human-perceptible improvement over
+the current `sad/enunciated` guard on the five highest-priority rows. Therefore
+`anger_s10` and `fear_s7p5` should not become checked-in style presets yet.
+
 ### Implication
 
 Finding 35 gives the first positive evidence for generated-audio-calibrated
 control policy search, but it also prevents overclaiming. Audio-level strength
 reranking can recover target labels for specific hard styles, especially
-`anger` and `fear`, yet the safe next step is perceptual review and
-style-specific preset design, not another embedding-space training objective
-and not a global strength increase.
+`anger` and `fear`, yet Joe's first listening review shows those objective wins
+are not perceptually salient enough to promote as presets. The grid should stay
+as a diagnostic artifact; the next positive work should move to additional
+controllable attributes such as CommonVoice age/gender controls, clearer metric
+documentation, or a stronger generated-audio/content-repair loop.
 
 Recommended listening artifacts:
 
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md`
 - `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`
@@ -2790,7 +2819,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 32. The decoder-prototype objective family is a cautionary baseline, not the new reference: the first run reaches `42.4%` recall and `0.3008` novelty but worsens WER/collapse, the guarded readout improves WER/MOS without recovering recall, and the lower-weight `0.005` run still stays at `42.4%` recall with `0.2782` WER. Generated-audio failure mining confirms the current guard still has the lowest row-level failure score and localizes persistent failures to `disgust`, `fear`, and `anger`; the failure-conditioned selector narrows the next positive target objective to `anger`/`disgust` while blocking `fear`.
 33. Failure-conditioned target-dim style-teacher supervision is a useful negative result: `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` keeps novelty high (`0.2960`) and slightly reduces content collapse (`1`), but recall drops to `39.4%` and style-to-neutral collapse rises to `26`. Clean target selection alone does not force decoded audio out of the neutral basin, so the next objective needs an explicit anti-neutral or generated-audio-calibrated output signal.
 34. Anti-neutral prototype-margin supervision is also a useful negative result: `mixed_teacher_cvrare_antineutral_labeled_warmup` slightly improves over the failure-targeted target-dim run (`40.9%` recall, `0.2962` novelty, `0.2609` WER), but still loses to the current `sad/enunciated` guard on recall (`47.0%`), WER (`0.2348`), style-to-neutral collapse (`18` vs `25`), and any-collapse files (`20` vs `27`). Embedding-space anti-neutral proxies are not enough; the next calibration signal must come from generated audio itself.
-35. The first generated-audio style-strength grid confirms that audio-calibrated reranking is the right next lens but not a solved default: `anger_s10` improves anger recall from `1/11` to `3/11` with moderate WER cost, `fear_s7p5` improves fear recall from `3/11` to `6/11` but has high WER (`0.5231`), and `disgust_s10` raises novelty while failing to improve recall and severely hurting MOS (`-0.6039`). This should drive perceptual review and style-specific presets, not a global strength increase.
+35. The first generated-audio style-strength grid confirms that audio-calibrated reranking is the right next lens but not a solved default: `anger_s10` improves anger recall from `1/11` to `3/11` with moderate WER cost, `fear_s7p5` improves fear recall from `3/11` to `6/11` but has high WER (`0.5231`), and `disgust_s10` raises novelty while failing to improve recall and severely hurting MOS (`-0.6039`). Joe's first five-row listening review found `0/5` candidate wins (`4` ties and `1` reference preference), so these objective gains should stay diagnostic rather than become checked-in style presets.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion

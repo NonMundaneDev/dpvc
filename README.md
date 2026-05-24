@@ -23,9 +23,9 @@ Immediate next queue:
 
 1. use `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard` as the current quality-balanced profile, `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` as the strongest high-novelty result, and `combined` as the cleanest original quality baseline
 2. treat the decoder-prototype, failure-targeted target-dim, and anti-neutral prototype-margin runs as verified cautionary baselines, not as the new reference
-3. run perceptual review from the priority-only A/B dashboard `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`, using `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md` as the objective triage sheet
-4. only promote style-specific presets after perceptual review; the grid improves some hard-style rows but is not yet a safe global strength increase
-5. then add the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
+3. treat Joe's first priority A/B listening review as a perceptual gate: four rows sounded identical to the guard, one row preferred the guard, and no metric-selected candidate won perceptually
+4. do not promote `anger_s10` or `fear_s7p5` as checked-in style presets yet; keep the generated-audio grid as a diagnostic artifact
+5. then add CommonVoice age/gender controls, the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
 
@@ -199,6 +199,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`](results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html)
 - [`results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`](results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html)
 - [`results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md`](results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md)
+- [`results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`](results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html)
 - [`results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html`](results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html)
 - [`results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html`](results/listening_mixed_teacher_cvrare_decoder_proto_labeled_warmup.html)

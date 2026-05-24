@@ -75,9 +75,10 @@ novelty, WER, MOS, collapse labels, and listening reports, then writes:
 - `results/eval_mixed_teacher_cvrare_strength_grid_ranking.md`
 
 Current readout: `anger_s10` and `fear_s7p5` improve target recall on their
-own rows, but `fear_s7p5` has high WER and `disgust_s10` hurts MOS without
-improving recall. Treat the grid as a perceptual-review queue, not a new
-global default. Start listening with:
+own rows, but Joe's first five-row listening review found `0/5` candidate
+wins (`4` ties and `1` reference preference). Treat the grid as a diagnostic
+artifact, not a new global default or checked-in style preset. Listening
+artifacts:
 
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`
@@ -121,6 +122,10 @@ This writes:
 
 Use the priority sheet to listen to the most informative rows first. After the
 ratings CSV is filled, rerun the same command to summarize human preferences.
+Joe's first filled-rating artifact is:
+
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`
 
 ## Full Pipeline
 

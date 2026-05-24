@@ -1,6 +1,6 @@
 # Controllable DP Voice Conversion — Work Log
 
-**Last updated:** 2026-05-08
+**Last updated:** 2026-05-24
 **Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
@@ -100,12 +100,17 @@ Priority tags:
 - [x] `[DONE]` Build a single A/B perceptual-review dashboard for the best grid cells (`anger_s10`, `disgust_s10`, `fear_s7p5`) against the current `sad/enunciated` guard
 - [x] `[DONE]` Add an objective-assisted A/B triage sheet so perceptual review starts with the most informative rows instead of all 33 pairs
 - [x] `[DONE]` Build a priority-only A/B listening dashboard from the five triaged rows so perceptual review can start with the cleanest target-gain candidates
-- [ ] `[NOW]` Complete human/perceptual ratings from the A/B review dashboard before promoting any style-specific inference preset
+- [x] `[DONE]` Complete Joe's first five-row human/perceptual review from the A/B dashboard; result was `4` ties/indistinguishable, `1` reference preference, and `0` candidate wins, so no style-specific preset is promoted yet
+- [ ] `[NOW]` Add CommonVoice metadata controls for age and gender, because Joe's May 14 feedback reframed emotion as one controllable speaker attribute rather than the only target
+- [ ] `[NOW]` Add a Joe-facing metric and collapse taxonomy guide, especially clarifying that identity collapse is low novelty gain vs baseline, not WER
+- [ ] `[NOW]` Start paper-method documentation for architecture, data mixture, training schedule, and evaluation justification once the listening review and first age/gender control baseline are in hand
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
+- [ ] `[SOON]` Compare strict pseudo-label filtering against looser confidence-only or minimally filtered CommonVoice pseudo labels, because Joe's May 14 question raised a valid possibility that filtering may discard useful breadth once all CommonVoice rows have weak labels
 - [x] `[DONE]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths; the first grid is intentionally narrow and should be expanded only after perceptual review confirms the ranked cells sound useful
 - [ ] `[SOON]` Add a browser index for grid listening reports, because the grid now produces many per-cell HTML/rating files and manual link-hunting is error-prone
+- [ ] `[SOON]` Include anticipated questions and concise answers in every future Joe-facing meeting brief, because the May 14 meeting showed predictable questions about pseudo-labeling, filtering, collapse, DP, and evaluation should be pre-answered
 - [x] `[DONE]` Persist teacher-branch evaluation corpora and summary artifacts under stable `mixed_teacher_*` names; the branch now has `output/mixed_teacher_threshold_balanced_eval/`, `output/mixed_teacher_labeled_finish_eval/`, `output/mixed_teacher_labeled_guarded_eval/`, and the checked-in `results/eval_mixed_teacher_summary.csv` / `results/eval_mixed_teacher_collapse.csv` bundle
 
 ### Phase 2: Evaluation (Joe: emotion eval is #1 priority)
@@ -3214,20 +3219,144 @@ Artifacts:
 
 FINDINGS.md review:
 
-- Reviewed after generating the priority-only dashboard. No new paper-facing
-  finding was added because no human/perceptual scores have been collected
-  yet. Finding 35 remains the current paper-facing evidence statement.
+- Updated Finding 35 after Joe's first priority A/B listening review. The
+  perceptual result is negative for preset promotion: `0/5` candidate wins,
+  `4/5` ties/indistinguishable, and `1/5` reference preference.
 
 Future upgrade to preserve:
 
-- `[NOW]` Listen to the priority-only dashboard first and fill
-  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv`.
-- `[NOW]` After ratings are filled, rerun
-  `scripts/summarize_style_grid_review.py` with the filled ratings and decide
-  whether `anger_s10` or `fear_s7p5` deserves a checked-in style profile.
-- `[SOON]` If none of the five priority rows wins perceptually, keep the grid
-  as a diagnostic artifact and move next to fear/content repair rather than
-  preset promotion.
+- `[DONE]` Joe listened to the priority-only dashboard and provided qualitative
+  ratings in Teams. Encoded results are in
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv`.
+- `[DONE]` Reran `scripts/summarize_style_grid_review.py` with Joe's filled
+  ratings. Summary is in
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`.
+- `[NOW]` Because none of the five priority rows won perceptually, keep the
+  style-strength grid as a diagnostic artifact and do not promote `anger_s10`
+  or `fear_s7p5` as checked-in style profiles yet.
+- `[SOON]` If we return to generated-audio calibration later, focus on
+  content/naturalness repair or broader listener panels rather than simply
+  increasing style strength.
+
+---
+
+### 0.46 May 14 Joe Meeting Debrief and Direction Update (2026-05-14, branch `research/controllable-vae`)
+
+Context:
+
+- Reviewed the current mixed-data / generated-audio calibration status with
+  Joe and Ivoline.
+- A durable post-meeting debrief is saved at
+  `MEETING_DEBRIEF_JOE_2026-05-14.md`.
+
+What Joe clarified:
+
+- Emotion control does not need to be perfect or world-class; the broader
+  claim is controllable speaker generation / anonymization with multiple
+  controllable attributes.
+- Strong, perceptually obvious styles such as `whisper` and possibly `anger`
+  are enough to carry the demonstration if the outputs sound convincing.
+- CommonVoice age/gender metadata should be incorporated next, because age and
+  gender are additional speaker attributes with labels already present in the
+  broad corpus.
+- The phrase `identity collapse` needs to be explained more carefully; Joe
+  reasonably heard `collapse` as possibly meaning garbage audio, while our
+  current metric means low OpenVoice novelty gain versus baseline.
+- If the five-row listening review and age/gender controls look acceptable,
+  the project may be close to paper-writing mode: architecture, training data,
+  and evaluation strategy should be documented clearly.
+
+Important correction preserved for future meetings:
+
+- `content_collapse`: high WER / poor intelligibility.
+- `style_collapse_to_neutral`: non-neutral target predicted as neutral by the
+  emotion model.
+- `identity_collapse_to_baseline`: low novelty gain versus baseline in
+  OpenVoice speaker-embedding space; this is not WER.
+- `mixed_collapse`: multiple collapse axes on the same generated file.
+
+Communication feedback preserved:
+
+- Start future updates with the top-line result before experiment details.
+- Avoid saying pseudo-label filtering is `cherry picking` or `hope for the
+  best`; call it a confidence-gated weak-label selection step with auditable
+  accepted/rejected counts.
+- Say `emotion2vec_plus_large` for the pseudo-label teacher/evaluator, not
+  `EmoVoice classifier`.
+- Separate content preservation, style control, identity/novelty, and
+  anonymization modes explicitly.
+- Every future Joe-facing meeting brief should include anticipated questions
+  and concise answers.
+
+Updated near-term task sequence:
+
+- `[DONE]` Joe completed the five-row priority listening review in Teams; no
+  CSV transfer was needed after encoding his message into the ratings artifact.
+- `[NOW]` Add a plain-English metric/collapse guide for Joe and future paper
+  readers.
+- `[NOW]` Design and implement the first CommonVoice metadata-controls
+  experiment for age and gender.
+- `[SOON]` Add a filtered-vs-looser-pseudo-label ablation so Joe's question
+  about whether filtering is actually necessary becomes an empirical result.
+- `[SOON]` Start paper-method documentation covering architecture, data
+  mixture, training schedule, and evaluation justification.
+- `[SOON]` Package generated-audio review artifacts so collaborators do not
+  depend on Steve-local output directories.
+
+FINDINGS.md review:
+
+- No new paper-facing finding was added from the meeting alone. The next
+  FINDINGS update should wait for either filled perceptual ratings or an
+  evaluated age/gender-control result.
+
+---
+
+### 0.47 Joe Priority A/B Listening Review Result (2026-05-24, branch `research/controllable-vae`)
+
+Context:
+
+- Joe could not send back the CSV file through Teams, but he returned the five
+  row judgments in message form.
+- I encoded his response into a separate ratings file so the blank template
+  remains reusable.
+
+Artifacts:
+
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.csv`
+- `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`
+
+Perceptual result:
+
+- Row 1, `anger / cremad_1006`, `anger_s10`: tie; Joe said the reference and
+  candidate sounded identical.
+- Row 2, `fear / male_1_cremad_1003`, `fear_s7p5`: reference preferred; Joe
+  heard an unnatural pitch change in the candidate, though the difference was
+  small.
+- Row 3, `anger / female_1_cremad_1002`, `anger_s10`: tie.
+- Row 4, `fear / cremad_1003`, `fear_s7p5`: tie.
+- Row 5, `fear / female_1_cremad_1002`, `fear_s7p5`: tie.
+
+Interpretation:
+
+- Objective metric gains did not translate into a perceptual win in Joe's
+  first five-row review.
+- Do not promote `anger_s10` or `fear_s7p5` as checked-in presets yet.
+- Treat the grid as a useful diagnostic for where objective metrics and human
+  perception diverge.
+- The next practical research step should move to CommonVoice age/gender
+  controls and the metric/collapse guide, rather than another style-strength
+  increase.
+
+Validation:
+
+- `Validation`: Joe's five Teams judgments were mapped to the exact priority
+  dashboard row order.
+- `Validation`: the Joe-specific ratings CSV has the expected `16` columns on
+  all rows.
+- `Validation`: `scripts/summarize_style_grid_review.py` produced a human
+  ratings summary with `5` filled rows, `4` ties, `1` reference preference, and
+  `0` candidate wins.
 
 ---
 

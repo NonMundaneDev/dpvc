@@ -319,6 +319,9 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md` | five-row listen-first summary plus metric traps | [`scripts/summarize_style_grid_review.py`](../scripts/summarize_style_grid_review.py) | perceptual review queue for Finding 35 |
 | `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html` | five-row priority-only A/B perceptual review dashboard | [`scripts/build_style_grid_review.py`](../scripts/build_style_grid_review.py) | perceptual review queue for Finding 35 |
 | `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv` | five-row subjective rating template | [`scripts/build_style_grid_review.py`](../scripts/build_style_grid_review.py) | perceptual review queue for Finding 35 |
+| `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv` | Joe's encoded five-row subjective ratings from Teams | manual transcription from Joe review | FINDINGS Finding 35 |
+| `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.csv` | objective-assisted A/B triage with Joe ratings attached | [`scripts/summarize_style_grid_review.py`](../scripts/summarize_style_grid_review.py) | FINDINGS Finding 35 |
+| `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md` | Joe review summary: `4` ties, `1` reference preference, `0` candidate wins | [`scripts/summarize_style_grid_review.py`](../scripts/summarize_style_grid_review.py) | FINDINGS Finding 35 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.
@@ -366,6 +369,10 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
   dashboard and rating template expose only those five rows for the first
   perceptual pass. The triage also confirms `disgust_s10` has no target-gain
   rows in this panel.
+- Joe's first five-row listening review found no candidate wins: `4/5` rows
+  sounded identical to the current guard and `1/5` preferred the guard because
+  the candidate had an unnatural pitch change. Keep `anger_s10` and
+  `fear_s7p5` diagnostic for now rather than promoting them as presets.
 
 Non-Trump style-strength sweep from 2026-05-03:
 
