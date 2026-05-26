@@ -1,6 +1,6 @@
 # Controllable DP Voice Conversion — Work Log
 
-**Last updated:** 2026-05-24
+**Last updated:** 2026-05-26
 **Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
@@ -101,8 +101,9 @@ Priority tags:
 - [x] `[DONE]` Add an objective-assisted A/B triage sheet so perceptual review starts with the most informative rows instead of all 33 pairs
 - [x] `[DONE]` Build a priority-only A/B listening dashboard from the five triaged rows so perceptual review can start with the cleanest target-gain candidates
 - [x] `[DONE]` Complete Joe's first five-row human/perceptual review from the A/B dashboard; result was `4` ties/indistinguishable, `1` reference preference, and `0` candidate wins, so no style-specific preset is promoted yet
-- [ ] `[NOW]` Add CommonVoice metadata controls for age and gender, because Joe's May 14 feedback reframed emotion as one controllable speaker attribute rather than the only target
-- [ ] `[NOW]` Add a Joe-facing metric and collapse taxonomy guide, especially clarifying that identity collapse is low novelty gain vs baseline, not WER
+- [x] `[DONE]` Create the canonical evidence/demo packet and listening index so the substantial current result can be reviewed without branch archaeology
+- [x] `[DONE]` Add a Joe-facing metric and collapse taxonomy guide, especially clarifying that identity collapse is low novelty gain vs baseline, not WER
+- [ ] `[NOW]` Add CommonVoice metadata controls for age and gender on a dedicated branch, because Joe's May 14 feedback reframed emotion as one controllable speaker attribute rather than the only target
 - [ ] `[NOW]` Start paper-method documentation for architecture, data mixture, training schedule, and evaluation justification once the listening review and first age/gender control baseline are in hand
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
@@ -3357,6 +3358,64 @@ Validation:
 - `Validation`: `scripts/summarize_style_grid_review.py` produced a human
   ratings summary with `5` filled rows, `4` ties, `1` reference preference, and
   `0` candidate wins.
+
+---
+
+### 0.48 Canonical Evidence/Demo Packet (2026-05-26, branch `research/evidence-demo-packet`)
+
+Goal:
+
+- Consolidate the substantial current result into one reviewable packet before
+  starting CommonVoice age/gender controls.
+- Make it easy to explain that Joe's latest priority A/B review rejected the
+  stronger strength-grid candidates, not the whole controllable speaker system.
+
+Artifacts:
+
+- `EVIDENCE_DEMO_PACKET.md`
+- `docs/metric_collapse_guide.md`
+- `results/listening_evidence_demo_index.html`
+
+What changed:
+
+- Added a root-level evidence packet that separates:
+  - current quality-balanced demo evidence,
+  - high-recall/high-novelty scientific tradeoff evidence,
+  - Joe's negative perceptual gate on the metric-selected strength candidates,
+  - historical evidence that OpenVoice + CREMA-D/Expresso produced perceptibly
+    distinct controls.
+- Added a browser-playable listening index with a quick-listen panel for two
+  source speakers and useful current controls (`anger`, `happy`, `sad`,
+  `whisper`, plus one cleaner `fear` row).
+- Added a plain-English metric/collapse guide that defines style recall,
+  WER/content collapse, MOS/naturalness, novelty/identity collapse, and mixed
+  collapse.
+
+Interpretation:
+
+- The current project has a substantial result: controllable speaker
+  generation/anonymization with audible style controls and a strong mixed-data
+  quantitative result around `47%` emotion recall.
+- The newest high-strength `anger_s10` / `fear_s7p5` candidates should not be
+  promoted as presets because Joe did not hear a perceptual candidate win.
+- The next research branch should test CommonVoice age/gender controls so the
+  paper story becomes multi-attribute controllable speaker generation, not only
+  emotion conversion.
+
+Validation:
+
+- `Validation`: the listening index references existing local source/audio
+  files and existing result dashboards.
+- `Validation`: the metric guide preserves the corrected collapse taxonomy
+  from the May 14 Joe debrief.
+- `Validation`: no new paper-facing finding was added because this packet
+  consolidates existing evidence rather than producing a new experiment.
+
+Next:
+
+- `[NOW]` Start `research/commonvoice-metadata-controls` from the canonical
+  research line and audit CommonVoice age/gender metadata coverage before
+  training.
 
 ---
 

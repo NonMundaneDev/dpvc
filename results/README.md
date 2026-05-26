@@ -310,6 +310,7 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `eval_mixed_teacher_strength_grid_collapse.csv` | per-row collapse labels for the grid | [`scripts/run_style_strength_grid.py`](../scripts/run_style_strength_grid.py) | FINDINGS Finding 35 |
 | `eval_mixed_teacher_cvrare_strength_grid_ranking.csv` | per-style ranked grid cells | [`scripts/summarize_style_strength_grid.py`](../scripts/summarize_style_strength_grid.py) | FINDINGS Finding 35 |
 | `eval_mixed_teacher_cvrare_strength_grid_ranking.md` | grid readout and best-cell table | [`scripts/summarize_style_strength_grid.py`](../scripts/summarize_style_strength_grid.py) | FINDINGS Finding 35 |
+| `listening_evidence_demo_index.html` | canonical listening index for current evidence/demo review | hand-authored evidence packet | evidence/demo packet for Findings 30-35 |
 | `listening_mixed_teacher_cvrare_strength_grid_anger_s10.html` | best ranked `anger` grid cell | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 35 |
 | `listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html` | best ranked `disgust` grid cell | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 35 |
 | `listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html` | best ranked `fear` grid cell | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 35 |
@@ -373,6 +374,9 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
   sounded identical to the current guard and `1/5` preferred the guard because
   the candidate had an unnatural pitch change. Keep `anger_s10` and
   `fear_s7p5` diagnostic for now rather than promoting them as presets.
+- `listening_evidence_demo_index.html` is the first page to open for local
+  perceptual review. It links to the current guard, the high-novelty checkpoint,
+  Joe's priority A/B gate, and embeds a small quick-listen panel.
 
 Non-Trump style-strength sweep from 2026-05-03:
 

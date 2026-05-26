@@ -23,6 +23,7 @@ nav:
   - controlvc_wrapper.md
   - controlvc_setup.md
   - quick_reference.md
+  - metric_collapse_guide.md
   - training.md
   - wrapping.md
   - reference.md

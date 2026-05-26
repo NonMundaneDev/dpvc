@@ -2736,6 +2736,7 @@ documentation, or a stronger generated-audio/content-repair loop.
 
 Recommended listening artifacts:
 
+- `results/listening_evidence_demo_index.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings.csv`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv`

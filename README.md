@@ -17,7 +17,7 @@ Canonical research branch:
 
 Current experiment focus on that branch:
 
-- **mixed-data generated-audio calibration and style-specific reranking**
+- **canonical evidence/demo packet, then CommonVoice age/gender controls**
 
 Immediate next queue:
 
@@ -25,12 +25,14 @@ Immediate next queue:
 2. treat the decoder-prototype, failure-targeted target-dim, and anti-neutral prototype-margin runs as verified cautionary baselines, not as the new reference
 3. treat Joe's first priority A/B listening review as a perceptual gate: four rows sounded identical to the guard, one row preferred the guard, and no metric-selected candidate won perceptually
 4. do not promote `anger_s10` or `fear_s7p5` as checked-in style presets yet; keep the generated-audio grid as a diagnostic artifact
-5. then add CommonVoice age/gender controls, the Joe-facing metric guide, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
+5. use the canonical evidence packet and metric guide to explain what already works, then add CommonVoice age/gender controls, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
 
 - **[`IMPLEMENTATION_PLAN_post-consolidation-next-queue.md`](IMPLEMENTATION_PLAN_post-consolidation-next-queue.md)** — historical record of the consolidation / rollback sequence
 - **[`IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md`](IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md)** — the technical plan for the current experiment slice on `research/controllable-vae`
+- **[`EVIDENCE_DEMO_PACKET.md`](EVIDENCE_DEMO_PACKET.md)** — the one-page evidence/demo packet for the current substantial result and next branch
+- **[`docs/metric_collapse_guide.md`](docs/metric_collapse_guide.md)** — plain-English metric and collapse definitions for meetings and paper writing
 
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
 
@@ -197,6 +199,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/eval_mixed_teacher_failure_conditioned_targets.md`](results/eval_mixed_teacher_failure_conditioned_targets.md)
 - [`results/eval_mixed_teacher_cvrare_strength_grid_ranking.md`](results/eval_mixed_teacher_cvrare_strength_grid_ranking.md)
 - [`results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html`](results/listening_mixed_teacher_cvrare_strength_grid_ab_review.html)
+- [`results/listening_evidence_demo_index.html`](results/listening_evidence_demo_index.html)
 - [`results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html`](results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html)
 - [`results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md`](results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.md)
 - [`results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`](results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md)

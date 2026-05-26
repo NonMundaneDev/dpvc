@@ -13,3 +13,12 @@ Install the library by cloning the repository and then running:
 ```
 pip install .
 ```
+
+## Current Research Notes
+
+The active controllable-speaker research line is maintained in the research
+fork, not upstream `main`. For the latest research interpretation, start with:
+
+- [Metric and Collapse Guide](metric_collapse_guide.md)
+- `EVIDENCE_DEMO_PACKET.md` at the repository root
+- `results/listening_evidence_demo_index.html` for local listening review

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DPVC Evidence Demo Index</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink: #18251f;
+  --muted: #627066;
+  --line: #d9dfd3;
+  --bg: #f4f1e8;
+  --card: #fffdf7;
+  --accent: #2f6045;
+  --warn: #8a4b16;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 15px/1.5 Georgia, "Times New Roman", serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(47,96,69,.14), transparent 32%),
+    linear-gradient(130deg, #f4f1e8, #eaf1df 58%, #f7efe2);
+}
+main { max-width: 1180px; margin: 0 auto; padding: 34px 20px 64px; }
+header { border-bottom: 2px solid var(--ink); padding-bottom: 18px; margin-bottom: 22px; }
+h1 { margin: 0 0 8px; font-size: clamp(32px, 6vw, 58px); line-height: .95; letter-spacing: -.05em; }
+h2 { margin: 34px 0 12px; font-size: 25px; }
+h3 { margin: 18px 0 8px; font-size: 18px; }
+a { color: var(--accent); font-weight: 700; }
+.meta, .small { color: var(--muted); }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.card, .listen-set {
+  background: rgba(255,253,247,.92);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 12px 30px rgba(45, 57, 39, .08);
+}
+.kicker { text-transform: uppercase; letter-spacing: .11em; font-size: 12px; color: var(--muted); font-weight: 700; }
+.badge { display: inline-block; padding: 3px 8px; border: 1px solid var(--line); border-radius: 999px; background: #f8f4e8; color: var(--muted); font-size: 12px; }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+th, td { border-bottom: 1px solid var(--line); padding: 9px 8px; vertical-align: top; text-align: left; }
+th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+audio { width: 100%; min-width: 190px; }
+.callout { border-left: 5px solid var(--warn); padding: 12px 14px; background: rgba(255, 246, 231, .86); border-radius: 12px; }
+@media (max-width: 760px) {
+  .grid { grid-template-columns: 1fr; }
+  table, thead, tbody, tr, th, td { display: block; }
+  th { display: none; }
+  tr { border-bottom: 1px solid var(--line); padding: 10px 0; }
+  td { border: 0; padding: 5px 0; }
+}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="kicker">Canonical evidence packet</div>
+  <h1>Controllable voice evidence, without the branch archaeology.</h1>
+  <p class="meta">Use this page first when listening locally. It separates the substantial current result from the newer strength-grid candidates that Joe did not perceptually prefer.</p>
+</header>
+
+<section class="grid">
+  <article class="card">
+    <div class="kicker">Current demo reference</div>
+    <h2>Quality-balanced guarded report</h2>
+    <p>Best first full listening surface. It keeps the expanded rare-supply recall result while improving content/naturalness.</p>
+    <p><a href="listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html">Open guarded listening report</a></p>
+    <span class="badge">recommended demo profile</span>
+  </article>
+  <article class="card">
+    <div class="kicker">Scientific tradeoff</div>
+    <h2>High-recall / high-novelty report</h2>
+    <p>Shows the stronger expanded rare-supply checkpoint before the guard. Useful for explaining recall versus quality.</p>
+    <p><a href="listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.html">Open high-novelty listening report</a></p>
+    <span class="badge">about 47% recall / 0.2995 novelty</span>
+  </article>
+  <article class="card">
+    <div class="kicker">Perceptual gate</div>
+    <h2>Joe's five-row A/B review</h2>
+    <p>Joe heard four ties and one reference preference. No strength-grid candidate won perceptually.</p>
+    <p><a href="listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.html">Open priority A/B dashboard</a></p>
+    <p><a href="listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md">Open Joe review summary</a></p>
+    <span class="badge">0 / 5 candidate wins</span>
+  </article>
+  <article class="card">
+    <div class="kicker">Diagnostic grid</div>
+    <h2>Full strength-grid A/B report</h2>
+    <p>Useful for analysis, not for presets. It shows where objective metrics and human perception can diverge.</p>
+    <p><a href="listening_mixed_teacher_cvrare_strength_grid_ab_review.html">Open full A/B dashboard</a></p>
+    <span class="badge">diagnostic only</span>
+  </article>
+</section>
+
+<section>
+  <h2>Quick Listen: Useful Current Controls</h2>
+  <p class="small">Listen source -> baseline -> style controls. These examples use the current guarded profile.</p>
+
+  <div class="listen-set">
+    <h3>Source: cremad_1003</h3>
+    <table>
+      <thead><tr><th>Clip</th><th>Audio</th><th>Why listen</th></tr></thead>
+      <tbody>
+        <tr><td>Source</td><td><audio controls preload="none" src="../examples/source_speakers/cremad_1003.wav"></audio></td><td>Original input speaker/content.</td></tr>
+        <tr><td>Baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1003_baseline.wav"></audio></td><td>OpenVoice conversion without a style control.</td></tr>
+        <tr><td>Anger</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1003_anger.wav"></audio></td><td>Target-class match in the report with low WER.</td></tr>
+        <tr><td>Happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1003_happy.wav"></audio></td><td>Clear target-class match and low content cost.</td></tr>
+        <tr><td>Sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1003_sad.wav"></audio></td><td>Useful to hear the low-energy control; check intelligibility.</td></tr>
+        <tr><td>Whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1003_whisper.wav"></audio></td><td>Historically the clearest non-emotion control.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="listen-set" style="margin-top:16px">
+    <h3>Source: cremad_1004</h3>
+    <table>
+      <thead><tr><th>Clip</th><th>Audio</th><th>Why listen</th></tr></thead>
+      <tbody>
+        <tr><td>Source</td><td><audio controls preload="none" src="../examples/source_speakers/cremad_1004.wav"></audio></td><td>Second speaker sanity check.</td></tr>
+        <tr><td>Baseline</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1004_baseline.wav"></audio></td><td>Baseline conversion for comparison.</td></tr>
+        <tr><td>Fear</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1004_fear.wav"></audio></td><td>One of the cleaner guarded fear rows.</td></tr>
+        <tr><td>Happy</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1004_happy.wav"></audio></td><td>Target-class match with low WER.</td></tr>
+        <tr><td>Sad</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1004_sad.wav"></audio></td><td>Low-energy style check.</td></tr>
+        <tr><td>Whisper</td><td><audio controls preload="none" src="../output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/cremad_1004_whisper.wav"></audio></td><td>Audible non-emotion control; listen for breathy quality.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="callout" style="margin-top:26px">
+  <h2>What this means</h2>
+  <p>We have something substantial: controllable speaker generation/anonymization with clear style controls and a strong mixed-data quantitative result. We do not yet have evidence that the newest high-strength anger/fear candidates are perceptually better than the current guard.</p>
+  <p>Next research move: add CommonVoice age/gender controls so the paper story becomes multi-attribute controllable speaker generation, not only emotion conversion.</p>
+</section>
+</main>
+</body>
+</html>
