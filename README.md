@@ -33,8 +33,9 @@ The dedicated next-step plans live in:
 - **[`IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md`](IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md)** — the technical plan for the current experiment slice on `research/controllable-vae`
 - **[`EVIDENCE_DEMO_PACKET.md`](EVIDENCE_DEMO_PACKET.md)** — the one-page evidence/demo packet for the current substantial result and next branch
 - **[`docs/metric_collapse_guide.md`](docs/metric_collapse_guide.md)** — plain-English metric and collapse definitions for meetings and paper writing
+- **[`IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md`](IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md)** — age/gender metadata-control plan and audit results
 
-We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. Primary entry points:
+We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. The current research branch also has first-pass CommonVoice metadata-control plumbing for age/gender scalar controls, but those controls still need a real checkpoint and listening/evaluation panel before they become paper-facing claims. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
 - **[`FINDINGS.md`](FINDINGS.md)** — 35 paper-facing findings with methodology and per-row takeaways.
@@ -218,6 +219,7 @@ specialized settings than new defaults. The main summary artifacts are:
 - [`results/commonvoice_rare_supply_expansion_preflight.md`](results/commonvoice_rare_supply_expansion_preflight.md)
 - [`results/eval_nontrump_strength_sweep.csv`](results/eval_nontrump_strength_sweep.csv)
 - [`results/eval_nontrump_strength_sweep_summary.md`](results/eval_nontrump_strength_sweep_summary.md)
+- [`results/commonvoice_metadata_controls_audit.md`](results/commonvoice_metadata_controls_audit.md)
 
 ## Installation
 
@@ -270,9 +272,10 @@ See also:
 
 - `examples/openvoice_inference.py` — basic anonymization (no style control).
 - `examples/openvoice_train_vae.py` — train a custom DP-VAE for the anonymizer.
-- `examples/openvoice_infer_controllable.py` — **controllable** style-aware inference (the current headline flow; see [`examples/README.md`](examples/README.md) for the full pipeline).
+- `examples/openvoice_infer_controllable.py` — **controllable** style-aware inference (the current headline flow; see [`examples/README.md`](examples/README.md) for the full pipeline), now with optional age/gender metadata-control flags for checkpoints trained with those dims.
 - `examples/openvoice_extract_commonvoice.py` + `examples/openvoice_pretrain_vae_commonvoice.py` — Common Voice pretraining path, including validation-scale weak supervision from metadata and pseudo labels.
-- `scripts/build_mixed_training_set.py` + `examples/openvoice_train_vae_mixed.py` — mixed-data bootstrap path that combines pseudo-labeled CommonVoice with labeled CREMA-D and Expresso under schedule-controlled sampling, including optional style-space teacher distillation via `--style-teacher-checkpoint`, `--style-teacher-weight`, `--style-teacher-weight-final`, `--style-teacher-dims`, `--style-teacher-datasets`, `--style-teacher-target-mode`, `--style-teacher-require-label`, `--style-teacher-style-weights`, and `--style-teacher-confidence-power`.
+- `scripts/build_mixed_training_set.py` + `examples/openvoice_train_vae_mixed.py` — mixed-data bootstrap path that combines pseudo-labeled CommonVoice with labeled CREMA-D and Expresso under schedule-controlled sampling, including optional style-space teacher distillation via `--style-teacher-checkpoint`, `--style-teacher-weight`, `--style-teacher-weight-final`, `--style-teacher-dims`, `--style-teacher-datasets`, `--style-teacher-target-mode`, `--style-teacher-require-label`, `--style-teacher-style-weights`, and `--style-teacher-confidence-power`, plus masked CommonVoice metadata controls via `--metadata-control-weight`, `--metadata-gender-dim`, and `--metadata-age-dim`.
+- `scripts/audit_commonvoice_metadata_controls.py` — audits local CommonVoice age/gender coverage and extracted OpenVoice artifacts before training metadata-control checkpoints.
 - `scripts/prepare_commonvoice_subset.py` — helper for turning downloaded Common Voice shards into a filtered local `validated.tsv` + `clips/` subset.
 - `scripts/annotate_commonvoice_pseudolabels.py` — adds confidence-scored pseudo-style labels to a Common Voice embedding artifact, with batch size, checkpoint/resume, per-row error recording, and target-seeking stop controls for expanded-corpus teacher runs.
 - `scripts/annotate_commonvoice_latent_prototypes.py` — scores Common Voice rows against combined-VAE latent style prototypes as an alternate pseudo-label teacher.

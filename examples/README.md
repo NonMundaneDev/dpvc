@@ -43,6 +43,22 @@ Each run writes a JSONL manifest by default. Single-file runs create
 `<out_stem>_manifest.jsonl`; batch runs create
 `<out>/generation_manifest.jsonl`.
 
+Checkpoints trained with the CommonVoice metadata-control path can also set
+age/gender controls. Do **not** use these flags as a claim about the older
+`openvoice_vae_combined.pt`; they are for checkpoints trained with metadata
+dims, currently `dim_9` for gender and `dim_10` for age:
+
+```bash
+python examples/openvoice_infer_controllable.py \
+    --source examples/trump_0.wav \
+    --out output/happy_male_forties.wav \
+    --vae-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_metadata_control.pt \
+    --style happy \
+    --gender-control male \
+    --age-control forties \
+    --seed 42
+```
+
 Generate only a subset of styles for focused evaluation:
 
 ```bash
@@ -943,6 +959,10 @@ What the builder writes:
 - `style_label_mask`: which rows should contribute label loss
 - `style_label_row_weight`: inverse-frequency style weights, with optional
   pseudo-label confidence scaling
+- `metadata_gender_scalar` / `metadata_gender_mask`: masked CommonVoice
+  gender scalar control target (`female=-1`, `male=1`)
+- `metadata_age_ordinal_scalar` / `metadata_age_mask`: masked CommonVoice age
+  ordinal control target (`teens=-1` through `nineties=1`)
 - `source_dataset`: `CommonVoice`, `CREMA-D`, or `Expresso` per row
 - `style_label_acceptance_reason`: why each row kept its label or fell back to
   unlabeled speaker-breadth selection
@@ -973,6 +993,25 @@ python examples/openvoice_train_vae_mixed.py \
     --schedule labeled_finish \
     --schedule-epochs 1000
 ```
+
+Train a metadata-control checkpoint from a mixed artifact that contains the
+metadata tensors:
+
+```bash
+python examples/openvoice_train_vae_mixed.py \
+    --embeddings embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
+    --output embeddings/openvoice_vae_mixed_teacher_cvrare_metadata_control.pt \
+    --metadata-control-weight 0.1 \
+    --metadata-gender-dim 9 \
+    --metadata-age-dim 10 \
+    --metadata-control-report results/openvoice_vae_mixed_teacher_cvrare_metadata_control_report.json \
+    --schedule labeled_warmup \
+    --schedule-epochs 1000
+```
+
+Before drawing conclusions, generate a listening panel that holds source/style
+fixed while varying `--gender-control` and `--age-control`; the manifest will
+record the requested controls for evaluation and perceptual review.
 
 Schedule meanings:
 
@@ -1955,9 +1994,9 @@ scores more interpretable.
 | 4g | `openvoice_train_vae_combined.py --freeze-* ...` | Step 3 output + Step 4c checkpoint | `openvoice_vae_combined_cv500_ft_*.pt` |
 | 4h | `openvoice_train_vae_combined.py --label-weight/...` | Step 3 output + Step 4c checkpoint | `openvoice_vae_combined_cv500_obj_*.pt` |
 | 4i | `openvoice_train_vae_combined.py --style-teacher-* / --free-anchor-*` | Step 3 output + Step 4c checkpoint (+ optional teacher checkpoint) | `openvoice_vae_combined_cv500_rich_*.pt` |
-| 4j | `../scripts/build_mixed_training_set.py` | Step 1 + 2 + 4c/10e outputs | `openvoice_mixed_base.pt` |
-| 4k | `openvoice_train_vae_mixed.py` | Step 4j output | `openvoice_vae_mixed_*.pt` |
-| 5 | `openvoice_infer_controllable.py` | Step 4 or 4d output + audio | `.wav` files |
+| 4j | `../scripts/build_mixed_training_set.py` | Step 1 + 2 + 4c/10e outputs | `openvoice_mixed_base.pt` with optional metadata scalar/mask controls |
+| 4k | `openvoice_train_vae_mixed.py` | Step 4j output | `openvoice_vae_mixed_*.pt`, optionally with masked metadata-control supervision |
+| 5 | `openvoice_infer_controllable.py` | Step 4, 4d, or 4k output + audio | `.wav` files plus manifest rows with style and optional age/gender controls |
 | 5b | `../scripts/run_ablation_inference.py` | Step 4 / 4d / 4f / 4g / 4h / 4i / 4k output + audio | evaluation ablation matrix, CommonVoice finetune ablation, CommonVoice objective ablation, CommonVoice rich-objective ablation, CommonVoice partial-label pretraining, or mixed-data pseudolabel mix evaluation corpora + manifest |
 | 6 | `eval_emotion.py` | Step 5 output directory | `eval_emotion.csv` |
 | 7 | `eval_novelty.py` | Step 5 manifest or explicit source/generated pair | `eval_novelty.csv` |
@@ -1979,10 +2018,11 @@ scores more interpretable.
 - `openvoice_inference.py` — Basic DP inference without style control.
 - `openvoice_extract_commonvoice.py` — Local Common Voice extraction for pretraining.
 - `openvoice_pretrain_vae_commonvoice.py` — Reconstruction-only VAE pretraining on Common Voice.
-- `openvoice_train_vae_mixed.py` — Schedule-aware mixed-data VAE training on a sampled CommonVoice + CREMA-D + Expresso artifact.
+- `openvoice_train_vae_mixed.py` — Schedule-aware mixed-data VAE training on a sampled CommonVoice + CREMA-D + Expresso artifact, including optional masked age/gender metadata-control loss.
 - `eval_novelty.py` — Measures source-vs-generated speaker novelty in OpenVoice embedding space.
 - `../scripts/prepare_commonvoice_subset.py` — Filters a full Common Voice `validated.tsv` down to the locally available clip subset.
-- `../scripts/build_mixed_training_set.py` — Builds mixed-data bootstrap artifacts with CommonVoice speaker-first sampling, pseudo-label filtering, style caps, optional selected-pseudo preservation, and a saved mixture report.
+- `../scripts/build_mixed_training_set.py` — Builds mixed-data bootstrap artifacts with CommonVoice speaker-first sampling, pseudo-label filtering, style caps, optional selected-pseudo preservation, metadata scalar/mask preservation, and a saved mixture report.
+- `../scripts/audit_commonvoice_metadata_controls.py` — Audits local CommonVoice age/gender coverage and extracted OpenVoice artifacts before training metadata-control checkpoints.
 - `../scripts/filter_commonvoice_pseudolabels.py` — Applies reusable row-level pseudo-label acceptance rules so CommonVoice scoring and class-balanced selection can be iterated separately.
 - `../scripts/plan_commonvoice_rare_supply_expansion.py` — Checks whether a local CommonVoice corpus has enough usable rows and speakers to justify rebuilding rare-class pseudo labels before another model run.
 - `../scripts/prepare_ablation_embeddings.py` — Builds the evaluation ablation matrix `cremad_only` / `expresso_only` embedding sets.

@@ -56,6 +56,7 @@ class VariationalAutoencoder(nn.Module):
                  clip_threshold=10.0,
                  post_clip_threshold=10.0):
         super().__init__()
+        self.latent_dims = latent_dims
         self.encoder = Encoder(input_dim, latent_dims)
         self.decoder = Decoder(latent_dims, input_dim)
         self.noise_mult = None

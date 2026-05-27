@@ -287,6 +287,10 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                             recon_weight=1.0, kl_weight=1.0,
                             label_weight=1.0, schedule="static_balanced",
                             schedule_epochs=0, style_label_row_weights=None,
+                            metadata_targets=None,
+                            metadata_label_mask=None,
+                            metadata_control_dims=None,
+                            metadata_control_weight=0.0,
                             static_masses=None, schedule_start_masses=None,
                             schedule_end_masses=None,
                             style_teacher_model=None,
@@ -319,6 +323,44 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
         raise ValueError("No trainable parameters remain in the model")
     optimizer = torch.optim.Adam(trainable_params, lr=lr)
 
+    metadata_control_dims = list(metadata_control_dims or [])
+    if metadata_control_weight > 0:
+        if metadata_targets is None or metadata_label_mask is None:
+            raise ValueError(
+                "metadata_control_weight > 0 requires metadata_targets and "
+                "metadata_label_mask"
+            )
+        if not metadata_control_dims:
+            raise ValueError(
+                "metadata_control_weight > 0 requires metadata_control_dims"
+            )
+    if metadata_targets is not None:
+        if metadata_targets.shape[0] != embeddings.shape[0]:
+            raise ValueError(
+                "metadata_targets row count must match embeddings: "
+                f"{metadata_targets.shape[0]} != {embeddings.shape[0]}"
+            )
+        if metadata_targets.shape[1] != len(metadata_control_dims):
+            raise ValueError(
+                "metadata_targets width must match metadata_control_dims: "
+                f"{metadata_targets.shape[1]} != {len(metadata_control_dims)}"
+            )
+    if metadata_label_mask is not None:
+        if metadata_targets is None:
+            raise ValueError("metadata_label_mask requires metadata_targets")
+        if metadata_label_mask.shape != metadata_targets.shape:
+            raise ValueError(
+                "metadata_label_mask shape must match metadata_targets: "
+                f"{metadata_label_mask.shape} != {metadata_targets.shape}"
+            )
+    if metadata_control_dims and (
+        min(metadata_control_dims) < 0 or max(metadata_control_dims) >= model.latent_dims
+    ):
+        raise ValueError(
+            "metadata_control_dims must be inside the VAE latent width: "
+            f"{metadata_control_dims} for latent_dims={model.latent_dims}"
+        )
+
     if schedule_epochs <= 0 and (
         schedule != "static_balanced"
         or style_teacher_weight_final is not None
@@ -337,6 +379,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
     print(f"  recon weight : {recon_weight}")
     print(f"  kl weight    : {kl_weight}")
     print(f"  label weight : {label_weight}")
+    print(f"  metadata-control weight: {metadata_control_weight}")
     print(f"  teacher-style weight: {style_teacher_weight}"
           + (f" -> {style_teacher_weight_final}" if style_teacher_weight_final is not None else ""))
     print(f"  decoder-prototype weight: {decoder_prototype_weight}"
@@ -357,6 +400,19 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
         print(f"  dataset rows {dataset:11s}: {dataset_counts[dataset]}")
     labeled_rows = int((style_label_mask.view(-1) > 0).sum().item())
     print(f"  labeled rows : {labeled_rows}/{len(embeddings)}")
+    metadata_control_enabled = (
+        metadata_targets is not None
+        and metadata_label_mask is not None
+        and metadata_control_dims
+        and metadata_control_weight > 0
+    )
+    if metadata_targets is not None and metadata_label_mask is not None:
+        metadata_counts = metadata_label_mask.sum(dim=0).detach().cpu().tolist()
+        print(f"  metadata-control dims: {metadata_control_dims}")
+        print(
+            "  metadata-control rows by dim: "
+            f"{[int(value) for value in metadata_counts]}"
+        )
     teacher_enabled = (
         style_teacher_model is not None
         and (
@@ -529,6 +585,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
             teacher_style_loss = embeddings_b.new_tensor(0.0)
             decoder_prototype_loss = embeddings_b.new_tensor(0.0)
             anti_neutral_loss = embeddings_b.new_tensor(0.0)
+            metadata_loss = embeddings_b.new_tensor(0.0)
 
             batch_mask = style_label_mask[batch_indexes].view(-1) > 0
             if batch_mask.any():
@@ -542,6 +599,19 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                     label_loss = row_loss.sum()
             else:
                 label_loss = embeddings_b.new_tensor(0.0)
+
+            if metadata_control_enabled:
+                metadata_mask_b = metadata_label_mask[batch_indexes] > 0
+                if metadata_mask_b.any():
+                    metadata_target_b = metadata_targets[batch_indexes]
+                    metadata_student_b = _slice_or_none(
+                        model.last_z,
+                        metadata_control_dims,
+                    )
+                    metadata_errors = (
+                        (metadata_student_b - metadata_target_b) ** 2
+                    ) * metadata_mask_b.to(metadata_student_b.dtype)
+                    metadata_loss = metadata_errors.sum()
 
             if (
                 style_teacher_model is not None
@@ -677,6 +747,7 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                 recon_weight * recon_loss
                 + kl_weight * kl_loss
                 + label_weight * label_loss
+                + metadata_control_weight * metadata_loss
                 + current_style_teacher_weight * teacher_style_loss
                 + current_decoder_prototype_weight * decoder_prototype_loss
                 + current_anti_neutral_weight * anti_neutral_loss
@@ -693,6 +764,8 @@ def train_mixed_autoencoder(model, embeddings, style_targets, style_label_mask,
                 f"recon: {recon_loss.item():.2f} (w={recon_weight:.2f})  "
                 f"kl: {kl_loss.item():.2f} (w={kl_weight:.2f})  "
                 f"label: {label_loss.item():.2f} (w={label_weight:.2f})  "
+                f"metadata: {metadata_loss.item():.2f} "
+                f"(w={metadata_control_weight:.2f})  "
                 f"teacher: {teacher_style_loss.item():.2f} (w={current_style_teacher_weight:.2f})  "
                 f"decoder_proto: {decoder_prototype_loss.item():.2f} "
                 f"(w={current_decoder_prototype_weight:.4f})  "

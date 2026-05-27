@@ -1,7 +1,7 @@
 # Controllable DP Voice Conversion — Work Log
 
-**Last updated:** 2026-05-26
-**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`
+**Last updated:** 2026-05-27
+**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
 ---
@@ -48,7 +48,7 @@ Priority tags:
 - [ ] `[SOON]` Test prototype-style or teacher-embedding targets during CommonVoice pretraining itself, not just combined finetuning, because CommonVoice partial-label pretraining's label-space pseudo supervision preserved intelligibility much more than controllability
 - [ ] `[SOON]` Compare metadata-only weak supervision against stronger free-dim supervision (for example: age/gender/accent + auxiliary speaker-structure constraints), because CommonVoice partial-label pretraining suggests metadata shapes novelty a little but does not recover recall
 - [ ] `[SOON]` Add per-style recovery plots for the CommonVoice finetune and objective variants; the finetune, objective, and rich-objective ablations suggest novelty returns first for a few conservative styles, not as broad emotion recovery
-- [ ] `[SOON]` Add age/gender control dims using CommonVoice metadata (dims 9-10)
+- [x] `[DONE]` Add age/gender control dims using CommonVoice metadata (dims 9-10) to the mixed-artifact/training/inference plumbing; next step is a real checkpoint/evaluation panel, not another interface change
 - [ ] `[SOON]` Test orthogonality: does pushing emotion dims shift perceived age/gender?
 - [ ] `[SOON]` Test whether CommonVoice-broad pretraining preserves age/gender control more easily than emotion control; CommonVoice finetune ablation suggests different attribute families may survive broad speaker priors differently
 - [ ] `[SOON]` **Open question (Joe, April 16):** Can we train all knobs at once when labels come from different datasets? CommonVoice has age/gender, CREMA-D has emotion — each stage only trains a subset of latent dims
@@ -103,7 +103,9 @@ Priority tags:
 - [x] `[DONE]` Complete Joe's first five-row human/perceptual review from the A/B dashboard; result was `4` ties/indistinguishable, `1` reference preference, and `0` candidate wins, so no style-specific preset is promoted yet
 - [x] `[DONE]` Create the canonical evidence/demo packet and listening index so the substantial current result can be reviewed without branch archaeology
 - [x] `[DONE]` Add a Joe-facing metric and collapse taxonomy guide, especially clarifying that identity collapse is low novelty gain vs baseline, not WER
-- [ ] `[NOW]` Add CommonVoice metadata controls for age and gender on a dedicated branch, because Joe's May 14 feedback reframed emotion as one controllable speaker attribute rather than the only target
+- [x] `[DONE]` Audit CommonVoice metadata coverage for age/gender controls; the local 40k-clip subset has `5504` age-control rows, `5291` binary gender-control rows, and `5258` rows with both labels
+- [x] `[DONE]` Implement masked direct metadata-control supervision for age/gender on `research/commonvoice-metadata-controls`, because Joe's May 14 feedback reframed emotion as one controllable speaker attribute rather than the only target
+- [ ] `[NOW]` Rebuild the full `openvoice_mixed_teacher_cvrare_hybrid_extra_base` artifact with the new metadata tensors, train the first metadata-control checkpoint, and generate a small age/gender listening panel before claiming perceptual control
 - [ ] `[NOW]` Start paper-method documentation for architecture, data mixture, training schedule, and evaluation justification once the listening review and first age/gender control baseline are in hand
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
@@ -3416,6 +3418,135 @@ Next:
 - `[NOW]` Start `research/commonvoice-metadata-controls` from the canonical
   research line and audit CommonVoice age/gender metadata coverage before
   training.
+
+---
+
+### 0.49 CommonVoice Metadata Controls Audit (2026-05-27, branch `research/commonvoice-metadata-controls`)
+
+Goal:
+
+- Start the age/gender-control branch by verifying whether the local
+  CommonVoice corpus and extracted OpenVoice artifact actually contain enough
+  metadata for supervised controls.
+
+Artifacts:
+
+- `scripts/audit_commonvoice_metadata_controls.py`
+- `results/commonvoice_metadata_controls_audit.md`
+- `results/commonvoice_metadata_controls_audit.json`
+- `IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md`
+
+Audit result:
+
+- Local corpus: `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`
+- Local clips: `40000`
+- Local validated rows: `40000`
+- Unique local speakers: `20537`
+- Age-control rows: `5504` (`13.8%`)
+- Gender-control rows: `5291` (`13.2%`)
+- Rows with both age and gender controls: `5258` (`13.1%`)
+- Extracted OpenVoice artifact rows: `25910`
+- Extracted age-control rows: `3566` (`13.8%`)
+- Extracted gender-control rows: `3429` (`13.2%`)
+- Extracted rows with both age and gender controls: `3403` (`13.1%`)
+
+Design implication:
+
+- The metadata is usable but sparse and imbalanced.
+- First-pass controls should be conservative scalar controls:
+  - style dims `0-8`
+  - `dim_9`: binary gender scalar (`female_feminine/female=-1`,
+    `male_masculine/male=1`)
+  - `dim_10`: ordinal age scalar
+  - free dims `11-14`
+- Missing metadata must be handled with masks; missing age/gender rows should
+  still contribute reconstruction and style supervision, not false metadata
+  targets.
+
+Validation:
+
+- `Validation`: the audit script ran against the local CommonVoice corpus and
+  existing `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt` artifact.
+- `Validation`: the script normalizes CommonVoice gender values
+  `male_masculine` / `female_feminine` into binary scalar controls.
+- `Validation`: audit reports were written to Markdown and JSON for later
+  reproducibility.
+
+Next:
+
+- `[DONE]` Extend `scripts/build_mixed_training_set.py` to preserve per-row
+  metadata scalars/masks in mixed artifacts.
+- `[DONE]` Extend mixed VAE training with masked direct metadata-control loss.
+- `[NOW]` Generate a small age/gender listening/evaluation panel after the
+  first smoke checkpoint.
+
+---
+
+### 0.50 CommonVoice Metadata-Control Plumbing (2026-05-27, branch `research/commonvoice-metadata-controls`)
+
+Goal:
+
+- Turn the age/gender audit into runnable metadata-control infrastructure
+  without claiming that age/gender control works perceptually yet.
+
+Implementation:
+
+- Extended `scripts/build_mixed_training_set.py` so mixed artifacts now preserve
+  per-row CommonVoice metadata controls:
+  - `metadata_gender_scalar`
+  - `metadata_gender_mask`
+  - `metadata_age_ordinal_scalar`
+  - `metadata_age_mask`
+  - raw metadata lists and `metadata_control_report`
+- Extended `dpvc.utils.train_mixed_autoencoder` with a masked direct
+  metadata-control loss over selected latent dimensions.
+- Extended `examples/openvoice_train_vae_mixed.py` with:
+  - `--metadata-control-weight`
+  - `--metadata-gender-dim`
+  - `--metadata-age-dim`
+  - `--metadata-control-report`
+- Extended `examples/openvoice_infer_controllable.py` with:
+  - `--gender-control female|male`
+  - `--gender-control-dim`
+  - `--age-control teens|twenties|...|nineties`
+  - `--age-control-dim`
+- Added `latent_dims` metadata to `dpvc.VariationalAutoencoder` so utility
+  validation can reject out-of-range metadata-control dims cleanly.
+
+Validation:
+
+- `Validation`: `.venv/bin/python -m py_compile scripts/build_mixed_training_set.py dpvc/utils.py dpvc/model_embedding_vae.py examples/openvoice_train_vae_mixed.py examples/openvoice_infer_controllable.py scripts/audit_commonvoice_metadata_controls.py`
+- `Validation`: `.venv/bin/python examples/openvoice_train_vae_mixed.py --help | rg "metadata-control|metadata-gender|metadata-age"` exposes the training flags.
+- `Validation`: `.venv/bin/python examples/openvoice_infer_controllable.py --help | rg "gender-control|age-control"` exposes the inference flags.
+- `Validation`: a small `/private/tmp/openvoice_mixed_metadata_smoke.pt`
+  artifact built successfully from the cvrare CommonVoice artifact plus
+  CREMA-D and Expresso, and contained metadata scalar/mask tensors.
+- `Validation`: a one-epoch smoke training run with
+  `--metadata-control-weight 0.1` completed and wrote
+  `/private/tmp/openvoice_vae_metadata_smoke.pt` plus
+  `/private/tmp/openvoice_metadata_train_smoke.json`.
+
+Interpretation:
+
+- This is an engineering/reproducibility result, not yet a paper-facing
+  empirical finding. `FINDINGS.md` should stay unchanged until a real
+  metadata-control checkpoint produces evaluated or perceptually reviewed
+  behavior.
+- The tiny smoke sample had only `2` labeled metadata rows because metadata
+  coverage is sparse; the real next step must rebuild the full cvrare mixed
+  artifact before training a meaningful checkpoint.
+
+Next:
+
+- `[NOW]` Rebuild the full mixed artifact with metadata tensors using the
+  existing cvrare CommonVoice pseudo-label artifact.
+- `[NOW]` Train a first metadata-control checkpoint with conservative
+  `dim_9` gender / `dim_10` age supervision.
+- `[NOW]` Generate a small listening panel that holds source/style fixed and
+  varies age/gender controls, then evaluate WER/MOS/novelty before asking Joe
+  to listen.
+- `[SOON]` Add a fairness/ethics note before any external-facing age/gender
+  claims; CommonVoice labels are self-reported, sparse, and imbalanced.
 
 ---
 

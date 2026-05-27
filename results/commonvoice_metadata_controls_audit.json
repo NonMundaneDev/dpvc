@@ -1,0 +1,418 @@
+{
+  "corpus_path": "/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en",
+  "embedding_artifact": {
+    "accent": {
+      "known": 3590,
+      "missing": 22320,
+      "top_values": {
+        "Australian English": 95,
+        "Canadian English": 139,
+        "England English": 409,
+        "English as second language (russian as first)": 6,
+        "Filipino": 23,
+        "German": 11,
+        "Hong Kong English": 42,
+        "India and South Asia (India, Pakistan, Sri Lanka)": 693,
+        "Irish English": 39,
+        "Malaysian English": 24,
+        "New Zealand English": 32,
+        "Scottish English": 42,
+        "Singaporean English": 15,
+        "Southern African (South Africa, Zimbabwe, Namibia)": 60,
+        "United States English": 1401,
+        "United States English,England English": 19,
+        "United States English,England English,India and South Asia (India, Pakistan, Sri Lanka)": 9,
+        "United States English,India and South Asia (India, Pakistan, Sri Lanka)": 11,
+        "Welsh English": 19,
+        "West Indies and Bermuda (Bahamas, Bermuda, Jamaica, Trinidad)": 20
+      },
+      "total": 25910,
+      "unique_known": 266
+    },
+    "age": {
+      "known": 3566,
+      "missing": 22344,
+      "top_values": {
+        "eighties": 6,
+        "fifties": 173,
+        "fourties": 333,
+        "nineties": 1,
+        "seventies": 36,
+        "sixties": 69,
+        "teens": 491,
+        "thirties": 720,
+        "twenties": 1737
+      },
+      "total": 25910,
+      "unique_known": 9
+    },
+    "age_gender_pairs_top": {
+      "eighties/male_masculine": 5,
+      "fifties/female_feminine": 39,
+      "fifties/male_masculine": 126,
+      "forties/female_feminine": 41,
+      "forties/male_masculine": 277,
+      "seventies/female_feminine": 9,
+      "seventies/male_masculine": 27,
+      "sixties/female_feminine": 17,
+      "sixties/male_masculine": 50,
+      "teens/do_not_wish_to_say": 1,
+      "teens/female_feminine": 67,
+      "teens/male_masculine": 404,
+      "thirties/female_feminine": 84,
+      "thirties/male_masculine": 610,
+      "thirties/non-binary": 4,
+      "twenties/do_not_wish_to_say": 1,
+      "twenties/female_feminine": 294,
+      "twenties/male_masculine": 1353,
+      "twenties/non-binary": 1
+    },
+    "control_readiness": {
+      "age_bin_counts": {
+        "adult": 1053,
+        "older": 285,
+        "young": 2228
+      },
+      "age_control_rows": 3566,
+      "age_gender_control_rows": 3403,
+      "gender_control_rows": 3429,
+      "recommended_control_dims": {
+        "dim_10": "age_ordinal_scalar youngest=-1 oldest=1",
+        "dim_9": "gender_binary_scalar female_feminine/female=-1 male_masculine/male=1",
+        "dims_11_14": "free speaker/identity capacity for latent_dims=15"
+      }
+    },
+    "gender": {
+      "known": 3437,
+      "missing": 22473,
+      "top_values": {
+        "do_not_wish_to_say": 2,
+        "female_feminine": 562,
+        "male_masculine": 2867,
+        "non-binary": 6
+      },
+      "total": 25910,
+      "unique_known": 4
+    },
+    "name": "embedding_artifact",
+    "rows": 25910,
+    "unique_speakers": 13308
+  },
+  "embedding_artifact_path": "/Users/steve/UVM-plaid/dp-vc/embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt",
+  "embedding_metadata_report": {
+    "accent": {
+      "known": 3590,
+      "missing": 22320,
+      "top_values": [
+        {
+          "count": 1401,
+          "value": "United States English"
+        },
+        {
+          "count": 693,
+          "value": "India and South Asia (India, Pakistan, Sri Lanka)"
+        },
+        {
+          "count": 409,
+          "value": "England English"
+        },
+        {
+          "count": 139,
+          "value": "Canadian English"
+        },
+        {
+          "count": 95,
+          "value": "Australian English"
+        },
+        {
+          "count": 60,
+          "value": "Southern African (South Africa, Zimbabwe, Namibia)"
+        },
+        {
+          "count": 42,
+          "value": "Scottish English"
+        },
+        {
+          "count": 42,
+          "value": "Hong Kong English"
+        },
+        {
+          "count": 39,
+          "value": "Irish English"
+        },
+        {
+          "count": 32,
+          "value": "New Zealand English"
+        }
+      ],
+      "total": 25910,
+      "unique_known": 266
+    },
+    "age": {
+      "known": 3566,
+      "missing": 22344,
+      "top_values": [
+        {
+          "count": 1737,
+          "value": "twenties"
+        },
+        {
+          "count": 720,
+          "value": "thirties"
+        },
+        {
+          "count": 491,
+          "value": "teens"
+        },
+        {
+          "count": 333,
+          "value": "fourties"
+        },
+        {
+          "count": 173,
+          "value": "fifties"
+        },
+        {
+          "count": 69,
+          "value": "sixties"
+        },
+        {
+          "count": 36,
+          "value": "seventies"
+        },
+        {
+          "count": 6,
+          "value": "eighties"
+        },
+        {
+          "count": 1,
+          "value": "nineties"
+        }
+      ],
+      "total": 25910,
+      "unique_known": 9
+    },
+    "gender": {
+      "known": 3437,
+      "missing": 22473,
+      "top_values": [
+        {
+          "count": 2867,
+          "value": "male_masculine"
+        },
+        {
+          "count": 562,
+          "value": "female_feminine"
+        },
+        {
+          "count": 6,
+          "value": "non-binary"
+        },
+        {
+          "count": 2,
+          "value": "do_not_wish_to_say"
+        }
+      ],
+      "total": 25910,
+      "unique_known": 4
+    }
+  },
+  "local_clip_files": 40000,
+  "local_validated_rows": {
+    "accent": {
+      "known": 5462,
+      "missing": 34538,
+      "top_values": {
+        "Australian English": 161,
+        "Canadian English": 187,
+        "England English": 644,
+        "Filipino": 31,
+        "German": 17,
+        "Hong Kong English": 66,
+        "India and South Asia (India, Pakistan, Sri Lanka)": 970,
+        "Irish English": 62,
+        "Malaysian English": 41,
+        "New Zealand English": 52,
+        "Russian": 12,
+        "Scottish English": 66,
+        "Singaporean English": 20,
+        "Southern African (South Africa, Zimbabwe, Namibia)": 90,
+        "United States English": 2198,
+        "United States English,England English": 35,
+        "United States English,England English,India and South Asia (India, Pakistan, Sri Lanka)": 11,
+        "United States English,India and South Asia (India, Pakistan, Sri Lanka)": 13,
+        "Welsh English": 26,
+        "West Indies and Bermuda (Bahamas, Bermuda, Jamaica, Trinidad)": 35
+      },
+      "total": 40000,
+      "unique_known": 387
+    },
+    "age": {
+      "known": 5504,
+      "missing": 34496,
+      "top_values": {
+        "eighties": 9,
+        "fifties": 265,
+        "fourties": 521,
+        "nineties": 1,
+        "seventies": 63,
+        "sixties": 114,
+        "teens": 788,
+        "thirties": 1106,
+        "twenties": 2637
+      },
+      "total": 40000,
+      "unique_known": 9
+    },
+    "age_gender_pairs_top": {
+      "eighties/male_masculine": 8,
+      "fifties/female_feminine": 56,
+      "fifties/male_masculine": 197,
+      "forties/female_feminine": 82,
+      "forties/male_masculine": 414,
+      "seventies/female_feminine": 20,
+      "seventies/male_masculine": 42,
+      "sixties/female_feminine": 30,
+      "sixties/male_masculine": 79,
+      "teens/do_not_wish_to_say": 1,
+      "teens/female_feminine": 121,
+      "teens/male_masculine": 635,
+      "thirties/female_feminine": 138,
+      "thirties/male_masculine": 928,
+      "thirties/non-binary": 4,
+      "twenties/do_not_wish_to_say": 1,
+      "twenties/female_feminine": 446,
+      "twenties/male_masculine": 2062,
+      "twenties/non-binary": 1
+    },
+    "control_readiness": {
+      "age_bin_counts": {
+        "adult": 1627,
+        "older": 452,
+        "young": 3425
+      },
+      "age_control_rows": 5504,
+      "age_gender_control_rows": 5258,
+      "gender_control_rows": 5291,
+      "recommended_control_dims": {
+        "dim_10": "age_ordinal_scalar youngest=-1 oldest=1",
+        "dim_9": "gender_binary_scalar female_feminine/female=-1 male_masculine/male=1",
+        "dims_11_14": "free speaker/identity capacity for latent_dims=15"
+      }
+    },
+    "gender": {
+      "known": 5299,
+      "missing": 34701,
+      "top_values": {
+        "do_not_wish_to_say": 2,
+        "female_feminine": 907,
+        "male_masculine": 4384,
+        "non-binary": 6
+      },
+      "total": 40000,
+      "unique_known": 4
+    },
+    "name": "local_validated_rows",
+    "rows": 40000,
+    "unique_speakers": 20537
+  },
+  "validated_rows": {
+    "accent": {
+      "known": 5462,
+      "missing": 34538,
+      "top_values": {
+        "Australian English": 161,
+        "Canadian English": 187,
+        "England English": 644,
+        "Filipino": 31,
+        "German": 17,
+        "Hong Kong English": 66,
+        "India and South Asia (India, Pakistan, Sri Lanka)": 970,
+        "Irish English": 62,
+        "Malaysian English": 41,
+        "New Zealand English": 52,
+        "Russian": 12,
+        "Scottish English": 66,
+        "Singaporean English": 20,
+        "Southern African (South Africa, Zimbabwe, Namibia)": 90,
+        "United States English": 2198,
+        "United States English,England English": 35,
+        "United States English,England English,India and South Asia (India, Pakistan, Sri Lanka)": 11,
+        "United States English,India and South Asia (India, Pakistan, Sri Lanka)": 13,
+        "Welsh English": 26,
+        "West Indies and Bermuda (Bahamas, Bermuda, Jamaica, Trinidad)": 35
+      },
+      "total": 40000,
+      "unique_known": 387
+    },
+    "age": {
+      "known": 5504,
+      "missing": 34496,
+      "top_values": {
+        "eighties": 9,
+        "fifties": 265,
+        "fourties": 521,
+        "nineties": 1,
+        "seventies": 63,
+        "sixties": 114,
+        "teens": 788,
+        "thirties": 1106,
+        "twenties": 2637
+      },
+      "total": 40000,
+      "unique_known": 9
+    },
+    "age_gender_pairs_top": {
+      "eighties/male_masculine": 8,
+      "fifties/female_feminine": 56,
+      "fifties/male_masculine": 197,
+      "forties/female_feminine": 82,
+      "forties/male_masculine": 414,
+      "seventies/female_feminine": 20,
+      "seventies/male_masculine": 42,
+      "sixties/female_feminine": 30,
+      "sixties/male_masculine": 79,
+      "teens/do_not_wish_to_say": 1,
+      "teens/female_feminine": 121,
+      "teens/male_masculine": 635,
+      "thirties/female_feminine": 138,
+      "thirties/male_masculine": 928,
+      "thirties/non-binary": 4,
+      "twenties/do_not_wish_to_say": 1,
+      "twenties/female_feminine": 446,
+      "twenties/male_masculine": 2062,
+      "twenties/non-binary": 1
+    },
+    "control_readiness": {
+      "age_bin_counts": {
+        "adult": 1627,
+        "older": 452,
+        "young": 3425
+      },
+      "age_control_rows": 5504,
+      "age_gender_control_rows": 5258,
+      "gender_control_rows": 5291,
+      "recommended_control_dims": {
+        "dim_10": "age_ordinal_scalar youngest=-1 oldest=1",
+        "dim_9": "gender_binary_scalar female_feminine/female=-1 male_masculine/male=1",
+        "dims_11_14": "free speaker/identity capacity for latent_dims=15"
+      }
+    },
+    "gender": {
+      "known": 5299,
+      "missing": 34701,
+      "top_values": {
+        "do_not_wish_to_say": 2,
+        "female_feminine": 907,
+        "male_masculine": 4384,
+        "non-binary": 6
+      },
+      "total": 40000,
+      "unique_known": 4
+    },
+    "name": "validated_tsv",
+    "rows": 40000,
+    "unique_speakers": 20537
+  },
+  "validated_tsv": "/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en/validated.tsv"
+}

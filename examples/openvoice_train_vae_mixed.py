@@ -26,6 +26,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
+from pathlib import Path
 
 import torch
 
@@ -278,6 +280,76 @@ def build_selected_style_row_weights(
     return row_weights, style_weights
 
 
+def build_metadata_controls(data, args, supported_styles, device):
+    if args.metadata_control_weight <= 0:
+        return None, None, [], {}
+
+    target_specs = [
+        (
+            "gender",
+            "metadata_gender_scalar",
+            "metadata_gender_mask",
+            args.metadata_gender_dim,
+        ),
+        (
+            "age",
+            "metadata_age_ordinal_scalar",
+            "metadata_age_mask",
+            args.metadata_age_dim,
+        ),
+    ]
+    dims = [spec[3] for spec in target_specs]
+    if len(set(dims)) != len(dims):
+        raise ValueError(f"Metadata control dims must be unique, got {dims}")
+    if any(dim < 0 or dim >= args.latent_dims for dim in dims):
+        raise ValueError(
+            f"Metadata control dims must be within [0, {args.latent_dims - 1}], "
+            f"got {dims}"
+        )
+    style_width = len(supported_styles)
+    overlapping = [dim for dim in dims if dim < style_width]
+    if overlapping:
+        raise ValueError(
+            "Metadata control dims must not overlap style dims "
+            f"[0, {style_width - 1}], got {overlapping}"
+        )
+
+    targets = []
+    masks = []
+    counts = {}
+    for name, target_key, mask_key, dim in target_specs:
+        if target_key not in data or mask_key not in data:
+            raise ValueError(
+                f"--metadata-control-weight requires {target_key} and {mask_key} "
+                "in the mixed artifact. Rebuild it with scripts/build_mixed_training_set.py."
+            )
+        target = data[target_key].to(device).float().view(-1, 1)
+        mask = data[mask_key].to(device).float().view(-1, 1)
+        targets.append(target)
+        masks.append(mask)
+        counts[name] = int((mask.view(-1) > 0).sum().item())
+        if counts[name] == 0:
+            print(f"WARNING: metadata control target {name!r} has zero labeled rows")
+
+    metadata_targets = torch.cat(targets, dim=1)
+    metadata_mask = torch.cat(masks, dim=1)
+    total_labeled = int((metadata_mask > 0).sum().item())
+    if total_labeled == 0:
+        raise ValueError("No labeled metadata-control targets are available")
+
+    report = {
+        "enabled": True,
+        "weight": float(args.metadata_control_weight),
+        "dims": {
+            "gender": int(args.metadata_gender_dim),
+            "age": int(args.metadata_age_dim),
+        },
+        "labeled_rows": counts,
+        "artifact_report": data.get("metadata_control_report", {}),
+    }
+    return metadata_targets, metadata_mask, dims, report
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
@@ -346,6 +418,32 @@ def main():
         type=float,
         default=1.0,
         help="Style-label loss weight (default: 1.0)",
+    )
+    ap.add_argument(
+        "--metadata-control-weight",
+        type=float,
+        default=0.0,
+        help=(
+            "Masked direct latent-control loss for CommonVoice age/gender "
+            "metadata (default: 0.0, disabled)"
+        ),
+    )
+    ap.add_argument(
+        "--metadata-gender-dim",
+        type=int,
+        default=9,
+        help="Latent dim for gender scalar supervision (default: 9)",
+    )
+    ap.add_argument(
+        "--metadata-age-dim",
+        type=int,
+        default=10,
+        help="Latent dim for age ordinal supervision (default: 10)",
+    )
+    ap.add_argument(
+        "--metadata-control-report",
+        default=None,
+        help="Optional JSON path for the metadata-control training config/report",
     )
     ap.add_argument(
         "--style-teacher-checkpoint",
@@ -619,6 +717,8 @@ def main():
         ap.error("--anti-neutral-margin must be non-negative")
     if args.decoder_prototype_min_count < 1:
         ap.error("--decoder-prototype-min-count must be >= 1")
+    if args.metadata_control_weight < 0:
+        ap.error("--metadata-control-weight must be non-negative")
 
     dpvc.utils.set_seed(args.seed)
     device = resolve_device()
@@ -667,6 +767,16 @@ def main():
     source_datasets = data.get('source_dataset')
     if source_datasets is None:
         raise ValueError("Mixed artifact is missing source_dataset")
+    metadata_targets = None
+    metadata_label_mask = None
+    metadata_control_dims = []
+    metadata_control_report = {"enabled": False}
+    (
+        metadata_targets,
+        metadata_label_mask,
+        metadata_control_dims,
+        metadata_control_report,
+    ) = build_metadata_controls(data, args, supported_styles, device)
     teacher_requested = (
         args.style_teacher_checkpoint
         and (
@@ -795,6 +905,9 @@ def main():
         print(f"CommonVoice acceptance policy: {mixture_report['commonvoice_acceptance_policy']}")
     if filter_info.get('acceptance_policy'):
         print(f"Pre-filtered CommonVoice policy: {filter_info['acceptance_policy']}")
+    if metadata_control_report.get("enabled"):
+        print(f"Metadata control dims: {metadata_control_report['dims']}")
+        print(f"Metadata control labeled rows: {metadata_control_report['labeled_rows']}")
 
     model = dpvc.VariationalAutoencoder(
         latent_dims=args.latent_dims,
@@ -881,6 +994,10 @@ def main():
         schedule=args.schedule,
         schedule_epochs=args.schedule_epochs,
         style_label_row_weights=style_label_row_weights,
+        metadata_targets=metadata_targets,
+        metadata_label_mask=metadata_label_mask,
+        metadata_control_dims=metadata_control_dims,
+        metadata_control_weight=args.metadata_control_weight,
         static_masses=static_masses,
         schedule_start_masses=schedule_start_masses,
         schedule_end_masses=schedule_end_masses,
@@ -914,6 +1031,12 @@ def main():
 
     torch.save(model.state_dict(), args.output)
     print(f"Saved mixed-data VAE checkpoint to {args.output}")
+    if args.metadata_control_report:
+        report_path = Path(args.metadata_control_report)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        with report_path.open("w", encoding="utf-8") as handle:
+            json.dump(metadata_control_report, handle, indent=2)
+        print(f"Saved metadata-control report to {report_path}")
 
 
 if __name__ == '__main__':

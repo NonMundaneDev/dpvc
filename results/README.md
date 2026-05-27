@@ -10,6 +10,13 @@ These are the full 258-file sweep over 27 speaker/variant configurations run on
 | `eval_wer_full.csv`     | 258 | [`examples/eval_wer.py`](../examples/eval_wer.py)         | Finding 8 (drift-from-baseline WER) |
 | `eval_mos_full.csv`     | 258 | [`examples/eval_mos.py`](../examples/eval_mos.py)         | Finding 9 (SQUIM_SUBJECTIVE predicted MOS) |
 
+CommonVoice metadata-control preflight artifacts from 2026-05-27:
+
+| File | Rows | Script | Backs |
+|------|------|--------|-------|
+| `commonvoice_metadata_controls_audit.md` | local corpus + extracted artifact summary | [`scripts/audit_commonvoice_metadata_controls.py`](../scripts/audit_commonvoice_metadata_controls.py) | Worklog-only preflight for `research/commonvoice-metadata-controls` |
+| `commonvoice_metadata_controls_audit.json` | local corpus + extracted artifact summary | [`scripts/audit_commonvoice_metadata_controls.py`](../scripts/audit_commonvoice_metadata_controls.py) | Machine-readable audit for metadata-control training setup |
+
 Validation-scale CommonVoice pretraining comparison artifacts from 2026-04-28:
 
 | File | Rows | Script | Backs |
@@ -311,6 +318,8 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `eval_mixed_teacher_cvrare_strength_grid_ranking.csv` | per-style ranked grid cells | [`scripts/summarize_style_strength_grid.py`](../scripts/summarize_style_strength_grid.py) | FINDINGS Finding 35 |
 | `eval_mixed_teacher_cvrare_strength_grid_ranking.md` | grid readout and best-cell table | [`scripts/summarize_style_strength_grid.py`](../scripts/summarize_style_strength_grid.py) | FINDINGS Finding 35 |
 | `listening_evidence_demo_index.html` | canonical listening index for current evidence/demo review | hand-authored evidence packet | evidence/demo packet for Findings 30-35 |
+| `commonvoice_metadata_controls_audit.md` | local CommonVoice age/gender coverage audit | [`scripts/audit_commonvoice_metadata_controls.py`](../scripts/audit_commonvoice_metadata_controls.py) | metadata-control branch preflight |
+| `commonvoice_metadata_controls_audit.json` | machine-readable CommonVoice age/gender coverage audit | [`scripts/audit_commonvoice_metadata_controls.py`](../scripts/audit_commonvoice_metadata_controls.py) | metadata-control branch preflight |
 | `listening_mixed_teacher_cvrare_strength_grid_anger_s10.html` | best ranked `anger` grid cell | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 35 |
 | `listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html` | best ranked `disgust` grid cell | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 35 |
 | `listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html` | best ranked `fear` grid cell | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | FINDINGS Finding 35 |

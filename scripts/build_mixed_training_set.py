@@ -63,6 +63,26 @@ EXPRESSO_MAP = {
 EXPRESSO_ONLY = {"confused", "enunciated", "whisper"}
 EXPRESSO_SUPPORTED = ["confused", "enunciated", "happy", "neutral", "sad", "whisper"]
 DATASETS = ["CommonVoice", "CREMA-D", "Expresso"]
+AGE_CONTROL_ORDER = [
+    "teens",
+    "twenties",
+    "thirties",
+    "forties",
+    "fifties",
+    "sixties",
+    "seventies",
+    "eighties",
+    "nineties",
+]
+AGE_NORMALIZATION = {
+    "fourties": "forties",
+}
+GENDER_NORMALIZATION = {
+    "female": "female",
+    "female_feminine": "female",
+    "male": "male",
+    "male_masculine": "male",
+}
 
 
 def parse_args():
@@ -271,6 +291,139 @@ def onehot_target(style: str) -> List[float]:
 
 def build_empty_target() -> List[float]:
     return [0.0] * len(UNIFIED_STYLES)
+
+
+def clean_metadata_value(value):
+    if value is None:
+        return None
+    if torch.is_tensor(value):
+        if value.numel() == 0:
+            return None
+        value = value.reshape(-1)[0].item()
+    if pd.isna(value):
+        return None
+    value = str(value).strip()
+    return value or None
+
+
+def normalize_age(value):
+    value = clean_metadata_value(value)
+    if value is None:
+        return None
+    return AGE_NORMALIZATION.get(value, value)
+
+
+def normalize_gender(value):
+    value = clean_metadata_value(value)
+    if value is None:
+        return None
+    return GENDER_NORMALIZATION.get(value, value)
+
+
+def age_to_ordinal_scalar(value):
+    value = normalize_age(value)
+    if value not in AGE_CONTROL_ORDER:
+        return None
+    if len(AGE_CONTROL_ORDER) == 1:
+        return 0.0
+    idx = AGE_CONTROL_ORDER.index(value)
+    return -1.0 + (2.0 * idx / (len(AGE_CONTROL_ORDER) - 1))
+
+
+def gender_to_binary_scalar(value):
+    value = normalize_gender(value)
+    if value == "female":
+        return -1.0
+    if value == "male":
+        return 1.0
+    return None
+
+
+def payload_value(payload, key, row_idx):
+    values = payload.get(key)
+    if values is None:
+        return None
+    try:
+        return values[row_idx]
+    except (IndexError, TypeError, KeyError):
+        return None
+
+
+def row_metadata_controls(row, source_payload):
+    if row["dataset"] != "CommonVoice":
+        return {
+            "age_raw": None,
+            "gender_raw": None,
+            "accent_raw": None,
+            "age_scalar": 0.0,
+            "age_mask": 0.0,
+            "gender_scalar": 0.0,
+            "gender_mask": 0.0,
+        }
+
+    row_idx = row["row_idx"]
+    age_raw = clean_metadata_value(payload_value(source_payload, "age", row_idx))
+    gender_raw = clean_metadata_value(payload_value(source_payload, "gender", row_idx))
+    accent_raw = clean_metadata_value(payload_value(source_payload, "accent", row_idx))
+    if accent_raw is None:
+        accent_raw = clean_metadata_value(payload_value(source_payload, "accents", row_idx))
+
+    age_scalar = age_to_ordinal_scalar(age_raw)
+    gender_scalar = gender_to_binary_scalar(gender_raw)
+    return {
+        "age_raw": age_raw,
+        "gender_raw": gender_raw,
+        "accent_raw": accent_raw,
+        "age_scalar": float(age_scalar) if age_scalar is not None else 0.0,
+        "age_mask": 1.0 if age_scalar is not None else 0.0,
+        "gender_scalar": float(gender_scalar) if gender_scalar is not None else 0.0,
+        "gender_mask": 1.0 if gender_scalar is not None else 0.0,
+    }
+
+
+def build_metadata_control_report(source_datasets, age_raw, gender_raw, age_mask, gender_mask):
+    age_mask_int = [int(value > 0) for value in age_mask]
+    gender_mask_int = [int(value > 0) for value in gender_mask]
+    both = [int(a and g) for a, g in zip(age_mask_int, gender_mask_int)]
+    by_dataset = {}
+    for dataset in DATASETS:
+        dataset_indexes = [
+            idx for idx, source in enumerate(source_datasets)
+            if source == dataset
+        ]
+        if not dataset_indexes:
+            continue
+        by_dataset[dataset] = {
+            "rows": len(dataset_indexes),
+            "age_control_rows": int(sum(age_mask_int[idx] for idx in dataset_indexes)),
+            "gender_control_rows": int(sum(gender_mask_int[idx] for idx in dataset_indexes)),
+            "age_gender_control_rows": int(sum(both[idx] for idx in dataset_indexes)),
+        }
+
+    return {
+        "schema": {
+            "metadata_gender_scalar": "female/female_feminine=-1, male/male_masculine=1",
+            "metadata_gender_mask": "1 when gender scalar is known, else 0",
+            "metadata_age_ordinal_scalar": (
+                "CommonVoice age bucket mapped youngest=-1 to oldest=1"
+            ),
+            "metadata_age_mask": "1 when age scalar is known, else 0",
+        },
+        "recommended_control_dims": {
+            "gender_dim": 9,
+            "age_dim": 10,
+            "free_dims": [11, 12, 13, 14],
+        },
+        "age_control_order": list(AGE_CONTROL_ORDER),
+        "gender_normalization": dict(GENDER_NORMALIZATION),
+        "rows": len(source_datasets),
+        "age_control_rows": int(sum(age_mask_int)),
+        "gender_control_rows": int(sum(gender_mask_int)),
+        "age_gender_control_rows": int(sum(both)),
+        "by_dataset": by_dataset,
+        "age_raw_counts": dict(Counter(value for value in age_raw if value is not None)),
+        "gender_raw_counts": dict(Counter(value for value in gender_raw if value is not None)),
+    }
 
 
 def load_expresso_metadata(expresso_data, parquet_dir: Path) -> pd.DataFrame:
@@ -665,6 +818,13 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
     acceptance_reasons = []
     style_mask = []
     style_row_weights = []
+    metadata_age_raw = []
+    metadata_gender_raw = []
+    metadata_accent_raw = []
+    metadata_age_scalars = []
+    metadata_age_mask = []
+    metadata_gender_scalars = []
+    metadata_gender_mask = []
 
     for row in rows:
         source_payload = payloads[row['dataset']]
@@ -689,6 +849,14 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
         acceptance_reasons.append(row.get('selection_reason', row['label_source']))
         style_mask.append(mask)
         style_row_weights.append(float(row['style_row_weight']))
+        metadata = row_metadata_controls(row, source_payload)
+        metadata_age_raw.append(metadata['age_raw'])
+        metadata_gender_raw.append(metadata['gender_raw'])
+        metadata_accent_raw.append(metadata['accent_raw'])
+        metadata_age_scalars.append(metadata['age_scalar'])
+        metadata_age_mask.append(metadata['age_mask'])
+        metadata_gender_scalars.append(metadata['gender_scalar'])
+        metadata_gender_mask.append(metadata['gender_mask'])
 
     save_dict = {
         'data': torch.stack(embeddings, dim=0),
@@ -701,6 +869,17 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
         'style_label_confidence': torch.tensor(style_confidences, dtype=torch.float32).unsqueeze(1),
         'style_label_mask': torch.tensor(style_mask, dtype=torch.float32).unsqueeze(1),
         'style_label_row_weight': torch.tensor(style_row_weights, dtype=torch.float32).unsqueeze(1),
+        'metadata_age_raw': metadata_age_raw,
+        'metadata_gender_raw': metadata_gender_raw,
+        'metadata_accent_raw': metadata_accent_raw,
+        'metadata_age_ordinal_scalar': torch.tensor(
+            metadata_age_scalars, dtype=torch.float32
+        ).unsqueeze(1),
+        'metadata_age_mask': torch.tensor(metadata_age_mask, dtype=torch.float32).unsqueeze(1),
+        'metadata_gender_scalar': torch.tensor(
+            metadata_gender_scalars, dtype=torch.float32
+        ).unsqueeze(1),
+        'metadata_gender_mask': torch.tensor(metadata_gender_mask, dtype=torch.float32).unsqueeze(1),
     }
     for key, values in targets.items():
         save_dict[key] = torch.stack(values).unsqueeze(1)
@@ -735,6 +914,14 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
     selected_pseudo_counts = Counter(
         row['style'] for row in rows if row['dataset'] == 'CommonVoice' and row['style'] is not None
     )
+    metadata_control_report = build_metadata_control_report(
+        source_datasets,
+        metadata_age_raw,
+        metadata_gender_raw,
+        metadata_age_mask,
+        metadata_gender_mask,
+    )
+    save_dict['metadata_control_report'] = metadata_control_report
     save_dict['mixture_report'] = {
         'seed': args.seed,
         'parquet_dir': str(parquet_dir),
@@ -765,6 +952,7 @@ def build_save_dict(rows, payloads, args, parquet_dir, threshold_map, commonvoic
         'commonvoice_threshold_accepted_style_counts': dict(threshold_accepted_counts),
         'commonvoice_threshold_rejected_style_counts': dict(threshold_rejected_counts),
         'commonvoice_selected_pseudo_style_counts': dict(selected_pseudo_counts),
+        'metadata_control_report': metadata_control_report,
         'commonvoice_skipped_by_cap_counts': dict(
             commonvoice_selection_report.get('skipped_by_cap_counts', {})
         ),
@@ -869,6 +1057,24 @@ def print_report(save_dict):
             count = shortfalls.get(style, 0)
             if count:
                 print(f"    {style:11s} {count:4d}")
+    metadata_report = report.get('metadata_control_report', {})
+    if metadata_report:
+        print('  metadata control rows:')
+        print(
+            "    age          "
+            f"{metadata_report.get('age_control_rows', 0):4d}/"
+            f"{metadata_report.get('rows', 0)}"
+        )
+        print(
+            "    gender       "
+            f"{metadata_report.get('gender_control_rows', 0):4d}/"
+            f"{metadata_report.get('rows', 0)}"
+        )
+        print(
+            "    age+gender   "
+            f"{metadata_report.get('age_gender_control_rows', 0):4d}/"
+            f"{metadata_report.get('rows', 0)}"
+        )
 
 
 def main():
