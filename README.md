@@ -25,7 +25,7 @@ Immediate next queue:
 2. treat the decoder-prototype, failure-targeted target-dim, and anti-neutral prototype-margin runs as verified cautionary baselines, not as the new reference
 3. treat Joe's first priority A/B listening review as a perceptual gate: four rows sounded identical to the guard, one row preferred the guard, and no metric-selected candidate won perceptually
 4. do not promote `anger_s10` or `fear_s7p5` as checked-in style presets yet; keep the generated-audio grid as a diagnostic artifact
-5. use the canonical evidence packet and metric guide to explain what already works, then add CommonVoice age/gender controls, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
+5. use the canonical evidence packet and metric guide to explain what already works, review the first CommonVoice age/gender listening panel, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
 
 The dedicated next-step plans live in:
 

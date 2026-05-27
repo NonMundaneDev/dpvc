@@ -1,0 +1,11 @@
+source_stem,style,gender_control,age_control,audio_file,emotion_match_1_5,naturalness_1_5,intelligibility_1_5,identity_shift_1_5,notes
+female_1_cremad_1002,happy,,,/Users/steve/UVM-plaid/dp-vc/output/metadata_control_panel_w010/female_1_cremad_1002_happy_reference.wav,,,,,
+female_1_cremad_1002,happy,female,twenties,/Users/steve/UVM-plaid/dp-vc/output/metadata_control_panel_w010/female_1_cremad_1002_happy_female_twenties.wav,,,,,
+female_1_cremad_1002,happy,male,twenties,/Users/steve/UVM-plaid/dp-vc/output/metadata_control_panel_w010/female_1_cremad_1002_happy_male_twenties.wav,,,,,
+female_1_cremad_1002,happy,female,fifties,/Users/steve/UVM-plaid/dp-vc/output/metadata_control_panel_w010/female_1_cremad_1002_happy_female_fifties.wav,,,,,
+female_1_cremad_1002,happy,male,fifties,/Users/steve/UVM-plaid/dp-vc/output/metadata_control_panel_w010/female_1_cremad_1002_happy_male_fifties.wav,,,,,
+male_1_cremad_1003,happy,,,/Users/steve/UVM-plaid/dp-vc/output/metadata_control_panel_w010/male_1_cremad_1003_happy_reference.wav,,,,,
+male_1_cremad_1003,happy,female,twenties,/Users/steve/UVM-plaid/dp-vc/output/metadata_control_panel_w010/male_1_cremad_1003_happy_female_twenties.wav,,,,,
+male_1_cremad_1003,happy,male,twenties,/Users/steve/UVM-plaid/dp-vc/output/metadata_control_panel_w010/male_1_cremad_1003_happy_male_twenties.wav,,,,,
+male_1_cremad_1003,happy,female,fifties,/Users/steve/UVM-plaid/dp-vc/output/metadata_control_panel_w010/male_1_cremad_1003_happy_female_fifties.wav,,,,,
+male_1_cremad_1003,happy,male,fifties,/Users/steve/UVM-plaid/dp-vc/output/metadata_control_panel_w010/male_1_cremad_1003_happy_male_fifties.wav,,,,,

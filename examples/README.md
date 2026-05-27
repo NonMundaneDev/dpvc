@@ -1013,6 +1013,11 @@ Before drawing conclusions, generate a listening panel that holds source/style
 fixed while varying `--gender-control` and `--age-control`; the manifest will
 record the requested controls for evaluation and perceptual review.
 
+The first local smoke panel for this path is:
+
+- `results/listening_metadata_w010_labeled_warmup.html`
+- `results/listening_metadata_w010_labeled_warmup_ratings.csv`
+
 Schedule meanings:
 
 - `static_balanced`: equal dataset mass each epoch

@@ -105,7 +105,8 @@ Priority tags:
 - [x] `[DONE]` Add a Joe-facing metric and collapse taxonomy guide, especially clarifying that identity collapse is low novelty gain vs baseline, not WER
 - [x] `[DONE]` Audit CommonVoice metadata coverage for age/gender controls; the local 40k-clip subset has `5504` age-control rows, `5291` binary gender-control rows, and `5258` rows with both labels
 - [x] `[DONE]` Implement masked direct metadata-control supervision for age/gender on `research/commonvoice-metadata-controls`, because Joe's May 14 feedback reframed emotion as one controllable speaker attribute rather than the only target
-- [ ] `[NOW]` Rebuild the full `openvoice_mixed_teacher_cvrare_hybrid_extra_base` artifact with the new metadata tensors, train the first metadata-control checkpoint, and generate a small age/gender listening panel before claiming perceptual control
+- [x] `[DONE]` Rebuild the full `openvoice_mixed_teacher_cvrare_hybrid_extra_base` artifact with the new metadata tensors, train the first metadata-control checkpoint, and generate a small age/gender listening panel before claiming perceptual control
+- [ ] `[NOW]` Listen to `results/listening_metadata_w010_labeled_warmup.html` and decide whether the first metadata-control checkpoint is perceptually meaningful, merely changing identity/timbre, or effectively inaudible
 - [ ] `[NOW]` Start paper-method documentation for architecture, data mixture, training schedule, and evaluation justification once the listening review and first age/gender control baseline are in hand
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
@@ -3512,6 +3513,24 @@ Implementation:
   - `--age-control-dim`
 - Added `latent_dims` metadata to `dpvc.VariationalAutoencoder` so utility
   validation can reject out-of-range metadata-control dims cleanly.
+- Built the full cvrare metadata-ready mixed artifact:
+  - `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_metadata_base.pt`
+  - rows: `14195`
+  - age-control rows: `1889`
+  - gender-control rows: `1795`
+  - rows with both controls: `1780`
+- Trained the first conservative metadata-control checkpoint:
+  - `embeddings/openvoice_vae_mixed_teacher_cvrare_metadata_w010_labeled_warmup.pt`
+  - initialized from `embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt`
+  - metadata weight: `0.1`
+  - style-teacher weight: `0.25`
+  - dims: gender `9`, age `10`
+  - report: `results/openvoice_vae_mixed_teacher_cvrare_metadata_w010_labeled_warmup_report.json`
+- Generated the first metadata-control perceptual smoke panel:
+  - `output/metadata_control_panel_w010/`
+  - `results/listening_metadata_w010_labeled_warmup.html`
+  - `results/listening_metadata_w010_labeled_warmup_ratings.csv`
+  - `results/listening_metadata_w010_labeled_warmup.md`
 
 Validation:
 
@@ -3525,26 +3544,33 @@ Validation:
   `--metadata-control-weight 0.1` completed and wrote
   `/private/tmp/openvoice_vae_metadata_smoke.pt` plus
   `/private/tmp/openvoice_metadata_train_smoke.json`.
+- `Validation`: full metadata-ready artifact rebuild completed with
+  `14195` rows and non-empty metadata masks (`1889` age rows, `1795` gender
+  rows).
+- `Validation`: first 1000-epoch metadata-control checkpoint training completed
+  and wrote the checkpoint plus JSON training report.
+- `Validation`: metadata-control inference smoke generated a single
+  `happy/male/forties` file successfully.
+- `Validation`: the 10-row listening panel generated successfully and the HTML
+  contains `12` valid audio references including source clips.
 
 Interpretation:
 
-- This is an engineering/reproducibility result, not yet a paper-facing
-  empirical finding. `FINDINGS.md` should stay unchanged until a real
-  metadata-control checkpoint produces evaluated or perceptually reviewed
-  behavior.
-- The tiny smoke sample had only `2` labeled metadata rows because metadata
-  coverage is sparse; the real next step must rebuild the full cvrare mixed
-  artifact before training a meaningful checkpoint.
+- This is still an engineering/reproducibility result, not yet a paper-facing
+  empirical finding. `FINDINGS.md` should stay unchanged until the listening
+  panel and metric checks show meaningful behavior.
+- The first checkpoint is intentionally conservative. It proves the end-to-end
+  path can train and generate audio, but the scientific question is still
+  perceptual: do age/gender controls produce interpretable changes without
+  damaging intelligibility and naturalness?
 
 Next:
 
-- `[NOW]` Rebuild the full mixed artifact with metadata tensors using the
-  existing cvrare CommonVoice pseudo-label artifact.
-- `[NOW]` Train a first metadata-control checkpoint with conservative
-  `dim_9` gender / `dim_10` age supervision.
-- `[NOW]` Generate a small listening panel that holds source/style fixed and
-  varies age/gender controls, then evaluate WER/MOS/novelty before asking Joe
-  to listen.
+- `[NOW]` Listen locally to
+  `results/listening_metadata_w010_labeled_warmup.html`; classify the result
+  as perceptible control, generic speaker/timbre shift, or inaudible control.
+- `[NOW]` Run WER/MOS/novelty on the metadata-control smoke panel only after
+  the first listen confirms that the audio is worth scoring.
 - `[SOON]` Add a fairness/ethics note before any external-facing age/gender
   claims; CommonVoice labels are self-reported, sparse, and imbalanced.
 

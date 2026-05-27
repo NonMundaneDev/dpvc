@@ -179,6 +179,8 @@ def write_rating_template(path, rows):
     fields = [
         "source_stem",
         "style",
+        "gender_control",
+        "age_control",
         "audio_file",
         "emotion_match_1_5",
         "naturalness_1_5",
@@ -187,7 +189,7 @@ def write_rating_template(path, rows):
         "notes",
     ]
     with open(path, "w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         for row in rows:
             if row.get("style") == "baseline":
@@ -196,6 +198,8 @@ def write_rating_template(path, rows):
                 {
                     "source_stem": row.get("source_stem", ""),
                     "style": row.get("style", ""),
+                    "gender_control": row.get("gender_control", ""),
+                    "age_control": row.get("age_control", ""),
                     "audio_file": row.get("output_file", ""),
                     "emotion_match_1_5": "",
                     "naturalness_1_5": "",
@@ -208,6 +212,9 @@ def write_rating_template(path, rows):
 
 def write_html(path, rows, metrics_by_file, metric_paths, title, rating_template):
     condition = rows[0].get("condition", "unknown_condition")
+    has_metadata_controls = any(
+        row.get("gender_control") or row.get("age_control") for row in rows
+    )
     grouped = defaultdict(list)
     for row in rows:
         grouped[row.get("source_stem", "unknown")].append(row)
@@ -249,6 +256,7 @@ def write_html(path, rows, metrics_by_file, metric_paths, title, rating_template
         "<ol class=\"checklist\">",
         "<li>For each speaker, play the source and baseline first.</li>",
         "<li>Then compare each styled output against the baseline for target emotion, intelligibility, naturalness, and identity shift.</li>",
+        "<li>If age/gender controls are present, judge them perceptually and do not assume the requested label was achieved.</li>",
         "<li>Use headphones if possible; whisper/confused often trade novelty for quality.</li>",
         "<li>Record subjective scores in the rating template CSV linked below.</li>",
         "</ol>",
@@ -265,31 +273,44 @@ def write_html(path, rows, metrics_by_file, metric_paths, title, rating_template
     for source, source_rows in sorted(grouped.items()):
         source_rows = sorted(source_rows, key=style_sort_key)
         source_file = source_rows[0].get("source_file")
+        metadata_header = "<th>Gender</th><th>Age</th>" if has_metadata_controls else ""
         lines.extend([
             f"<h2>{html.escape(source)}</h2>",
             "<div class=\"panel\">",
             "<div><strong>Source</strong></div>",
             f"<audio controls preload=\"none\" src=\"{html.escape(rel_src(source_file, path))}\"></audio>",
             "<table>",
-            "<thead><tr><th>Style</th><th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th><th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>",
+            (
+                "<thead><tr><th>Style</th>"
+                + metadata_header
+                + "<th>Audio</th><th>Predicted</th><th>Target</th><th>Match</th>"
+                + "<th>Novelty</th><th>WER</th><th>MOS</th><th>MOS Δ</th></tr></thead>"
+            ),
             "<tbody>",
         ])
         for row in source_rows:
             output_file = row.get("output_file", "")
             file_name = Path(output_file).name
             cells = metric_cells(metrics_by_file.get(file_name, {}))
+            metadata_cells = ""
+            if has_metadata_controls:
+                metadata_cells = (
+                    f"<td>{html.escape(fmt(row.get('gender_control')))}</td>"
+                    f"<td>{html.escape(fmt(row.get('age_control')))}</td>"
+                )
             lines.append(
                 "<tr>"
                 f"<td class=\"style\">{html.escape(row.get('style', ''))}</td>"
-                f"<td><audio controls preload=\"none\" src=\"{html.escape(rel_src(output_file, path))}\"></audio><div class=\"small\">{html.escape(file_name)}</div></td>"
-                f"<td>{html.escape(fmt(cells['predicted']))}</td>"
-                f"<td>{html.escape(fmt(cells['target']))}</td>"
-                f"<td>{html.escape(fmt(cells['match']))}</td>"
-                f"<td>{html.escape(fmt(cells['novelty']))}</td>"
-                f"<td>{html.escape(fmt(cells['wer']))}</td>"
-                f"<td>{html.escape(fmt(cells['mos']))}</td>"
-                f"<td>{html.escape(fmt(cells['mos_delta']))}</td>"
-                "</tr>"
+                + metadata_cells
+                + f"<td><audio controls preload=\"none\" src=\"{html.escape(rel_src(output_file, path))}\"></audio><div class=\"small\">{html.escape(file_name)}</div></td>"
+                + f"<td>{html.escape(fmt(cells['predicted']))}</td>"
+                + f"<td>{html.escape(fmt(cells['target']))}</td>"
+                + f"<td>{html.escape(fmt(cells['match']))}</td>"
+                + f"<td>{html.escape(fmt(cells['novelty']))}</td>"
+                + f"<td>{html.escape(fmt(cells['wer']))}</td>"
+                + f"<td>{html.escape(fmt(cells['mos']))}</td>"
+                + f"<td>{html.escape(fmt(cells['mos_delta']))}</td>"
+                + "</tr>"
             )
         lines.extend(["</tbody>", "</table>", "</div>"])
 

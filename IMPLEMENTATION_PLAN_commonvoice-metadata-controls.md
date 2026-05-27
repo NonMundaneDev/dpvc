@@ -88,7 +88,7 @@ Why:
    - Ensure every generated output records style, age, gender, seed, source,
      checkpoint, and latent-dim settings in the manifest.
 
-5. Evaluate first checkpoints. **Status: next.**
+5. Evaluate first checkpoints. **Status: first checkpoint trained and listening smoke panel generated; perceptual review next.**
    - Run a metadata-only or metadata-light mixed checkpoint first.
    - Generate a small panel with gender/age controls while holding content and
      style fixed.
@@ -121,6 +121,17 @@ Why:
   successfully and contains metadata scalar/mask tensors.
 - 2026-05-27: one-epoch smoke training with `--metadata-control-weight 0.1`
   completed successfully and wrote `/private/tmp/openvoice_vae_metadata_smoke.pt`.
+- 2026-05-27: full metadata-ready mixed artifact
+  `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_metadata_base.pt`
+  built successfully with `1889` age-control rows and `1795` gender-control
+  rows.
+- 2026-05-27: first 1000-epoch checkpoint
+  `embeddings/openvoice_vae_mixed_teacher_cvrare_metadata_w010_labeled_warmup.pt`
+  trained successfully with metadata-control weight `0.1`.
+- 2026-05-27: generated
+  `results/listening_metadata_w010_labeled_warmup.html` and
+  `results/listening_metadata_w010_labeled_warmup_ratings.csv` for local
+  perceptual review.
 
 ## Risks
 
