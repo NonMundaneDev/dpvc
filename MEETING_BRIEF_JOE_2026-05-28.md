@@ -5,23 +5,25 @@
 **Prepared for:** Stephen Oladele
 **Current branch:** `research/generated-audio-calibrated-training`
 **Research fork:** `https://github.com/NonMundaneDev/dpvc`
+**Updated after:** Joe's pre-meeting Teams listening feedback
 
 ## 1. The 90-Second Opening
 
 Use this first, before details:
 
-> Since our last meeting, I followed up on the perceptual-review and broader-control directions. The strongest checkpoint is still the expanded CommonVoice rare-supply mixed teacher with the `sad/enunciated` guard: it keeps about `47%` emotion recall while improving quality compared with the unguarded version. I also tested age/gender metadata controls, external speaker verification, generated-audio content repair, and a training-side audio-calibrated objective. The newest audio-calibrated checkpoint is not better on aggregate metrics, but my first listening pass found something important: `disgust` sounds perceptually good and intelligible even though emotion2vec scores it as `0/11`; `anger` has audible style pressure but damages intelligibility. So today I want your help deciding whether `disgust` is a real perceptual success that the metric misses, and whether the next repair should focus on anger content preservation rather than more generic style pressure.
+> Since our last meeting, I followed up on the perceptual-review and broader-control directions. The strongest checkpoint is still the expanded CommonVoice rare-supply mixed teacher with the `sad/enunciated` guard: it keeps about `47%` emotion recall while improving quality compared with the unguarded version. I also tested age/gender metadata controls, external speaker verification, generated-audio content repair, and a training-side audio-calibrated objective. The newest audio-calibrated checkpoint is not better on aggregate metrics. My first listen suggested `disgust` might be perceptually stronger than emotion2vec reported, but your pre-meeting review did not confirm that: you heard `disgust` as neutral and `anger` as only subtly/source-dependently angry. That is useful because it points away from trying to force weak labels and toward auditing which labels actually have clear perceptual training signal.
 
 ## 2. Main Meeting Goal
 
-The meeting should answer three questions:
+The meeting should answer four questions:
 
-1. Does Joe agree that the audio-calibrated `disgust` outputs sound perceptually disgusted and intelligible?
-2. Does Joe agree that `anger` has style pressure but needs content/intelligibility repair?
-3. Should the next two-week direction be:
-   - focused anger content repair,
-   - metric/perceptual calibration for `disgust`,
+1. Does Joe agree that the right interpretation is weak/ambiguous training signal for `disgust`, not simply a model repair problem?
+2. Should we deprioritize `disgust` as a headline control unless stronger examples/data are added?
+3. Which styles or controls have enough perceptual signal to support the paper/demo now?
+4. Should the next two-week direction be:
+   - a training-data perceptual audit and style-priority pass,
    - paper-methods documentation around the current strongest result,
+   - a focused repair for a higher-signal style such as `anger`,
    - or another experimental direction Joe thinks is higher value?
 
 ## 3. What Changed Since the May 14 Meeting
@@ -101,16 +103,17 @@ Top-line comparison:
 
 Targeted styles:
 
-| Style | emotion2vec recall | Stephen's first listening read |
-|-------|--------------------|--------------------------------|
-| `disgust` | `0/11` | sounds convincingly disgusted and intelligible |
-| `anger` | `3/11` | some style change, but distorted / less intelligible |
+| Style | emotion2vec recall | Stephen's first listening read | Joe's pre-meeting read |
+|-------|--------------------|--------------------------------|------------------------|
+| `disgust` | `0/11` | sounded convincingly disgusted and intelligible | neutral for all rows |
+| `anger` | `3/11` | some style change, but distorted / less intelligible | slightly angry only in early rows; later rows neutral |
 
 Interpretation:
 
 - Aggregate metrics say this checkpoint should not replace the current guard.
-- Human listening suggests `disgust` may be a metric-calibration miss, not a true style-control failure.
-- `anger` is likely the real next content-repair target.
+- Joe's review says `disgust` is not currently a confirmed perceptual success.
+- `anger` has weak/source-dependent signal, but it is not robust enough yet to become a headline claim without careful selection.
+- The more important bottleneck may be label/training-signal quality, especially if many CREMA-D `disgust` examples themselves sound neutral.
 
 ## 4. The Current Best Story
 
@@ -119,8 +122,8 @@ The current research story is stronger than it was two weeks ago, but more nuanc
 1. **The best aggregate result is still the expanded CommonVoice rare-supply mixed teacher with the `sad/enunciated` guard.**
 2. **External speaker verification supports the identity-shift claim.**
 3. **Age/gender controls are not yet perceptually validated.**
-4. **The newest audio-calibrated checkpoint creates an important metric-vs-human disagreement for `disgust`.**
-5. **The next bottleneck may be less "make the emotion metric higher" and more "separate perceptual style success from classifier mismatch, while repairing content damage for anger."**
+4. **The newest audio-calibrated checkpoint is diagnostic, not a new reference.**
+5. **Joe's pre-meeting review shifts the next bottleneck toward training-signal quality: some labels may be too perceptually subtle to support strong controls from the current data.**
 
 ## 5. What Not To Overclaim
 
@@ -129,6 +132,7 @@ Avoid saying:
 - "The audio-calibrated checkpoint is the new best model."
 - "Disgust is solved."
 - "emotion2vec is wrong."
+- "Joe confirmed the disgust result."
 - "Age/gender controls work."
 - "We have final privacy guarantees."
 - "Speaker novelty equals formal privacy."
@@ -136,7 +140,7 @@ Avoid saying:
 Safer wording:
 
 - "The current aggregate reference is still the `sad/enunciated` guard."
-- "My first listening pass suggests `disgust` may be perceptually successful despite emotion2vec missing it; I need Joe's confirmation."
+- "Joe's pre-meeting review did not confirm `disgust`; this now looks like weak/ambiguous label signal rather than a simple metric miss."
 - "Age/gender controls have signal in the latent space, but first-pass perceptual control is not established."
 - "External ECAPA corroborates identity shift, but final privacy/EER needs independent trials and DP accounting."
 
@@ -144,47 +148,32 @@ Safer wording:
 
 Ask these directly:
 
-1. When you listen to the focused `disgust` rows, do they sound genuinely disgusted, or am I over-reading generic timbre change?
-2. For `anger`, do you hear useful style control, or is the content distortion too severe to count as useful?
-3. If human listening says `disgust` works but emotion2vec says `0/11`, how should we report that in the paper?
-4. Should we add a small human perceptual study as a primary/secondary evaluation for hard styles?
-5. Is the current strongest result close enough to start paper method/evaluation writing, while keeping anger repair as follow-up?
-6. Should age/gender controls remain in scope now, or should they become future work until emotion/style is cleaner?
+1. Is my corrected interpretation right: `disgust` should be treated as weak/ambiguous training signal, not a current model success?
+2. Should we stop optimizing `disgust` as a hard repair target unless we add stronger perceptual examples?
+3. Which labels or controls do you think are worth keeping in the headline demo/paper story?
+4. Would a small perceptual audit of CREMA-D/Expresso labels be useful before another model run?
+5. Should the current strongest result be enough to begin paper method/evaluation writing while we keep limitations explicit?
+6. Should age/gender controls remain active, or should they become future work until emotion/style is cleaner?
 
-## 7. What To Send Joe
+## 7. What Was Sent To Joe
 
-Send the focused review bundle:
+Already sent the focused review bundle:
 
 - `results/joe_audio_calibrated_review_bundle_2026-05-28.zip`
 
 It is self-contained and does not require the full OpenVoice/CommonVoice setup.
+Joe already listened and replied over Teams, so do not resend it unless he asks
+for the link/path again.
 
-Copy-paste message:
+If Joe asks whether this is what we needed, use this wording:
 
 ```text
-Hi Joe,
-
-For today's follow-up, I made a smaller focused listening bundle for the newest audio-calibrated checkpoint. The question is narrower than last time:
-
-1. Does the `disgust` style actually sound disgusted and intelligible to you, even though emotion2vec reports 0/11 recall?
-2. Does `anger` sound emotionally stronger but too distorted / less intelligible?
-
-To run:
-
-cd joe_audio_calibrated_review_bundle_2026-05-28
-python3 -m http.server 8000
-
-Then open:
-
-http://localhost:8000/results/listening_mixed_teacher_cvrare_audio_calibrated_anger_disgust_focus.html
-
-Please listen source -> baseline -> disgust/anger for each speaker. If sending the CSV back is inconvenient, short text notes are fine:
-
-Disgust: convincing / mixed / not convincing; intelligibility: good / mixed / poor.
-Anger: convincing / mixed / not convincing; intelligibility: good / mixed / poor.
-Recommendation: treat disgust as a perceptual success? focus next repair on anger content?
-
-The key thing I want to avoid is over-trusting emotion2vec if human listeners hear a valid disgust style, but also avoid promoting anything that damages content.
+Yes, this was exactly useful. It changes my interpretation in a more
+conservative direction: I should not claim `disgust` works perceptually if you
+hear it as neutral, and your point about CREMA-D `disgust` examples sounding
+neutral suggests the label itself may be weak. I would like to use today to
+decide whether the next step should be a small training-data perceptual audit
+and style-priority pass before another model run.
 ```
 
 ## 8. What You Should Study Before the Meeting
@@ -221,15 +210,15 @@ Say:
 
 ### Q: What is the main result since last time?
 
-A: The new audio-calibrated checkpoint is not a new aggregate best model, but it revealed an important perceptual/metric split: `disgust` sounds promising to me despite emotion2vec scoring it as `0/11`, while `anger` needs content repair.
+A: The new audio-calibrated checkpoint is not a new aggregate best model. It revealed a useful negative/diagnostic result: Joe did not hear a robust `disgust` control, and he noted that many CREMA-D `disgust` examples also sound neutral. That moves the next question toward training-label perceptual quality.
 
 ### Q: Which model is the current reference?
 
 A: The current reference is still `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`: `46.97%` recall, `0.2348` mean WER, `0.2726` novelty gain, and `20` files with any collapse.
 
-### Q: Why trust human listening over emotion2vec?
+### Q: Why use human listening in addition to emotion2vec?
 
-A: We should not blindly replace the metric. The right interpretation is that hard styles may require perceptual validation because emotion2vec's prototype for "disgust" may not match the generated acoustic expression. That is why Joe's review matters.
+A: We should not blindly replace the metric. Human listening is a guard against both false positives and false negatives. In this case, Joe's listening made the result more conservative: it prevented us from overclaiming `disgust` as a metric miss when it may actually be weak/neutral training signal.
 
 ### Q: Did age/gender controls work?
 
@@ -241,16 +230,16 @@ A: No. We have stronger evidence of identity shift, including ECAPA external ver
 
 ### Q: What should happen next?
 
-A: First, Joe should review the focused `anger`/`disgust` bundle. If he confirms `disgust`, we treat it as a perceptual success with metric mismatch and focus repair on `anger` intelligibility. If he does not confirm it, then both hard styles remain unsolved and the next step is stronger generated-audio feedback/selection.
+A: Confirm the interpretation with Joe during the meeting, then run a small training-data perceptual audit / style-priority pass before another model run. The likely next paper move is to foreground controls with clear perceptual signal and treat weak labels like `disgust` as limitations unless stronger data is added.
 
 ## 10. Proposed Next Two-Week Plan
 
 Recommended order:
 
-1. Get Joe's focused review of `disgust` and `anger`.
-2. Encode his review into the ratings/notes artifacts.
-3. If `disgust` is confirmed, update findings to say emotion2vec under-scores that style and prepare a small perceptual-review protocol.
-4. Start an anger content-repair branch: preserve the audible anger style pressure while lowering WER/distortion.
+1. Confirm with Joe that his pre-meeting review should be interpreted as a training-signal warning, especially for `disgust`.
+2. After the meeting, record the actual meeting outcome separately from the pre-meeting Teams feedback.
+3. Add a training-data perceptual audit / style-priority branch for CREMA-D/Expresso labels.
+4. Re-rank current controls by human-perceptual strength and decide which belong in the paper/demo.
 5. Add eval-suite preflight for `ffmpeg` / `torchcodec`.
 6. Start paper-methods documentation around the current reference result, metrics, and limitations.
 
@@ -259,11 +248,13 @@ Recommended order:
 After the meeting, paste notes back into Codex using this structure:
 
 ```text
-Joe's read on disgust:
+Joe's read on disgust after discussion:
 
-Joe's read on anger:
+Joe's read on anger after discussion:
 
-Does Joe accept metric-vs-human mismatch framing?
+Does Joe accept the weak/ambiguous training-signal framing?
+
+Which labels or controls should remain in the paper/demo story?
 
 Should age/gender stay active or move to future work?
 
