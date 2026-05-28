@@ -196,7 +196,7 @@ The key rule for paper writing:
 | Mixed-data training needed rare-class CommonVoice supply. | Finding 30 shows expanded rare supply produced the first large recall jump. | `FINDINGS.md` Finding 30 | The unguarded run has WER/MOS quality cost. |
 | The best current quality-balanced result preserves the recall gain while reducing quality damage. | Finding 31 shows `cvrare_sad_enunc_guard` keeps `47.0%` recall, improves WER to `0.2348`, improves MOS delta to `-0.2081`, and reduces any-collapse files to `20`. | `FINDINGS.md` Finding 31; `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html` | It is an inference-side calibration profile, not a final learned repair objective. |
 | External speaker verification corroborates identity shift. | Finding 36 shows ECAPA mean styled novelty gain of `0.3594` and only `6/99` styled rows accepted as source at a proxy threshold. | `FINDINGS.md` Finding 36; `results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.md` | The threshold is proxy-calibrated; final EER needs independent labeled trials. |
-| Stronger metric-selected style settings should not be promoted yet. | Finding 35 plus Joe's five-row review showed `0/5` candidate wins. | `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md` | The grid remains useful for diagnostics and candidate mining. |
+| Stronger metric-selected style settings should not be promoted yet. | Finding 35 plus Joe's five-row review showed `0/5` candidate wins; Finding 38 formalizes this as a content-repair gate and promotes `0/33` hard-style strength rows. | `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`; `results/generated_audio_content_repair_gate.md` | The grid remains useful for diagnostics and candidate mining, but not preset selection. |
 | CommonVoice age/gender controls are implemented but not perceptually validated. | The metadata-control branch trained and generated a panel, local listening found identical/generic timbre shifts, and Finding 37 shows gender is separable while age/accent remain weak. | `results/listening_metadata_w010_labeled_warmup.md`; `results/commonvoice_metadata_separability_mixed_metadata_base.md`; `IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md` | Treat as future work, not a current paper result; a narrow gender-focused follow-up is more defensible than broad age/accent controls. |
 
 ## Current Positive Results
@@ -300,7 +300,7 @@ important for the paper.
 
 The immediate next moves should be targeted, not broad blind training runs:
 
-- design a generated-audio-calibrated content repair loop for hard styles;
+- design a generated-audio-calibrated content repair loop for hard styles, since the current gate promotes no strength-grid preset;
 - run a narrow gender-focused metadata-control follow-up only if needed;
 - add repeated-seed confidence intervals before freezing paper tables.
 
@@ -309,7 +309,7 @@ The immediate next moves should be targeted, not broad blind training runs:
 1. Paper-method documentation and evidence cleanup.
 2. Metadata separability probe before more age/gender training.
 3. Independent labeled speaker-verification trial CSV for final EER.
-4. Generated-audio/content-repair loop for `anger`, `disgust`, and `fear`.
+4. Generated-audio-calibrated training repair for `anger`, `disgust`, and `fear`, starting from the styles blocked by `results/generated_audio_content_repair_gate.md`.
 5. Repeated-seed confidence intervals for final candidate tables.
 6. Formal DP accounting and privacy-utility curves.
 

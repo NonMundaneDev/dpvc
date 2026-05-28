@@ -120,8 +120,9 @@ The current evidence says:
   novelty.
 - The `sad/enunciated` guard is the current quality-balanced listening profile.
 - The style-strength grid found metric gains for some hard styles, but Joe's
-  first perceptual review found no candidate wins, so those strength settings
-  remain diagnostic rather than presets.
+  first perceptual review found no candidate wins. The content-repair gate now
+  formalizes this and promotes `0/33` hard-style strength rows, so those
+  strength settings remain diagnostic rather than presets.
 - The first CommonVoice age/gender metadata-control checkpoint trained and
   generated audio, but local perceptual review heard identical outputs or
   generic timbre/identity shifts rather than interpretable age/gender control.
@@ -144,7 +145,8 @@ Current status:
   (`0.3594` mean styled novelty gain vs baseline; `6/99` styled rows accepted
   as source at a proxy threshold).
 - `anger_s10` / `fear_s7p5`: diagnostic candidates only; Joe heard no
-  perceptual win in the five-row review.
+  perceptual win in the five-row review and the generated-audio content-repair
+  gate promotes no current hard-style strength preset.
 - CommonVoice age/gender controls: implemented diagnostic infrastructure only;
   the first perceptual gate failed; separability probing says gender has
   objective structure, while age/accent remain weak or diagnostic.

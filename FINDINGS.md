@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-28 (Finding 37 adds CommonVoice metadata separability diagnostics)
+**Last updated:** 2026-05-28 (Finding 38 adds generated-audio content-repair gate)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -2905,6 +2905,83 @@ Artifacts:
 
 ---
 
+## Finding 38: The Content-Repair Gate Blocks All Current Hard-Style Strength Candidates
+
+### Setup
+
+Finding 35 showed that generated-audio strength-grid reranking can improve
+classifier recall on individual hard-style rows, especially `anger_s10` and
+`fear_s7p5`, but Joe's first listening review did not hear a perceptual
+candidate win.
+
+Finding 38 turns that judgment into a reproducible gate:
+
+- input triage:
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.csv`
+- Joe ratings:
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv`
+- selector:
+  `scripts/select_generated_audio_content_repairs.py`
+
+A candidate must pass:
+
+1. target-label gain over the current `sad/enunciated` guard;
+2. content safety: candidate WER no more than `0.30` and WER increase no more
+   than `0.15`;
+3. naturalness safety: candidate MOS delta no worse than `-0.75` and MOS
+   delta drop no worse than `0.25`;
+4. novelty safety: novelty delta no worse than `-0.02`;
+5. perceptual gate: if human ratings exist, the candidate must be preferred.
+
+### Result
+
+| Decision | Count |
+|----------|-------|
+| `promote_candidate` | `0` |
+| `blocked_by_perceptual_tie` | `1` |
+| `blocked_by_reference_preference` | `1` |
+| `reject_quality` | `3` |
+| `reject_no_target_gain` | `28` |
+
+Style-level decisions:
+
+| Style | Rows | Objective-pass rows | Perceptually blocked | Promoted | Decision |
+|-------|------|---------------------|----------------------|----------|----------|
+| `anger` | `11` | `1` | `1` | `0` | diagnostic only |
+| `disgust` | `11` | `0` | `0` | `0` | needs content repair |
+| `fear` | `11` | `1` | `1` | `0` | diagnostic only |
+
+The two objective-pass rows were:
+
+| Style | Source | Candidate | Objective result | Human result |
+|-------|--------|-----------|------------------|--------------|
+| `anger` | `cremad_1006` | `anger_s10` | passes content/style gate | tie / indistinguishable |
+| `fear` | `male_1_cremad_1003` | `fear_s7p5` | passes content/style gate | reference preferred; candidate pitch change sounded unnatural |
+
+### Implication
+
+This finding is a guardrail for the paper and demo:
+
+1. **No hard-style strength preset should be promoted yet.** The current grid
+   can identify classifier gains, but none pass both objective and perceptual
+   gates.
+2. **`disgust` is the clearest repair target.** It has no objective-pass row
+   in the current grid, so stronger inference strength is not enough.
+3. **`fear` needs content/naturalness diagnosis before more recall chasing.**
+   The best target-gain row was perceptually worse because of an unnatural
+   pitch change.
+4. **The next real repair must optimize generated audio, not just embeddings or
+   classifier labels.** The strength grid is diagnostic evidence for a future
+   generated-audio-calibrated objective, not a solved control policy.
+
+Artifacts:
+
+- `results/generated_audio_content_repair_gate.csv`
+- `results/generated_audio_content_repair_gate.md`
+- `results/generated_audio_content_repair_gate.json`
+
+---
+
 ## Open Questions
 
 1. **What are the formal privacy guarantees?** We need to compute epsilon for each noise level and report privacy-utility curves.
@@ -2918,7 +2995,7 @@ Artifacts:
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Finding 32 shows that the first naive decoder-prototype objective does not learn that repair (`42.4%` recall, `0.2863` WER, `27` collapse files), the same guard repairs only WER/MOS (`0.2592`, `-0.1787`) while recall stays `42.4%`, and lowering the prototype weight to `0.005` still stays at `42.4%` recall with worse WER (`0.2782`). Finding 33 shows that a failure-conditioned `anger`/`disgust` target-dim teacher objective is insufficient (`39.4%` recall, `26` style-to-neutral collapses). Finding 34 shows that an anti-neutral prototype-margin proxy is also insufficient (`40.9%` recall, `25` style-to-neutral collapses). Finding 35 shows that actual generated-audio reranking can improve some hard style rows (`anger` `1/11 -> 3/11`, `fear` `3/11 -> 6/11`) but does not solve `disgust` and creates WER/MOS tradeoffs. The remaining mixed-data question is now narrower: can perceptually validated style-specific presets or an audio-calibrated training loop preserve those row-level gains without breaking content quality?
+12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Finding 32 shows that the first naive decoder-prototype objective does not learn that repair (`42.4%` recall, `0.2863` WER, `27` collapse files), the same guard repairs only WER/MOS (`0.2592`, `-0.1787`) while recall stays `42.4%`, and lowering the prototype weight to `0.005` still stays at `42.4%` recall with worse WER (`0.2782`). Finding 33 shows that a failure-conditioned `anger`/`disgust` target-dim teacher objective is insufficient (`39.4%` recall, `26` style-to-neutral collapses). Finding 34 shows that an anti-neutral prototype-margin proxy is also insufficient (`40.9%` recall, `25` style-to-neutral collapses). Finding 35 shows that actual generated-audio reranking can improve some hard style rows (`anger` `1/11 -> 3/11`, `fear` `3/11 -> 6/11`) but does not solve `disgust` and creates WER/MOS tradeoffs. Finding 38 then gates those candidates with Joe's perceptual review and promotes none. The remaining mixed-data question is now narrower: can a generated-audio-calibrated training objective preserve the row-level target gains without breaking content quality or perceptual naturalness?
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---
@@ -2977,6 +3054,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 35. The first generated-audio style-strength grid confirms that audio-calibrated reranking is the right next lens but not a solved default: `anger_s10` improves anger recall from `1/11` to `3/11` with moderate WER cost, `fear_s7p5` improves fear recall from `3/11` to `6/11` but has high WER (`0.5231`), and `disgust_s10` raises novelty while failing to improve recall and severely hurting MOS (`-0.6039`). Joe's first five-row listening review found `0/5` candidate wins (`4` ties and `1` reference preference), so these objective gains should stay diagnostic rather than become checked-in style presets.
 36. External ECAPA speaker-verifier validation corroborates the identity-shift signal for the current `sad/enunciated` guard: mean styled external novelty gain versus baseline is `0.3594`, and only `6/99` styled rows are accepted as source at the derived proxy threshold. This supports the paper's identity-shift claim, with the caveat that final EER/privacy claims still need independent labeled speaker-verification trials.
 37. CommonVoice metadata separability diagnostics show that gender is strongly recoverable in both raw OpenVoice embeddings and the metadata-control VAE latents (`macro_f1` about `0.87-0.91`), while age is weak and accent mostly weakens in the VAE latent space. This explains why first-pass age/gender controls should stay diagnostic: gender signal exists objectively, but perceptual control is not established yet.
+38. The generated-audio content-repair gate promotes no current hard-style strength candidate. The only objective-pass rows are blocked by Joe's perceptual review (`anger_s10` tied the reference; `fear_s7p5` lost to the reference due to unnatural pitch change), and `disgust` has no objective-pass repair row. This formally keeps the strength grid diagnostic and pushes the next repair toward generated-audio-calibrated training.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion

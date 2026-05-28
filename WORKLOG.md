@@ -1,7 +1,7 @@
 # Controllable DP Voice Conversion — Work Log
 
 **Last updated:** 2026-05-28
-**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`
+**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
 ---
@@ -111,7 +111,9 @@ Priority tags:
 - [x] `[DONE]` Do not spend WER/MOS/novelty compute on the first metadata-control checkpoint unless needed for documentation; the perceptual gate failed, so metrics would likely characterize generic speaker shift rather than useful age/gender control
 - [x] `[DONE]` Add an external speaker-verifier / EER-style novelty validation branch; SpeechBrain ECAPA corroborates the current guard's identity shift with mean styled external novelty gain `0.3594` and only `6/99` styled rows accepted as source at the derived proxy threshold
 - [x] `[DONE]` Add a metadata separability probe before more age/gender training; result: gender is strongly separable in raw embeddings and VAE latents, but age is weak and accent mostly washes out in the metadata-control latent space, so more scalar age/accent training should wait for better labels or a stronger perceptual target
-- [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
+- [x] `[DONE]` Add a generated-audio content-repair gate for the hard-style strength grid; result: no `anger`, `disgust`, or `fear` candidate is promoted because the only objective-pass rows were blocked by Joe's perceptual review, and `disgust` has no objective-safe repair row
+- [ ] `[SOON]` Build a true generated-audio-calibrated training objective for hard styles, because strength-grid reranking is now formally gated as diagnostic rather than a promoted content repair
+- [ ] `[SOON]` Add a fear-specific diagnostic for the pitch-change artifact Joe heard in `fear_s7p5`, because fear can gain target recall but remains content/naturalness fragile
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [ ] `[SOON]` Compare strict pseudo-label filtering against looser confidence-only or minimally filtered CommonVoice pseudo labels, because Joe's May 14 question raised a valid possibility that filtering may discard useful breadth once all CommonVoice rows have weak labels
@@ -3806,8 +3808,76 @@ Next:
   balanced-control follow-up with a listening-first gate.
 - `[SOON]` Add per-dimension latent diagnostics for metadata dims `9-10` and
   free dims `11-14`.
-- `[SOON]` Prioritize generated-audio/content repair for hard styles before
+- `[DONE]` Prioritize generated-audio/content repair for hard styles before
   another broad age/gender/accent control branch.
+
+---
+
+### 0.54 Generated-Audio Content-Repair Gate (2026-05-28, branch `research/generated-audio-content-repair`)
+
+Goal:
+
+- Convert the hard-style strength grid into a conservative content-repair gate
+  so classifier gains cannot become presets unless they also preserve content,
+  naturalness, novelty, and human preference.
+
+Artifacts:
+
+- `scripts/select_generated_audio_content_repairs.py`
+- `tests/test_select_generated_audio_content_repairs.py`
+- `results/generated_audio_content_repair_gate.csv`
+- `results/generated_audio_content_repair_gate.md`
+- `results/generated_audio_content_repair_gate.json`
+- `IMPLEMENTATION_PLAN_generated-audio-content-repair.md`
+
+Implementation:
+
+- Added a reusable gate over
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.csv`.
+- Folded in Joe's five-row ratings from
+  `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv`.
+- Required target-label gain plus content/naturalness/novelty safety before a
+  row can pass the objective gate.
+- Required perceptual candidate preference before an objective-pass row can be
+  promoted.
+
+Result:
+
+- Total hard-style A/B candidate rows: `33`
+- `promote_candidate`: `0`
+- `blocked_by_perceptual_tie`: `1`
+- `blocked_by_reference_preference`: `1`
+- `reject_quality`: `3`
+- `reject_no_target_gain`: `28`
+- Style decisions:
+  - `anger`: `diagnostic_only`; one objective-pass row was a perceptual tie
+  - `fear`: `diagnostic_only`; one objective-pass row preferred the reference
+  - `disgust`: `needs_content_repair`; no objective-pass repair row
+
+Interpretation:
+
+- The strength grid remains useful diagnostics, not a promoted repair path.
+- `anger_s10` and `fear_s7p5` can produce classifier gains on individual rows,
+  but those rows did not win the perceptual gate.
+- `disgust` needs a training-side or generated-audio-calibrated objective; a
+  stronger strength preset is not enough.
+
+Validation:
+
+- `Validation`: `.venv/bin/python -m unittest tests.test_select_generated_audio_content_repairs`
+- `Validation`: `.venv/bin/python -m py_compile scripts/select_generated_audio_content_repairs.py`
+- `Validation`: `.venv/bin/python scripts/select_generated_audio_content_repairs.py --priority-csv results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.csv --ratings results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv --out-csv results/generated_audio_content_repair_gate.csv --out-md results/generated_audio_content_repair_gate.md --out-json results/generated_audio_content_repair_gate.json`
+- `Validation`: `FINDINGS.md` Finding 38 records the no-promote result as a
+  paper-facing guardrail, not a negative result against the whole system.
+
+Next:
+
+- `[SOON]` Build a generated-audio-calibrated training objective for hard
+  styles, with `disgust` as the clearest repair target.
+- `[SOON]` Add row-level audio-feature diagnostics for the `fear_s7p5`
+  pitch-change artifact Joe heard.
+- `[SOON]` Use the content-repair gate before any future style-strength preset
+  is promoted.
 
 ---
 

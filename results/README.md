@@ -361,6 +361,9 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv` | Joe's encoded five-row subjective ratings from Teams | manual transcription from Joe review | FINDINGS Finding 35 |
 | `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.csv` | objective-assisted A/B triage with Joe ratings attached | [`scripts/summarize_style_grid_review.py`](../scripts/summarize_style_grid_review.py) | FINDINGS Finding 35 |
 | `listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md` | Joe review summary: `4` ties, `1` reference preference, `0` candidate wins | [`scripts/summarize_style_grid_review.py`](../scripts/summarize_style_grid_review.py) | FINDINGS Finding 35 |
+| `generated_audio_content_repair_gate.csv` | `33` hard-style strength rows with objective and perceptual gate decisions | [`scripts/select_generated_audio_content_repairs.py`](../scripts/select_generated_audio_content_repairs.py) | FINDINGS Finding 38 |
+| `generated_audio_content_repair_gate.md` | gate summary: `0` promoted candidates, `2` perceptually blocked objective-pass rows | [`scripts/select_generated_audio_content_repairs.py`](../scripts/select_generated_audio_content_repairs.py) | FINDINGS Finding 38 |
+| `generated_audio_content_repair_gate.json` | machine-readable promoted-profile payload; currently empty because no preset passes | [`scripts/select_generated_audio_content_repairs.py`](../scripts/select_generated_audio_content_repairs.py) | FINDINGS Finding 38 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.

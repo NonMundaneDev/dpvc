@@ -1,0 +1,56 @@
+{
+  "profile": {
+    "note": "No promoted style strengths: objective gains need human candidate wins.",
+    "promoted_rows": [],
+    "style_strengths": {}
+  },
+  "style_summary": {
+    "anger": {
+      "decision_counts": {
+        "blocked_by_perceptual_tie": 1,
+        "reject_no_target_gain": 9,
+        "reject_quality": 1
+      },
+      "needs_listening": 0,
+      "objective_pass": 1,
+      "promoted": 0,
+      "reviewed_blocked": 1,
+      "rows": 11,
+      "style": "anger",
+      "style_decision": "diagnostic_only"
+    },
+    "disgust": {
+      "decision_counts": {
+        "reject_no_target_gain": 11
+      },
+      "needs_listening": 0,
+      "objective_pass": 0,
+      "promoted": 0,
+      "reviewed_blocked": 0,
+      "rows": 11,
+      "style": "disgust",
+      "style_decision": "needs_content_repair"
+    },
+    "fear": {
+      "decision_counts": {
+        "blocked_by_reference_preference": 1,
+        "reject_no_target_gain": 8,
+        "reject_quality": 2
+      },
+      "needs_listening": 0,
+      "objective_pass": 1,
+      "promoted": 0,
+      "reviewed_blocked": 1,
+      "rows": 11,
+      "style": "fear",
+      "style_decision": "diagnostic_only"
+    }
+  },
+  "thresholds": {
+    "max_candidate_wer": 0.3,
+    "max_mos_delta_drop": 0.25,
+    "max_wer_delta": 0.15,
+    "min_candidate_mos_delta": -0.75,
+    "min_novelty_delta": -0.02
+  }
+}

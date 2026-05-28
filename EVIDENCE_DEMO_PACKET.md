@@ -2,7 +2,7 @@
 
 **Created:** 2026-05-26
 **Last updated:** 2026-05-28
-**Current documentation branch:** `docs/paper-methods-and-evidence`
+**Current update branch:** `research/generated-audio-content-repair`
 **Base research line:** `research/controllable-vae`
 
 ## Top-Line Answer
@@ -16,7 +16,8 @@ perceptually clear and measurable.
 Two recent listening gates should be read narrowly:
 
 - Joe's higher-strength `anger_s10` / `fear_s7p5` review found no candidate
-  wins over the current guarded reference.
+  wins over the current guarded reference, and the generated-audio
+  content-repair gate now promotes `0/33` hard-style strength rows.
 - The first CommonVoice age/gender metadata-control panel sounded identical or
   mostly like generic speaker/timbre shifts.
 - The follow-up metadata separability probe shows gender is objectively
@@ -96,7 +97,9 @@ Interpretation:
 
 - The strength grid is useful as an analysis tool.
 - `anger_s10` and `fear_s7p5` should not become checked-in presets yet.
-- Objective classifier gains are not enough unless human listening agrees.
+- The content-repair gate promotes `0/33` hard-style strength rows.
+- Objective classifier gains are not enough unless content, naturalness,
+  novelty, and human listening all agree.
 
 ### Tier 4: Historical Strong Evidence
 
@@ -112,6 +115,8 @@ Use these findings to explain why this research line is substantial:
   the current guard's identity shift, with a proxy-threshold caveat.
 - `FINDINGS.md` Finding 37: CommonVoice gender metadata is separable, while
   age/accent controls remain diagnostic and not perceptually validated.
+- `FINDINGS.md` Finding 38: the generated-audio content-repair gate blocks
+  all current hard-style strength candidates from preset promotion.
 - `FINDINGS.md` Finding 35: generated-audio strength reranking is diagnostic,
   not a safe default.
 
@@ -158,7 +163,8 @@ Avoid saying:
 
 The next research branch should be targeted rather than exploratory:
 
-- generated-audio/content-repair loop for hard styles;
+- generated-audio-calibrated training repair for hard styles, because the
+  current strength-grid gate promotes no preset;
 - narrow gender-focused metadata-control follow-up only if we need a metadata
   appendix;
 - repeated-seed confidence intervals before final tables;
