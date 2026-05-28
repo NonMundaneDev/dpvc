@@ -106,5 +106,23 @@ The current evidence says:
 - The style-strength grid found metric gains for some hard styles, but Joe's
   first perceptual review found no candidate wins, so those strength settings
   remain diagnostic rather than presets.
-- The next high-value test is whether CommonVoice age/gender metadata can add
-  new controllable speaker attributes without washing out the existing controls.
+- The first CommonVoice age/gender metadata-control checkpoint trained and
+  generated audio, but local perceptual review heard identical outputs or
+  generic timbre/identity shifts rather than interpretable age/gender control.
+- The next high-value documentation task is to consolidate the current
+  style-control method and evidence. The next metadata-control research task
+  should first test whether OpenVoice embeddings contain recoverable age/gender
+  signal before spending more training compute.
+
+## Paper-Readiness Rule
+
+Use metrics to find candidates, but use listening to decide whether a candidate
+can become a demo or paper claim.
+
+Current status:
+
+- `cvrare_sad_enunc_guard`: paper/demo reference candidate.
+- `anger_s10` / `fear_s7p5`: diagnostic candidates only; Joe heard no
+  perceptual win in the five-row review.
+- CommonVoice age/gender controls: implemented diagnostic infrastructure only;
+  the first perceptual gate failed.

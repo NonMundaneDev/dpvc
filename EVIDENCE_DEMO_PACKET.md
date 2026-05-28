@@ -1,7 +1,8 @@
 # Canonical Evidence and Demo Packet
 
-**Date:** 2026-05-26
-**Branch:** `research/evidence-demo-packet`
+**Created:** 2026-05-26
+**Last updated:** 2026-05-28
+**Current documentation branch:** `docs/paper-methods-and-evidence`
 **Base research line:** `research/controllable-vae`
 
 ## Top-Line Answer
@@ -12,11 +13,16 @@ OpenVoice controllable VAE can generate/anonymize speakers while moving labeled
 perceptual attributes in controlled directions, with several styles that are
 perceptually clear and measurable.
 
-The latest Joe listening review should be read narrowly: the higher-strength
-metric-selected `anger_s10` / `fear_s7p5` candidates did not sound better than
-the current guarded reference. That does not invalidate the core system. It
-means we should keep the strength grid diagnostic and avoid promoting those
-specific candidates as presets.
+Two recent listening gates should be read narrowly:
+
+- Joe's higher-strength `anger_s10` / `fear_s7p5` review found no candidate
+  wins over the current guarded reference.
+- The first CommonVoice age/gender metadata-control panel sounded identical or
+  mostly like generic speaker/timbre shifts.
+
+Neither result invalidates the core system. They mean we should keep the
+strength grid and metadata controls diagnostic while consolidating the current
+positive style-control evidence for paper drafting.
 
 ## What To Listen To First
 
@@ -99,16 +105,31 @@ Use these findings to explain why this research line is substantial:
 - `FINDINGS.md` Finding 35: generated-audio strength reranking is diagnostic,
   not a safe default.
 
+### Tier 5: Metadata-Control Diagnostic
+
+Use this to explain what is implemented but not yet a claim:
+
+- `results/listening_metadata_w010_labeled_warmup.md`
+- `results/listening_metadata_w010_labeled_warmup.html`
+- `IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md`
+
+Result:
+
+- The metadata-control path trains and generates.
+- Local listening found the age/gender variants effectively identical or like
+  generic speaker/timbre shifts.
+- Do not promote age/gender control as a current paper result.
+
 ## What We Can Say Now
 
 Good wording:
 
 > We have a controllable speaker-generation/anonymization system with clear
 > audible controls for several styles, especially whisper, and a quantitative
-> mixed-data result around 47% emotion recall. The newest listening review says
-> metric-selected strength increases are not perceptually better enough to
-> promote yet, so the next research move is to add CommonVoice age/gender
-> controls and show the framework supports more than emotion.
+> mixed-data result around 47% emotion recall. Recent listening gates say
+> metric-selected strength increases and first-pass age/gender controls are not
+> perceptually ready to promote yet, so the next move is to document the method
+> and evidence clearly before another targeted research branch.
 
 Avoid saying:
 
@@ -116,16 +137,23 @@ Avoid saying:
 - Joe rejected the whole system.
 - The model is only an emotion converter.
 - The next step is simply more strength or more emotion tuning.
+- Age/gender controls work perceptually.
 
-## Next Research Step
+## Next Step
 
-The next implementation branch should be CommonVoice metadata controls:
+The next implementation branch is documentation/evidence consolidation:
 
-- Suggested branch: `research/commonvoice-metadata-controls`
-- Goal: add age/gender controls from CommonVoice metadata while preserving the
-  existing emotion/style controls.
-- Why: this directly tests Joe's broader paper framing: controllable speaker
-  generation with multiple labeled attributes, not only emotion conversion.
+- Branch: `docs/paper-methods-and-evidence`
+- Main doc: `PAPER_METHODS_AND_EVIDENCE.md`
+- Goal: make the current substantial result explainable to Joe and paper
+  readers without requiring branch archaeology.
+
+The next research branch after this should be targeted rather than exploratory:
+
+- external speaker-verifier / EER-style novelty validation;
+- metadata separability probe before more age/gender training;
+- generated-audio/content-repair loop for hard styles;
+- repeated-seed confidence intervals before final tables.
 
 ## Open Caveats
 
@@ -135,5 +163,6 @@ The next implementation branch should be CommonVoice metadata controls:
 - Joe's latest review covered five high-priority A/B rows, not a full human
   listening study.
 - Formal DP accounting remains a paper task.
-- Age/gender metadata quality and label imbalance still need auditing before
-  training.
+- Age/gender metadata quality has been audited and first-pass control plumbing
+  exists, but the first perceptual panel failed; future metadata work should
+  first test whether OpenVoice embeddings encode recoverable age/gender signal.

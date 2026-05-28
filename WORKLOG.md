@@ -107,13 +107,17 @@ Priority tags:
 - [x] `[DONE]` Implement masked direct metadata-control supervision for age/gender on `research/commonvoice-metadata-controls`, because Joe's May 14 feedback reframed emotion as one controllable speaker attribute rather than the only target
 - [x] `[DONE]` Rebuild the full `openvoice_mixed_teacher_cvrare_hybrid_extra_base` artifact with the new metadata tensors, train the first metadata-control checkpoint, and generate a small age/gender listening panel before claiming perceptual control
 - [x] `[DONE]` Listen to `results/listening_metadata_w010_labeled_warmup.html`; local perceptual review found the variants sounded identical or like generic speaker/timbre shifts, so this first metadata-control checkpoint is diagnostic rather than a perceptual age/gender-control win
-- [ ] `[NOW]` Start paper-method documentation for architecture, data mixture, training schedule, and evaluation justification once the listening review and first age/gender control baseline are in hand
-- [ ] `[NOW]` Do not spend WER/MOS/novelty compute on the first metadata-control checkpoint unless needed for documentation; the perceptual gate failed, so metrics would likely characterize generic speaker shift rather than useful age/gender control
+- [x] `[DONE]` Start paper-method documentation for architecture, data mixture, training schedule, and evaluation justification; see `PAPER_METHODS_AND_EVIDENCE.md` and `IMPLEMENTATION_PLAN_paper-methods-and-evidence.md`
+- [x] `[DONE]` Do not spend WER/MOS/novelty compute on the first metadata-control checkpoint unless needed for documentation; the perceptual gate failed, so metrics would likely characterize generic speaker shift rather than useful age/gender control
+- [ ] `[NOW]` Add an external speaker-verifier / EER-style novelty validation branch, because the paper should not rely only on native OpenVoice embedding-space novelty for identity-shift evidence
+- [ ] `[NOW]` Add a metadata separability probe before more age/gender training, because the first direct scalar metadata controls behaved like generic timbre/identity shifts rather than perceptible age/gender controls
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [ ] `[SOON]` Compare strict pseudo-label filtering against looser confidence-only or minimally filtered CommonVoice pseudo labels, because Joe's May 14 question raised a valid possibility that filtering may discard useful breadth once all CommonVoice rows have weak labels
 - [ ] `[SOON]` Before retrying age/gender controls, probe whether OpenVoice speaker embeddings contain recoverable age/gender signal and design a balanced metadata objective; otherwise direct scalar supervision may keep acting as a generic timbre/identity knob
+- [ ] `[SOON]` Add repeated-seed confidence intervals for the current reference tables before freezing final paper claims, because most ablations so far use deterministic single-seed comparisons
+- [ ] `[SOON]` Add formal DP accounting and privacy-utility curves before submission; the current strongest evidence is controllability/quality, while privacy accounting remains an explicit paper task
 - [x] `[DONE]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths; the first grid is intentionally narrow and should be expanded only after perceptual review confirms the ranked cells sound useful
 - [ ] `[SOON]` Add a browser index for grid listening reports, because the grid now produces many per-cell HTML/rating files and manual link-hunting is error-prone
 - [ ] `[SOON]` Include anticipated questions and concise answers in every future Joe-facing meeting brief, because the May 14 meeting showed predictable questions about pseudo-labeling, filtering, collapse, DP, and evaluation should be pre-answered
@@ -3350,9 +3354,10 @@ Interpretation:
 - Do not promote `anger_s10` or `fear_s7p5` as checked-in presets yet.
 - Treat the grid as a useful diagnostic for where objective metrics and human
   perception diverge.
-- The next practical research step should move to CommonVoice age/gender
+- At that time, the next practical research step was CommonVoice age/gender
   controls and the metric/collapse guide, rather than another style-strength
-  increase.
+  increase. That follow-up is now complete through the first diagnostic
+  metadata-control panel; see sections 0.49-0.51.
 
 Validation:
 
@@ -3403,9 +3408,10 @@ Interpretation:
   quantitative result around `47%` emotion recall.
 - The newest high-strength `anger_s10` / `fear_s7p5` candidates should not be
   promoted as presets because Joe did not hear a perceptual candidate win.
-- The next research branch should test CommonVoice age/gender controls so the
-  paper story becomes multi-attribute controllable speaker generation, not only
-  emotion conversion.
+- The next research branch at that point was CommonVoice age/gender controls.
+  That branch is now implemented through a first diagnostic panel; it did not
+  yet produce perceptible age/gender control, so the current next move is paper
+  methods/evidence consolidation.
 
 Validation:
 
@@ -3418,7 +3424,7 @@ Validation:
 
 Next:
 
-- `[NOW]` Start `research/commonvoice-metadata-controls` from the canonical
+- `[DONE]` Start `research/commonvoice-metadata-controls` from the canonical
   research line and audit CommonVoice age/gender metadata coverage before
   training.
 
@@ -3573,7 +3579,7 @@ Interpretation:
 
 Next:
 
-- `[NOW]` Shift back to paper-method documentation for the substantial current
+- `[DONE]` Shift back to paper-method documentation for the substantial current
   style-control result and describe metadata control as future work / diagnostic
   infrastructure.
 - `[SOON]` Probe whether OpenVoice speaker embeddings encode recoverable
@@ -3582,6 +3588,78 @@ Next:
   prototype/classifier supervision, or a verified metadata-readout objective.
 - `[SOON]` Add a fairness/ethics note before any external-facing age/gender
   claims; CommonVoice labels are self-reported, sparse, and imbalanced.
+
+---
+
+### 0.51 Paper Methods and Evidence Consolidation (2026-05-28, branch `docs/paper-methods-and-evidence`)
+
+Goal:
+
+- Pause exploratory model training long enough to make the current substantial
+  result paper-readable and collaborator-readable.
+
+Artifacts:
+
+- `PAPER_METHODS_AND_EVIDENCE.md`
+- `IMPLEMENTATION_PLAN_paper-methods-and-evidence.md`
+- `EVIDENCE_DEMO_PACKET.md`
+- `docs/metric_collapse_guide.md`
+- `README.md`
+
+What changed:
+
+- Added a paper-facing methods and evidence packet covering:
+  - problem framing as controllable speaker generation / anonymization;
+  - OpenVoice as the active controllable path;
+  - latent layout and style dimensions;
+  - CREMA-D / Expresso / CommonVoice data mixture;
+  - pseudo-label and teacher-supervision strategy;
+  - current evaluation stack;
+  - claim-to-evidence mapping;
+  - current non-claims;
+  - Joe-facing anticipated Q&A.
+- Refreshed the evidence/demo packet so it no longer says the next step is
+  first-pass age/gender controls. That branch has now been implemented and
+  perceptually failed its first gate.
+- Updated the metric/collapse guide with a paper-readiness rule: metrics can
+  nominate candidates, but listening decides whether a candidate becomes a
+  demo or paper claim.
+- Updated the README to point collaborators to the new paper-method packet and
+  to mark CommonVoice age/gender controls as diagnostic infrastructure, not a
+  current positive claim.
+
+Interpretation:
+
+- The current paper backbone is the expanded rare-supply mixed teacher plus
+  the `cvrare_sad_enunc_guard` inference profile.
+- The generated-audio strength grid is diagnostic because Joe heard `0/5`
+  candidate wins in the priority A/B review.
+- The first CommonVoice age/gender control path is diagnostic because local
+  listening heard identical outputs or generic speaker/timbre shifts.
+- No `FINDINGS.md` update was made because this branch consolidates existing
+  evidence rather than producing a new verified experiment.
+
+Validation:
+
+- `Validation`: `PAPER_METHODS_AND_EVIDENCE.md` includes a claim-to-evidence
+  table and the required Joe-facing Q&A.
+- `Validation`: docs preserve the canonical listening entrypoint
+  `results/listening_evidence_demo_index.html`.
+- `Validation`: docs do not promote `anger_s10`, `fear_s7p5`, or first-pass
+  age/gender controls as paper/demo wins.
+- `Validation`: `FINDINGS.md` remains unchanged.
+
+Next:
+
+- `[NOW]` Add an external speaker-verifier / EER-style novelty validation
+  branch so identity-shift evidence does not depend only on native OpenVoice
+  embedding-space novelty.
+- `[NOW]` Add a metadata separability probe before more age/gender training.
+- `[SOON]` Build a generated-audio/content-repair loop for hard styles
+  (`anger`, `disgust`, `fear`).
+- `[SOON]` Add repeated-seed confidence intervals before final tables.
+- `[SOON]` Add formal DP accounting and privacy-utility curves before paper
+  submission.
 
 ---
 

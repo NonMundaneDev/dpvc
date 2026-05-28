@@ -17,7 +17,8 @@ Canonical research branch:
 
 Current experiment focus on that branch:
 
-- **canonical evidence/demo packet, then CommonVoice age/gender controls**
+- **paper-method/evidence consolidation, using the canonical evidence packet as
+  the current listening entrypoint**
 
 Immediate next queue:
 
@@ -25,17 +26,19 @@ Immediate next queue:
 2. treat the decoder-prototype, failure-targeted target-dim, and anti-neutral prototype-margin runs as verified cautionary baselines, not as the new reference
 3. treat Joe's first priority A/B listening review as a perceptual gate: four rows sounded identical to the guard, one row preferred the guard, and no metric-selected candidate won perceptually
 4. do not promote `anger_s10` or `fear_s7p5` as checked-in style presets yet; keep the generated-audio grid as a diagnostic artifact
-5. use the canonical evidence packet and metric guide to explain what already works, review the first CommonVoice age/gender listening panel, broaden the non-Trump sweep, and finish the reproducibility checklist / dependency pinning work
+5. use the canonical evidence packet, paper-method packet, and metric guide to explain what already works; treat the first CommonVoice age/gender listening panel as diagnostic because it sounded identical or like generic speaker/timbre shifts
+6. next research work should be targeted: external speaker-verifier novelty validation, metadata separability probing before more age/gender training, generated-audio/content repair for hard styles, repeated-seed confidence intervals, and formal DP accounting
 
 The dedicated next-step plans live in:
 
 - **[`IMPLEMENTATION_PLAN_post-consolidation-next-queue.md`](IMPLEMENTATION_PLAN_post-consolidation-next-queue.md)** — historical record of the consolidation / rollback sequence
 - **[`IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md`](IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md)** — the technical plan for the current experiment slice on `research/controllable-vae`
 - **[`EVIDENCE_DEMO_PACKET.md`](EVIDENCE_DEMO_PACKET.md)** — the one-page evidence/demo packet for the current substantial result and next branch
+- **[`PAPER_METHODS_AND_EVIDENCE.md`](PAPER_METHODS_AND_EVIDENCE.md)** — paper-facing methods outline, claim-to-evidence map, listening entrypoints, and Joe-facing Q&A
 - **[`docs/metric_collapse_guide.md`](docs/metric_collapse_guide.md)** — plain-English metric and collapse definitions for meetings and paper writing
 - **[`IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md`](IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md)** — age/gender metadata-control plan and audit results
 
-We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. The current research branch also has first-pass CommonVoice metadata-control plumbing for age/gender scalar controls, but those controls still need a real checkpoint and listening/evaluation panel before they become paper-facing claims. Primary entry points:
+We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. The current research branch also has first-pass CommonVoice metadata-control plumbing for age/gender scalar controls. That path trains and generates, but the first perceptual panel sounded identical or like generic speaker/timbre shifts, so age/gender controls remain diagnostic infrastructure rather than paper-facing claims. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
 - **[`FINDINGS.md`](FINDINGS.md)** — 35 paper-facing findings with methodology and per-row takeaways.
