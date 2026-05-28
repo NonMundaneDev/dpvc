@@ -82,17 +82,22 @@ Why:
      - `--metadata-control-report`
    - Print labeled-row counts and warn if either mask is empty.
 
-4. Add inference support for metadata controls. **Status: implemented at CLI/manifest level; needs a real metadata-control checkpoint before generated-audio validation.**
+4. Add inference support for metadata controls. **Status: implemented and
+   generated-audio smoke-validated; first perceptual review was diagnostic, not
+   a control win.**
    - Extend the controllable inference path with explicit age/gender controls.
    - Keep this separate from emotion/style controls in the metadata output.
    - Ensure every generated output records style, age, gender, seed, source,
      checkpoint, and latent-dim settings in the manifest.
 
-5. Evaluate first checkpoints. **Status: first checkpoint trained and listening smoke panel generated; perceptual review next.**
+5. Evaluate first checkpoints. **Status: first checkpoint trained and listening
+   smoke panel reviewed; local perceptual review found identical/generic
+   timbre-shift behavior rather than perceptible age/gender control.**
    - Run a metadata-only or metadata-light mixed checkpoint first.
    - Generate a small panel with gender/age controls while holding content and
      style fixed.
-   - Evaluate WER, MOS, novelty, and a simple latent/proxy metadata-readout.
+   - Evaluate WER, MOS, novelty, and a simple latent/proxy metadata-readout only
+     after perceptual review suggests the generated audio is worth scoring.
    - Build a listening report for perceptual review.
 
 ## Acceptance / Validation
@@ -107,6 +112,8 @@ Why:
   controls and records them in the generation manifest.
 - Listening artifacts include enough metadata for Joe or another collaborator
   to inspect the outputs.
+- The first listening panel is interpreted conservatively before any paper/demo
+  claim is made.
 
 ## Validation Log
 
@@ -132,6 +139,9 @@ Why:
   `results/listening_metadata_w010_labeled_warmup.html` and
   `results/listening_metadata_w010_labeled_warmup_ratings.csv` for local
   perceptual review.
+- 2026-05-28: local perceptual review classified the first panel as effectively
+  identical or generic speaker/timbre movement, not interpretable age/gender
+  control.
 
 ## Risks
 
@@ -142,13 +152,19 @@ Why:
   classifiers.
 - Supervising too many metadata dimensions could reduce free speaker capacity;
   the first pass should stay scalar and conservative.
+- A direct scalar metadata-control loss may learn a generic speaker/timbre knob
+  if OpenVoice embeddings do not linearly encode age/gender strongly enough.
 
 ## Future Upgrades
 
 - Add a gender-balanced local CommonVoice subset if the current shard is too
   male-heavy for perceptual control.
+- Probe whether OpenVoice speaker embeddings contain recoverable age/gender
+  signal before training another metadata-control checkpoint.
 - Compare direct scalar latent supervision with auxiliary metadata-head
   supervision from `openvoice_pretrain_vae_commonvoice.py`.
+- Compare scalar supervision with contrastive/prototype metadata objectives, so
+  age/gender labels shape separable directions instead of generic timbre shifts.
 - Add an external age/gender/speaker-attribute verifier only after first
   generated audio sounds plausible; do not pick a verifier before the control
   path exists.

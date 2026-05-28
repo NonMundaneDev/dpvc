@@ -78,6 +78,22 @@ results/listening_metadata_w010_labeled_warmup_ratings.csv
   dims are acting as generic speaker-shift knobs rather than interpretable
   controls.
 
+## Perceptual Outcome
+
+Local review on 2026-05-28 found that the variants sounded identical or mostly
+like generic speaker/timbre shifts. The first direct scalar metadata-control
+checkpoint therefore should be treated as a negative diagnostic, not as evidence
+that age/gender controls are perceptually working.
+
+Action:
+
+- Do not promote this checkpoint as a paper/demo result.
+- Do not run the full WER/MOS/novelty stack for this checkpoint unless a later
+  documentation need requires it; the perceptual gate failed.
+- Before retrying metadata controls, first test whether OpenVoice speaker
+  embeddings contain recoverable age/gender signal and use a more balanced or
+  stronger metadata objective.
+
 ## Validation
 
 - `Validation`: generated `10` audio rows from `2` source speakers.
@@ -86,3 +102,6 @@ results/listening_metadata_w010_labeled_warmup_ratings.csv
 - `Validation`: the rating CSV includes `gender_control` and `age_control`
   columns so perceptual review can separate style quality from metadata-control
   behavior.
+- `Validation`: local listener classified the panel as effectively identical
+  or generic timbre/identity movement rather than perceptible age/gender
+  control.

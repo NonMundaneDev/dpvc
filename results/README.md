@@ -12,14 +12,19 @@ These are the full 258-file sweep over 27 speaker/variant configurations run on
 
 CommonVoice metadata-control preflight artifacts from 2026-05-27:
 
+Local perceptual review on 2026-05-28 found that the first metadata-control
+panel sounded identical or mostly like generic speaker/timbre shifts. These
+artifacts are therefore diagnostic engineering evidence, not paper-facing proof
+of perceptible age/gender control.
+
 | File | Rows | Script | Backs |
 |------|------|--------|-------|
 | `commonvoice_metadata_controls_audit.md` | local corpus + extracted artifact summary | [`scripts/audit_commonvoice_metadata_controls.py`](../scripts/audit_commonvoice_metadata_controls.py) | Worklog-only preflight for `research/commonvoice-metadata-controls` |
 | `commonvoice_metadata_controls_audit.json` | local corpus + extracted artifact summary | [`scripts/audit_commonvoice_metadata_controls.py`](../scripts/audit_commonvoice_metadata_controls.py) | Machine-readable audit for metadata-control training setup |
 | `openvoice_vae_mixed_teacher_cvrare_metadata_w010_labeled_warmup_report.json` | metadata-control training config | [`examples/openvoice_train_vae_mixed.py`](../examples/openvoice_train_vae_mixed.py) | Worklog-only first metadata-control checkpoint record |
-| `listening_metadata_w010_labeled_warmup.html` | 10-row browser listening panel | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Perceptual smoke review for age/gender controls |
+| `listening_metadata_w010_labeled_warmup.html` | 10-row browser listening panel | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Diagnostic negative perceptual smoke review for age/gender controls |
 | `listening_metadata_w010_labeled_warmup_ratings.csv` | subjective rating template | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Rating sheet for the metadata-control smoke panel |
-| `listening_metadata_w010_labeled_warmup.md` | listening instructions and interpretation rules | manual summary | Worklog-only perceptual smoke instructions |
+| `listening_metadata_w010_labeled_warmup.md` | listening instructions, outcome, and interpretation rules | manual summary | Worklog-only perceptual smoke outcome |
 
 Validation-scale CommonVoice pretraining comparison artifacts from 2026-04-28:
 

@@ -106,12 +106,14 @@ Priority tags:
 - [x] `[DONE]` Audit CommonVoice metadata coverage for age/gender controls; the local 40k-clip subset has `5504` age-control rows, `5291` binary gender-control rows, and `5258` rows with both labels
 - [x] `[DONE]` Implement masked direct metadata-control supervision for age/gender on `research/commonvoice-metadata-controls`, because Joe's May 14 feedback reframed emotion as one controllable speaker attribute rather than the only target
 - [x] `[DONE]` Rebuild the full `openvoice_mixed_teacher_cvrare_hybrid_extra_base` artifact with the new metadata tensors, train the first metadata-control checkpoint, and generate a small age/gender listening panel before claiming perceptual control
-- [ ] `[NOW]` Listen to `results/listening_metadata_w010_labeled_warmup.html` and decide whether the first metadata-control checkpoint is perceptually meaningful, merely changing identity/timbre, or effectively inaudible
+- [x] `[DONE]` Listen to `results/listening_metadata_w010_labeled_warmup.html`; local perceptual review found the variants sounded identical or like generic speaker/timbre shifts, so this first metadata-control checkpoint is diagnostic rather than a perceptual age/gender-control win
 - [ ] `[NOW]` Start paper-method documentation for architecture, data mixture, training schedule, and evaluation justification once the listening review and first age/gender control baseline are in hand
+- [ ] `[NOW]` Do not spend WER/MOS/novelty compute on the first metadata-control checkpoint unless needed for documentation; the perceptual gate failed, so metrics would likely characterize generic speaker shift rather than useful age/gender control
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [ ] `[SOON]` Compare strict pseudo-label filtering against looser confidence-only or minimally filtered CommonVoice pseudo labels, because Joe's May 14 question raised a valid possibility that filtering may discard useful breadth once all CommonVoice rows have weak labels
+- [ ] `[SOON]` Before retrying age/gender controls, probe whether OpenVoice speaker embeddings contain recoverable age/gender signal and design a balanced metadata objective; otherwise direct scalar supervision may keep acting as a generic timbre/identity knob
 - [x] `[DONE]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths; the first grid is intentionally narrow and should be expanded only after perceptual review confirms the ranked cells sound useful
 - [ ] `[SOON]` Add a browser index for grid listening reports, because the grid now produces many per-cell HTML/rating files and manual link-hunting is error-prone
 - [ ] `[SOON]` Include anticipated questions and concise answers in every future Joe-facing meeting brief, because the May 14 meeting showed predictable questions about pseudo-labeling, filtering, collapse, DP, and evaluation should be pre-answered
@@ -3553,24 +3555,31 @@ Validation:
   `happy/male/forties` file successfully.
 - `Validation`: the 10-row listening panel generated successfully and the HTML
   contains `12` valid audio references including source clips.
+- `Validation`: local perceptual review on 2026-05-28 found that the metadata
+  variants sounded identical or mostly like generic speaker/timbre shifts, not
+  interpretable age/gender control.
 
 Interpretation:
 
-- This is still an engineering/reproducibility result, not yet a paper-facing
-  empirical finding. `FINDINGS.md` should stay unchanged until the listening
-  panel and metric checks show meaningful behavior.
-- The first checkpoint is intentionally conservative. It proves the end-to-end
-  path can train and generate audio, but the scientific question is still
-  perceptual: do age/gender controls produce interpretable changes without
-  damaging intelligibility and naturalness?
+- This is an engineering/reproducibility result plus a useful negative
+  diagnostic, not a paper-facing positive finding. `FINDINGS.md` stays
+  unchanged.
+- The first checkpoint proves the end-to-end age/gender-control path can train,
+  generate audio, and expose review artifacts. It does not yet show perceptible
+  age/gender control.
+- Because the perceptual gate failed, WER/MOS/novelty should not be the next
+  move for this checkpoint. Those metrics would mainly characterize a generic
+  timbre/identity shift rather than validate useful metadata control.
 
 Next:
 
-- `[NOW]` Listen locally to
-  `results/listening_metadata_w010_labeled_warmup.html`; classify the result
-  as perceptible control, generic speaker/timbre shift, or inaudible control.
-- `[NOW]` Run WER/MOS/novelty on the metadata-control smoke panel only after
-  the first listen confirms that the audio is worth scoring.
+- `[NOW]` Shift back to paper-method documentation for the substantial current
+  style-control result and describe metadata control as future work / diagnostic
+  infrastructure.
+- `[SOON]` Probe whether OpenVoice speaker embeddings encode recoverable
+  age/gender before spending more training on metadata controls.
+- `[SOON]` Retry metadata control only with a balanced subset, stronger
+  prototype/classifier supervision, or a verified metadata-readout objective.
 - `[SOON]` Add a fairness/ethics note before any external-facing age/gender
   claims; CommonVoice labels are self-reported, sparse, and imbalanced.
 
