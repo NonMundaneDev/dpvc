@@ -16,7 +16,9 @@ The strongest current paper story is:
 > quality-balanced demo is the expanded rare-supply checkpoint with the
 > `cvrare_sad_enunc_guard` inference profile. Recent stronger style-strength
 > candidates and first-pass CommonVoice age/gender controls are diagnostic, not
-> promoted results.
+> promoted results. Metadata separability probing shows gender is objectively
+> recoverable, but age/accent controls remain too weak or non-perceptual for a
+> headline claim.
 
 This should be the paper-writing posture:
 
@@ -25,7 +27,8 @@ This should be the paper-writing posture:
 - present emotion/style as the best validated controllable attribute family;
 - present CommonVoice age/gender controls as implemented infrastructure and
   future work, because the first listening panel did not show perceptible
-  age/gender control;
+  age/gender control and the separability probe supports only a narrow
+  gender-focused follow-up;
 - separate objective metrics from perceptual listening, and do not promote a
   setting unless both support the claim.
 
@@ -99,7 +102,10 @@ controls:
 
 Those controls train and generate, but the first perceptual panel sounded
 identical or like generic speaker/timbre shifts. They are not paper-facing
-positive results yet.
+positive results yet. A follow-up metadata separability probe shows gender is
+strongly recoverable in both raw OpenVoice embeddings and VAE latents, while
+age and accent are weak or mostly diagnostic in the current metadata-control
+latent space.
 
 ### Training Data
 
@@ -169,6 +175,9 @@ The current evaluation stack is intentionally multi-axis:
 - external speaker verification: SpeechBrain ECAPA similarity and
   accept-as-source checks, currently proxy-thresholded from source/baseline
   trials
+- metadata separability: nearest-centroid probing of CommonVoice metadata in
+  raw embeddings and VAE `mu` latents, used only as a diagnostic gate before
+  more metadata-control training
 - perceptual validation: browser listening panels and collaborator review
 
 The key rule for paper writing:
@@ -188,7 +197,7 @@ The key rule for paper writing:
 | The best current quality-balanced result preserves the recall gain while reducing quality damage. | Finding 31 shows `cvrare_sad_enunc_guard` keeps `47.0%` recall, improves WER to `0.2348`, improves MOS delta to `-0.2081`, and reduces any-collapse files to `20`. | `FINDINGS.md` Finding 31; `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html` | It is an inference-side calibration profile, not a final learned repair objective. |
 | External speaker verification corroborates identity shift. | Finding 36 shows ECAPA mean styled novelty gain of `0.3594` and only `6/99` styled rows accepted as source at a proxy threshold. | `FINDINGS.md` Finding 36; `results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.md` | The threshold is proxy-calibrated; final EER needs independent labeled trials. |
 | Stronger metric-selected style settings should not be promoted yet. | Finding 35 plus Joe's five-row review showed `0/5` candidate wins. | `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md` | The grid remains useful for diagnostics and candidate mining. |
-| CommonVoice age/gender controls are implemented but not perceptually validated. | The metadata-control branch trained and generated a panel, but local listening found identical/generic timbre shifts. | `results/listening_metadata_w010_labeled_warmup.md`; `IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md` | Treat as future work, not a current paper result. |
+| CommonVoice age/gender controls are implemented but not perceptually validated. | The metadata-control branch trained and generated a panel, local listening found identical/generic timbre shifts, and Finding 37 shows gender is separable while age/accent remain weak. | `results/listening_metadata_w010_labeled_warmup.md`; `results/commonvoice_metadata_separability_mixed_metadata_base.md`; `IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md` | Treat as future work, not a current paper result; a narrow gender-focused follow-up is more defensible than broad age/accent controls. |
 
 ## Current Positive Results
 
@@ -202,7 +211,8 @@ Use these as the core paper/evidence backbone:
 - The `cvrare_sad_enunc_guard` profile is the current best recall/quality
   compromise.
 - The project now has a reproducible evaluation stack: emotion recall, WER,
-  MOS proxy, novelty, collapse taxonomy, and listening dashboards.
+  MOS proxy, novelty, external speaker verification, metadata separability
+  diagnostics, collapse taxonomy, and listening dashboards.
 
 ## Current Non-Claims
 
@@ -281,15 +291,17 @@ results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_e
 The repo now has first-pass CommonVoice age/gender control plumbing, training,
 inference flags, and a listening panel. The first local perceptual review did
 not hear interpretable age/gender changes, so this remains diagnostic
-infrastructure and future work.
+infrastructure and future work. A follow-up separability probe found strong
+gender structure in embeddings and VAE latents, but weak age/accent structure;
+that supports a narrow gender-focused follow-up only if metadata control stays
+important for the paper.
 
 ### What should happen next?
 
-The immediate next move is paper-method consolidation, not another blind
-training run. The next research moves should be targeted:
+The immediate next moves should be targeted, not broad blind training runs:
 
-- probe whether OpenVoice embeddings encode recoverable age/gender;
 - design a generated-audio-calibrated content repair loop for hard styles;
+- run a narrow gender-focused metadata-control follow-up only if needed;
 - add repeated-seed confidence intervals before freezing paper tables.
 
 ## Next Research Queue

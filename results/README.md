@@ -33,6 +33,19 @@ External speaker-verifier artifacts from 2026-05-28:
 | `eval_external_speaker_verifier_cvrare_sad_enunc_guard.csv` | 110 | [`scripts/eval_external_speaker_verifier.py`](../scripts/eval_external_speaker_verifier.py) | Finding 36 external ECAPA novelty validation |
 | `eval_external_speaker_verifier_cvrare_sad_enunc_guard.md` | summary | [`scripts/eval_external_speaker_verifier.py`](../scripts/eval_external_speaker_verifier.py) | Finding 36 summary and caveats |
 
+CommonVoice metadata separability artifacts from 2026-05-28:
+
+These probe whether metadata labels are recoverable in raw OpenVoice embeddings
+and metadata-control VAE latents. They are diagnostic evidence only; they do
+not prove perceptual age/gender control.
+
+| File | Rows | Script | Backs |
+|------|------|--------|-------|
+| `commonvoice_metadata_separability_cvrare_expanded.csv` | 6 | [`scripts/probe_commonvoice_metadata_separability.py`](../scripts/probe_commonvoice_metadata_separability.py) | Finding 37 expanded CommonVoice metadata separability |
+| `commonvoice_metadata_separability_cvrare_expanded.md` | summary | [`scripts/probe_commonvoice_metadata_separability.py`](../scripts/probe_commonvoice_metadata_separability.py) | Finding 37 expanded CommonVoice summary |
+| `commonvoice_metadata_separability_mixed_metadata_base.csv` | 6 | [`scripts/probe_commonvoice_metadata_separability.py`](../scripts/probe_commonvoice_metadata_separability.py) | Finding 37 mixed metadata-training artifact separability |
+| `commonvoice_metadata_separability_mixed_metadata_base.md` | summary | [`scripts/probe_commonvoice_metadata_separability.py`](../scripts/probe_commonvoice_metadata_separability.py) | Finding 37 mixed metadata-training artifact summary |
+
 Validation-scale CommonVoice pretraining comparison artifacts from 2026-04-28:
 
 | File | Rows | Script | Backs |

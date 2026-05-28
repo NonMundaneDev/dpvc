@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-28 (Finding 36 adds external ECAPA speaker-verifier novelty validation)
+**Last updated:** 2026-05-28 (Finding 37 adds CommonVoice metadata separability diagnostics)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -2821,13 +2821,97 @@ Artifacts:
 
 ---
 
+## Finding 37: CommonVoice Gender Is Separable, But Age/Accent Controls Remain Diagnostic
+
+### Setup
+
+After the first CommonVoice age/gender listening panel sounded identical or like
+generic speaker/timbre shifts, we tested a narrower question before retraining:
+
+**Do the current metadata labels have recoverable structure in OpenVoice
+embedding space and in the metadata-control VAE latent space?**
+
+The probe used a deterministic nearest-centroid classifier with:
+
+- majority-class baseline;
+- train-label permutation baseline;
+- macro-F1 for imbalanced classes;
+- centroid separation ratio;
+- raw embedding-space and optional VAE `mu` latent-space features.
+
+Artifacts:
+
+- script: `scripts/probe_commonvoice_metadata_separability.py`
+- expanded CommonVoice artifact:
+  `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`
+- mixed metadata-training artifact:
+  `embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_metadata_base.pt`
+- VAE checkpoint:
+  `embeddings/openvoice_vae_mixed_teacher_cvrare_metadata_w010_labeled_warmup.pt`
+
+### Result
+
+Expanded CommonVoice artifact:
+
+| Field | Space | Used rows | Classes | Macro F1 | Majority F1 | F1 delta | Verdict |
+|-------|-------|-----------|---------|----------|-------------|----------|---------|
+| `gender` | embedding | `3429` | `2` | `0.9077` | `0.4555` | `+0.4522` | strongly separable |
+| `gender` | VAE `mu` | `3429` | `2` | `0.9005` | `0.4555` | `+0.4450` | strongly separable |
+| `age` | embedding | `3559` | `7` | `0.1901` | `0.0937` | `+0.0964` | weak / diagnostic only |
+| `age` | VAE `mu` | `3559` | `7` | `0.1343` | `0.0937` | `+0.0406` | weak / diagnostic only |
+| `accent` | embedding | `2881` | `8` | `0.1902` | `0.0819` | `+0.1084` | moderately separable |
+| `accent` | VAE `mu` | `2881` | `8` | `0.1446` | `0.0819` | `+0.0627` | weak / diagnostic only |
+
+Mixed metadata-training artifact:
+
+| Field | Space | Used rows | Classes | Macro F1 | Majority F1 | F1 delta | Verdict |
+|-------|-------|-----------|---------|----------|-------------|----------|---------|
+| `gender` | embedding | `1795` | `2` | `0.8797` | `0.4531` | `+0.4266` | strongly separable |
+| `gender` | VAE `mu` | `1795` | `2` | `0.8670` | `0.4531` | `+0.4139` | strongly separable |
+| `age` | embedding | `1885` | `7` | `0.1499` | `0.0936` | `+0.0563` | weak / diagnostic only |
+| `age` | VAE `mu` | `1885` | `7` | `0.1412` | `0.0936` | `+0.0476` | weak / diagnostic only |
+| `accent` | embedding | `1621` | `8` | `0.1501` | `0.0821` | `+0.0680` | weak / diagnostic only |
+| `accent` | VAE `mu` | `1621` | `8` | `0.1016` | `0.0821` | `+0.0195` | not meaningfully separable |
+
+All rows above beat the permutation baseline on macro-F1, but the magnitude is
+what matters for control. Gender is a strong signal; age and accent are much
+weaker and imbalanced.
+
+### Implication
+
+This finding changes how we should interpret the failed first metadata-control
+listening panel:
+
+1. The negative listening result does **not** mean CommonVoice metadata is
+   useless. Gender is objectively separable in both raw OpenVoice embeddings
+   and the current metadata-control latent space.
+2. The negative listening result does mean that direct scalar controls have not
+   yet become perceptually reliable age/gender controls. The model may be
+   moving along generic timbre or identity directions that correlate with
+   gender rather than producing a listener-clear controllable attribute.
+3. Age and accent are poor next scalar-control targets without better labels,
+   class balancing, or explicit perceptual/acoustic objectives.
+
+For the paper, this is a diagnostic result rather than a headline claim. It
+supports saying: **metadata-control infrastructure exists, but only emotion /
+style controls are currently perceptually validated.**
+
+Artifacts:
+
+- `results/commonvoice_metadata_separability_cvrare_expanded.csv`
+- `results/commonvoice_metadata_separability_cvrare_expanded.md`
+- `results/commonvoice_metadata_separability_mixed_metadata_base.csv`
+- `results/commonvoice_metadata_separability_mixed_metadata_base.md`
+
+---
+
 ## Open Questions
 
 1. **What are the formal privacy guarantees?** We need to compute epsilon for each noise level and report privacy-utility curves.
 2. ~~**Does style control generalize across source speakers?**~~ → **Answered in Finding 6.** Brightness generalizes (7/9 styles); F0 does not. Some speaker-style combinations collapse.
 3. ~~**How do we evaluate emotion controllability?**~~ → **Answered in Finding 7.** emotion2vec Recall Rate + emo_sim (per EmoVoice) is the primary metric. Recall is 20% — training gap identified.
 4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Findings 30-35: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain, and the `sad/enunciated` strength guard keeps `47.0%` recall while improving WER/MOS. The decoder-prototype pilots preserve novelty but do not beat that guard, generated-audio failure mining localizes the remaining hard styles to `disgust`, `fear`, and `anger`, the failure-conditioned plus anti-neutral follow-ups confirm that embedding-space proxies do not escape neutral collapse, and the generated-audio strength grid shows that style-specific audio calibration can improve `anger` / `fear` rows but is not yet a safe global default.
-5. **Can we train age/gender and emotion knobs simultaneously?** CommonVoice has age/gender, CREMA-D has emotion. Can a single VAE learn all at once when each training stage only labels a subset? Unknown — Joe flagged this as an open research question.
+5. **Can we train age/gender and emotion knobs simultaneously?** Partly narrowed by Finding 37: gender has recoverable structure in the current embeddings and metadata-control latents, but age/accent are weak and first-pass scalar controls were not perceptually clear. The remaining question is whether a balanced gender-focused objective can produce listener-clear control without damaging style/identity behavior.
 6. ~~**Can an independent speaker verifier confirm the novelty signal?**~~ -> **Partly answered in Finding 36.** ECAPA corroborates the current guard's identity shift, but the EER threshold is proxy-calibrated; a final paper/security claim still needs an independent labeled trial CSV.
 7. **Can an adversary re-identify speakers from F0 alone?** If so, embedding-only DP is insufficient — motivates joint protection.
 8. **What is the minimum speaker count for style learning?** We jumped from 3 to 91. Where's the threshold?
@@ -2892,6 +2976,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 34. Anti-neutral prototype-margin supervision is also a useful negative result: `mixed_teacher_cvrare_antineutral_labeled_warmup` slightly improves over the failure-targeted target-dim run (`40.9%` recall, `0.2962` novelty, `0.2609` WER), but still loses to the current `sad/enunciated` guard on recall (`47.0%`), WER (`0.2348`), style-to-neutral collapse (`18` vs `25`), and any-collapse files (`20` vs `27`). Embedding-space anti-neutral proxies are not enough; the next calibration signal must come from generated audio itself.
 35. The first generated-audio style-strength grid confirms that audio-calibrated reranking is the right next lens but not a solved default: `anger_s10` improves anger recall from `1/11` to `3/11` with moderate WER cost, `fear_s7p5` improves fear recall from `3/11` to `6/11` but has high WER (`0.5231`), and `disgust_s10` raises novelty while failing to improve recall and severely hurting MOS (`-0.6039`). Joe's first five-row listening review found `0/5` candidate wins (`4` ties and `1` reference preference), so these objective gains should stay diagnostic rather than become checked-in style presets.
 36. External ECAPA speaker-verifier validation corroborates the identity-shift signal for the current `sad/enunciated` guard: mean styled external novelty gain versus baseline is `0.3594`, and only `6/99` styled rows are accepted as source at the derived proxy threshold. This supports the paper's identity-shift claim, with the caveat that final EER/privacy claims still need independent labeled speaker-verification trials.
+37. CommonVoice metadata separability diagnostics show that gender is strongly recoverable in both raw OpenVoice embeddings and the metadata-control VAE latents (`macro_f1` about `0.87-0.91`), while age is weak and accent mostly weakens in the VAE latent space. This explains why first-pass age/gender controls should stay diagnostic: gender signal exists objectively, but perceptual control is not established yet.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion

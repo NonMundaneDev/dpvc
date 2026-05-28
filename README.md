@@ -27,7 +27,7 @@ Immediate next queue:
 3. treat Joe's first priority A/B listening review as a perceptual gate: four rows sounded identical to the guard, one row preferred the guard, and no metric-selected candidate won perceptually
 4. do not promote `anger_s10` or `fear_s7p5` as checked-in style presets yet; keep the generated-audio grid as a diagnostic artifact
 5. use the canonical evidence packet, paper-method packet, and metric guide to explain what already works; treat the first CommonVoice age/gender listening panel as diagnostic because it sounded identical or like generic speaker/timbre shifts
-6. external ECAPA speaker-verifier novelty validation now corroborates the current guard's identity shift; next research work should target metadata separability probing before more age/gender training, generated-audio/content repair for hard styles, repeated-seed confidence intervals, and formal DP accounting
+6. external ECAPA speaker-verifier novelty validation now corroborates the current guard's identity shift; the metadata separability probe shows gender is objectively separable but age/accent controls remain diagnostic, so next research work should target generated-audio/content repair for hard styles, a narrow gender-focused follow-up only if needed, repeated-seed confidence intervals, and formal DP accounting
 
 The dedicated next-step plans live in:
 
@@ -37,11 +37,12 @@ The dedicated next-step plans live in:
 - **[`PAPER_METHODS_AND_EVIDENCE.md`](PAPER_METHODS_AND_EVIDENCE.md)** — paper-facing methods outline, claim-to-evidence map, listening entrypoints, and Joe-facing Q&A
 - **[`docs/metric_collapse_guide.md`](docs/metric_collapse_guide.md)** — plain-English metric and collapse definitions for meetings and paper writing
 - **[`IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md`](IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md)** — age/gender metadata-control plan and audit results
+- **[`IMPLEMENTATION_PLAN_metadata-separability-probe.md`](IMPLEMENTATION_PLAN_metadata-separability-probe.md)** — objective metadata separability diagnostic before more age/gender training
 
-We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. The current research branch also has first-pass CommonVoice metadata-control plumbing for age/gender scalar controls. That path trains and generates, but the first perceptual panel sounded identical or like generic speaker/timbre shifts, so age/gender controls remain diagnostic infrastructure rather than paper-facing claims. Primary entry points:
+We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. The current research branch also has first-pass CommonVoice metadata-control plumbing for age/gender scalar controls. That path trains and generates, but the first perceptual panel sounded identical or like generic speaker/timbre shifts. A follow-up separability probe shows gender is objectively recoverable in embeddings and VAE latents, while age/accent are weak; metadata controls therefore remain diagnostic infrastructure rather than paper-facing perceptual claims. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
-- **[`FINDINGS.md`](FINDINGS.md)** — 35 paper-facing findings with methodology and per-row takeaways.
+- **[`FINDINGS.md`](FINDINGS.md)** — paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 
@@ -279,6 +280,7 @@ See also:
 - `examples/openvoice_extract_commonvoice.py` + `examples/openvoice_pretrain_vae_commonvoice.py` — Common Voice pretraining path, including validation-scale weak supervision from metadata and pseudo labels.
 - `scripts/build_mixed_training_set.py` + `examples/openvoice_train_vae_mixed.py` — mixed-data bootstrap path that combines pseudo-labeled CommonVoice with labeled CREMA-D and Expresso under schedule-controlled sampling, including optional style-space teacher distillation via `--style-teacher-checkpoint`, `--style-teacher-weight`, `--style-teacher-weight-final`, `--style-teacher-dims`, `--style-teacher-datasets`, `--style-teacher-target-mode`, `--style-teacher-require-label`, `--style-teacher-style-weights`, and `--style-teacher-confidence-power`, plus masked CommonVoice metadata controls via `--metadata-control-weight`, `--metadata-gender-dim`, and `--metadata-age-dim`.
 - `scripts/audit_commonvoice_metadata_controls.py` — audits local CommonVoice age/gender coverage and extracted OpenVoice artifacts before training metadata-control checkpoints.
+- `scripts/probe_commonvoice_metadata_separability.py` — tests whether CommonVoice `gender`, `age`, and `accent` labels are separable in raw embeddings and optional VAE latent space before more metadata-control training.
 - `scripts/prepare_commonvoice_subset.py` — helper for turning downloaded Common Voice shards into a filtered local `validated.tsv` + `clips/` subset.
 - `scripts/annotate_commonvoice_pseudolabels.py` — adds confidence-scored pseudo-style labels to a Common Voice embedding artifact, with batch size, checkpoint/resume, per-row error recording, and target-seeking stop controls for expanded-corpus teacher runs.
 - `scripts/annotate_commonvoice_latent_prototypes.py` — scores Common Voice rows against combined-VAE latent style prototypes as an alternate pseudo-label teacher.
@@ -305,6 +307,7 @@ plus our speaker-novelty proof:
 - `examples/eval_emotion.py` — emotion2vec_plus_large Recall Rate + emo_sim (target alignment)
 - `examples/eval_novelty.py` — OpenVoice native speaker-embedding novelty vs source and vs baseline conversion (speaker shift / proof of novelty)
 - `scripts/eval_external_speaker_verifier.py` — SpeechBrain ECAPA external speaker-verifier similarity, baseline-relative novelty gain, and optional EER-style accept-as-source thresholding
+- `scripts/probe_commonvoice_metadata_separability.py` — metadata separability diagnostic for raw embeddings and VAE latents
 - `examples/eval_wer.py` — OpenAI Whisper drift-from-baseline Word Error Rate (content preservation)
 - `examples/eval_mos.py` — torchaudio SQUIM_SUBJECTIVE predicted MOS (naturalness)
 

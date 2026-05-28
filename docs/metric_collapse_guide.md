@@ -70,6 +70,20 @@ Important clarification:
 - Identity collapse is not WER. A file can be intelligible and still have low
   speaker novelty.
 
+### Metadata Separability
+
+**Question:** do labels such as CommonVoice `gender`, `age`, or `accent` have
+recoverable structure in the embeddings or VAE latents?
+
+Primary numeric metric:
+
+- nearest-centroid macro-F1 versus majority and permutation baselines.
+
+Important caveat:
+
+- Separability is not perceptual controllability. A model can encode a gender
+  correlate while a listener hears only a generic timbre or identity shift.
+
 ## Collapse Taxonomy
 
 ### `content_collapse`
@@ -111,10 +125,12 @@ The current evidence says:
 - The first CommonVoice age/gender metadata-control checkpoint trained and
   generated audio, but local perceptual review heard identical outputs or
   generic timbre/identity shifts rather than interpretable age/gender control.
-- The next high-value documentation task is to consolidate the current
-  style-control method and evidence. The next metadata-control research task
-  should first test whether OpenVoice embeddings contain recoverable age/gender
-  signal before spending more training compute.
+- The metadata separability probe found gender strongly recoverable in raw
+  embeddings and metadata-control VAE latents, but age is weak and accent does
+  not survive strongly in VAE latents.
+- The next metadata-control research task should be narrow and listening-first:
+  a balanced gender-focused follow-up only if the paper needs metadata controls,
+  not a broad age/gender/accent sweep.
 
 ## Paper-Readiness Rule
 
@@ -130,4 +146,5 @@ Current status:
 - `anger_s10` / `fear_s7p5`: diagnostic candidates only; Joe heard no
   perceptual win in the five-row review.
 - CommonVoice age/gender controls: implemented diagnostic infrastructure only;
-  the first perceptual gate failed.
+  the first perceptual gate failed; separability probing says gender has
+  objective structure, while age/accent remain weak or diagnostic.

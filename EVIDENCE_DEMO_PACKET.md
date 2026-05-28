@@ -19,6 +19,9 @@ Two recent listening gates should be read narrowly:
   wins over the current guarded reference.
 - The first CommonVoice age/gender metadata-control panel sounded identical or
   mostly like generic speaker/timbre shifts.
+- The follow-up metadata separability probe shows gender is objectively
+  recoverable in the current embeddings/latents, but age/accent remain weak or
+  diagnostic and perceptual control is still unproven.
 
 Neither result invalidates the core system. They mean we should keep the
 strength grid and metadata controls diagnostic while consolidating the current
@@ -107,6 +110,8 @@ Use these findings to explain why this research line is substantial:
   paper-relevant recall while exposing the quality tradeoff.
 - `FINDINGS.md` Finding 36: an external ECAPA speaker verifier corroborates
   the current guard's identity shift, with a proxy-threshold caveat.
+- `FINDINGS.md` Finding 37: CommonVoice gender metadata is separable, while
+  age/accent controls remain diagnostic and not perceptually validated.
 - `FINDINGS.md` Finding 35: generated-audio strength reranking is diagnostic,
   not a safe default.
 
@@ -116,6 +121,7 @@ Use this to explain what is implemented but not yet a claim:
 
 - `results/listening_metadata_w010_labeled_warmup.md`
 - `results/listening_metadata_w010_labeled_warmup.html`
+- `results/commonvoice_metadata_separability_mixed_metadata_base.md`
 - `IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md`
 
 Result:
@@ -123,6 +129,8 @@ Result:
 - The metadata-control path trains and generates.
 - Local listening found the age/gender variants effectively identical or like
   generic speaker/timbre shifts.
+- Objective separability says gender signal exists, but age/accent are weak
+  and the listener-clear control claim is not established.
 - Do not promote age/gender control as a current paper result.
 
 ## What We Can Say Now
@@ -133,8 +141,10 @@ Good wording:
 > audible controls for several styles, especially whisper, and a quantitative
 > mixed-data result around 47% emotion recall. Recent listening gates say
 > metric-selected strength increases and first-pass age/gender controls are not
-> perceptually ready to promote yet, so the next move is to document the method
-> and evidence clearly before another targeted research branch.
+> perceptually ready to promote yet. The metadata probe says gender is
+> objectively separable but not yet listener-clear, so the next branch should
+> prioritize generated-audio/content repair for the hard emotion styles unless
+> we deliberately choose a narrow gender-focused follow-up.
 
 Avoid saying:
 
@@ -146,19 +156,13 @@ Avoid saying:
 
 ## Next Step
 
-The next implementation branch is documentation/evidence consolidation:
+The next research branch should be targeted rather than exploratory:
 
-- Branch: `docs/paper-methods-and-evidence`
-- Main doc: `PAPER_METHODS_AND_EVIDENCE.md`
-- Goal: make the current substantial result explainable to Joe and paper
-  readers without requiring branch archaeology.
-
-The next research branch after this should be targeted rather than exploratory:
-
-- external speaker-verifier / EER-style novelty validation;
-- metadata separability probe before more age/gender training;
 - generated-audio/content-repair loop for hard styles;
-- repeated-seed confidence intervals before final tables.
+- narrow gender-focused metadata-control follow-up only if we need a metadata
+  appendix;
+- repeated-seed confidence intervals before final tables;
+- formal DP accounting before submission.
 
 ## Open Caveats
 
@@ -168,6 +172,7 @@ The next research branch after this should be targeted rather than exploratory:
 - Joe's latest review covered five high-priority A/B rows, not a full human
   listening study.
 - Formal DP accounting remains a paper task.
-- Age/gender metadata quality has been audited and first-pass control plumbing
-  exists, but the first perceptual panel failed; future metadata work should
+- Age/gender metadata quality has been audited, first-pass control plumbing
+  exists, and metadata separability has been probed. Gender has objective
+  signal, but the first perceptual panel failed; future metadata work should
   first test whether OpenVoice embeddings encode recoverable age/gender signal.

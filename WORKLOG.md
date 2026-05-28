@@ -1,7 +1,7 @@
 # Controllable DP Voice Conversion — Work Log
 
-**Last updated:** 2026-05-27
-**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`
+**Last updated:** 2026-05-28
+**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
 ---
@@ -110,12 +110,14 @@ Priority tags:
 - [x] `[DONE]` Start paper-method documentation for architecture, data mixture, training schedule, and evaluation justification; see `PAPER_METHODS_AND_EVIDENCE.md` and `IMPLEMENTATION_PLAN_paper-methods-and-evidence.md`
 - [x] `[DONE]` Do not spend WER/MOS/novelty compute on the first metadata-control checkpoint unless needed for documentation; the perceptual gate failed, so metrics would likely characterize generic speaker shift rather than useful age/gender control
 - [x] `[DONE]` Add an external speaker-verifier / EER-style novelty validation branch; SpeechBrain ECAPA corroborates the current guard's identity shift with mean styled external novelty gain `0.3594` and only `6/99` styled rows accepted as source at the derived proxy threshold
-- [ ] `[NOW]` Add a metadata separability probe before more age/gender training, because the first direct scalar metadata controls behaved like generic timbre/identity shifts rather than perceptible age/gender controls
+- [x] `[DONE]` Add a metadata separability probe before more age/gender training; result: gender is strongly separable in raw embeddings and VAE latents, but age is weak and accent mostly washes out in the metadata-control latent space, so more scalar age/accent training should wait for better labels or a stronger perceptual target
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [ ] `[SOON]` Compare strict pseudo-label filtering against looser confidence-only or minimally filtered CommonVoice pseudo labels, because Joe's May 14 question raised a valid possibility that filtering may discard useful breadth once all CommonVoice rows have weak labels
-- [ ] `[SOON]` Before retrying age/gender controls, probe whether OpenVoice speaker embeddings contain recoverable age/gender signal and design a balanced metadata objective; otherwise direct scalar supervision may keep acting as a generic timbre/identity knob
+- [ ] `[SOON]` If metadata controls stay in scope, run a narrow gender-focused balanced-control follow-up rather than another broad age/gender/accent sweep; the separability probe shows gender has objective structure, while the first listening panel still says perceptual controllability is unproven
+- [ ] `[SOON]` Add per-dimension metadata latent diagnostics for dims `9-10` and free dims `11-14`, because the separability probe confirms gender survives in `vae_mu` but does not prove the intended scalar control dim is the one carrying the signal
+- [ ] `[SOON]` Do not retry age/accent scalar controls without better labels, class balancing, or explicit perceptual/acoustic targets; the current probe finds weak age structure and weak-to-moderate accent structure that does not survive strongly in metadata-control latents
 - [ ] `[SOON]` Build an independent labeled speaker-verification trial CSV for final EER, because the current ECAPA threshold is derived from source-vs-baseline proxy trials
 - [ ] `[SOON]` Add repeated-seed confidence intervals for the current reference tables before freezing final paper claims, because most ablations so far use deterministic single-seed comparisons
 - [ ] `[SOON]` Add formal DP accounting and privacy-utility curves before submission; the current strongest evidence is controllability/quality, while privacy accounting remains an explicit paper task
@@ -3656,7 +3658,7 @@ Next:
 - `[DONE]` Add an external speaker-verifier / EER-style novelty validation
   branch so identity-shift evidence does not depend only on native OpenVoice
   embedding-space novelty.
-- `[NOW]` Add a metadata separability probe before more age/gender training.
+- `[DONE]` Add a metadata separability probe before more age/gender training.
 - `[SOON]` Build a generated-audio/content-repair loop for hard styles
   (`anger`, `disgust`, `fear`).
 - `[SOON]` Add repeated-seed confidence intervals before final tables.
@@ -3726,11 +3728,86 @@ Validation:
 
 Next:
 
-- `[NOW]` Add a metadata separability probe before more age/gender training.
+- `[DONE]` Add a metadata separability probe before more age/gender training.
 - `[SOON]` Build an independent labeled speaker-verification trial CSV for
   final EER.
 - `[SOON]` Combine external accept-as-source rates with WER/MOS/style recall
   into privacy-utility curves.
+
+---
+
+### 0.53 CommonVoice Metadata Separability Probe (2026-05-28, branch `research/metadata-separability-probe`)
+
+Goal:
+
+- Test whether the current CommonVoice metadata labels have recoverable
+  structure in raw OpenVoice embeddings and metadata-control VAE latents before
+  spending more compute on age/gender/accent scalar controls.
+
+Artifacts:
+
+- `scripts/probe_commonvoice_metadata_separability.py`
+- `tests/test_probe_commonvoice_metadata_separability.py`
+- `results/commonvoice_metadata_separability_cvrare_expanded.csv`
+- `results/commonvoice_metadata_separability_cvrare_expanded.md`
+- `results/commonvoice_metadata_separability_mixed_metadata_base.csv`
+- `results/commonvoice_metadata_separability_mixed_metadata_base.md`
+- `IMPLEMENTATION_PLAN_metadata-separability-probe.md`
+
+Implementation:
+
+- Added a deterministic nearest-centroid metadata probe with majority and
+  train-label permutation baselines.
+- Added optional VAE encoder probing, using checkpoint shape inference to
+  encode artifacts into `vae_mu` latents without requiring a separate config
+  file.
+- Probed `gender`, `age`, and `accent` for both the expanded CommonVoice
+  artifact and the actual mixed metadata-training base artifact.
+
+Result:
+
+- Expanded CommonVoice artifact:
+  - `gender`: strongly separable in embeddings (`macro_f1=0.9077`) and VAE
+    latents (`0.9005`)
+  - `age`: weak / diagnostic only in embeddings (`0.1901`) and VAE latents
+    (`0.1343`)
+  - `accent`: moderately separable in embeddings (`0.1902`) but weak in VAE
+    latents (`0.1446`)
+- Mixed metadata-training base:
+  - `gender`: strongly separable in embeddings (`0.8797`) and VAE latents
+    (`0.8670`)
+  - `age`: weak / diagnostic only (`0.1499` embedding, `0.1412` VAE latent)
+  - `accent`: weak in embeddings (`0.1501`) and not meaningfully separable in
+    VAE latents (`0.1016`)
+
+Interpretation:
+
+- The failed first listening panel should not be read as "CommonVoice metadata
+  has no signal." Gender has strong objective structure.
+- It should be read as "direct scalar age/gender controls are not yet
+  perceptually validated." A generic timbre/identity shift can preserve
+  classifier-separable gender structure without sounding like a clear,
+  controllable age/gender change.
+- Age and accent are not good next scalar-control targets without better
+  labels, class balancing, or stronger perceptual/acoustic targets.
+
+Validation:
+
+- `Validation`: `.venv/bin/python -m unittest tests.test_probe_commonvoice_metadata_separability`
+- `Validation`: `.venv/bin/python -m py_compile scripts/probe_commonvoice_metadata_separability.py`
+- `Validation`: `.venv/bin/python scripts/probe_commonvoice_metadata_separability.py --artifact embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt --vae-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_metadata_w010_labeled_warmup.pt --min-class-count 20 --top-k-classes 8 --permutations 100 --seed 42 --out-csv results/commonvoice_metadata_separability_cvrare_expanded.csv --out-md results/commonvoice_metadata_separability_cvrare_expanded.md`
+- `Validation`: `.venv/bin/python scripts/probe_commonvoice_metadata_separability.py --artifact embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_metadata_base.pt --vae-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_metadata_w010_labeled_warmup.pt --min-class-count 20 --top-k-classes 8 --permutations 100 --seed 42 --out-csv results/commonvoice_metadata_separability_mixed_metadata_base.csv --out-md results/commonvoice_metadata_separability_mixed_metadata_base.md`
+- `Validation`: `FINDINGS.md` Finding 37 records the result as diagnostic,
+  not as a perceptual age/gender-control win.
+
+Next:
+
+- `[SOON]` If metadata controls remain in scope, run a narrow gender-focused
+  balanced-control follow-up with a listening-first gate.
+- `[SOON]` Add per-dimension latent diagnostics for metadata dims `9-10` and
+  free dims `11-14`.
+- `[SOON]` Prioritize generated-audio/content repair for hard styles before
+  another broad age/gender/accent control branch.
 
 ---
 
