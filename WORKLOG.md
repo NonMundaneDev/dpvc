@@ -116,10 +116,14 @@ Priority tags:
 - [x] `[DONE]` Train and evaluate `mixed_teacher_cvrare_audio_calibrated_labeled_warmup` from `results/generated_audio_calibrated_objective_plan.md`; result is a useful negative/diagnostic finding because it confirms the trainer path but loses recall and does not repair `anger`/`disgust` targeting versus the current `sad/enunciated` guard
 - [x] `[DONE]` Listen to `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.html`; Stephen's first perceptual review said `disgust` sounded convincingly disgusted and intelligible, but Joe's focused review did not confirm it
 - [x] `[DONE]` Ask Joe for a focused perceptual confirmation on the audio-calibrated `disgust` and `anger` rows; Joe heard `disgust` as neutral across rows and `anger` as only slightly/source-dependently angry in early CREMA-D rows
-- [ ] `[NOW]` Stop optimizing `disgust` as a hard-style repair target unless stronger perceptual training examples are added; Joe found many CREMA-D `disgust` training examples also sound neutral
-- [ ] `[NOW]` Add a small training-data perceptual audit / style-priority note before the next model run, so future optimization focuses on labels with clear human-audible signal instead of forcing subtle labels
+- [x] `[DONE]` Record the May 28 Joe meeting direction update; Joe said the system is basically working and the next work should focus on paper-facing evaluation, control selection, and simplification rather than more open-ended model improvement
+- [ ] `[NOW]` Run a training-data separability audit over CREMA-D/Expresso style labels, using classifier per-label F1/confusion on the original training audio to justify the top emotion/style controls for the paper/demo
+- [ ] `[NOW]` Run a narrow gender-focused CommonVoice follow-up with many more gender-known rows, testing gender-only first and then gender plus only the top separable styles; Joe considers gender important enough to repair if unclear
+- [ ] `[NOW]` Start paper-facing simplification around the current reference guard: document the control-selection rationale, keep `disgust` as a weak-label limitation unless the audit contradicts it, and stop adding model complexity that does not answer a reviewer-facing question
+- [ ] `[SOON]` Mark accent explicitly out of scope for the current OpenVoice speaker-embedding VAE path, because Joe expects accent information to live in the content representation rather than the speaker embedding
+- [ ] `[SOON]` Reframe age as optional broad-bucket classification only, not continuous scalar control; keep it lower priority than gender and top-style selection
 - [ ] `[SOON]` Add an eval-suite preflight for `ffmpeg` / `torchcodec`, because WER evaluation required `PATH=/opt/homebrew/bin:$PATH` on this macOS machine even though the repo virtualenv was otherwise ready
-- [ ] `[SOON]` Design the next repair around training-data label quality and content-safe generated-audio feedback, not more target-dim/prototype pressure, because the audio-calibrated checkpoint increased style-to-neutral collapse while still moving speaker identity and Joe heard weak hard-style perceptual signal
+- [ ] `[LATER]` Only design another hard-style repair if the separability audit shows the target label is perceptually/classifier separable in the training data; otherwise weak labels such as `disgust` remain limitations/future work
 - [ ] `[SOON]` Add a fear-specific diagnostic for the pitch-change artifact Joe heard in `fear_s7p5`, because fear can gain target recall but remains content/naturalness fragile
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
@@ -4068,6 +4072,52 @@ Next:
 - `[SOON]` Move future demos/paper claims toward controls with clear perceptual
   signal, and treat subtle hard emotion labels as limitations or future work
   unless stronger labeled data is added.
+
+### 0.57 May 28 Meeting with Joe — Paper-Facing Evaluation Pivot (2026-05-28, branch `research/generated-audio-calibrated-training`)
+
+Source artifacts:
+
+- `MEETING_DEBRIEF_JOE_2026-05-28.md`
+- `ASYNC_FEEDBACK_JOE_2026-05-28.md`
+- `IMPLEMENTATION_PLAN_control-selection-evaluation.md`
+
+Joe's guidance:
+
+- The system is basically working; do not spend the next cycle trying to make
+  every weak emotion control stronger.
+- The next work should focus on writing the paper, simplifying the evaluation,
+  and justifying which controls we choose to highlight.
+- For emotion/style controls, run the classifier on the original training data
+  and use per-label F1/confusion to select the top separable controls. This is
+  the defensible way to pick a top-3/top-k story instead of hand-selecting
+  labels.
+- `disgust` should not remain a hard repair target unless the training-data
+  audit shows stronger separability than Joe heard perceptually.
+- Gender is important and should be repaired if unclear. Joe previously heard
+  CommonVoice-only gender control work, so the likely failure causes are
+  insufficient gender-known rows, interaction with emotion control, or latent
+  capacity.
+- Accent should not be pursued in the current setup because OpenVoice likely
+  carries accent in the content representation rather than the speaker
+  embedding; our speaker-embedding VAE should not be expected to control it.
+- Age is lowest priority. If tested, it should be broad-bucket classification,
+  not fine-grained scalar regression.
+
+Task-sequence impact:
+
+- Next recommended branch: `research/control-selection-evaluation`.
+- Primary next tasks: training-data style separability audit, gender-focused
+  CommonVoice follow-up, and paper-methods simplification.
+- Deprioritized tasks: `disgust` repair, accent control, broad metadata sweeps,
+  and additional model complexity that does not directly answer a paper-facing
+  evaluation question.
+
+FINDINGS.md review:
+
+- No new empirical finding was added from the meeting alone. The meeting is
+  recorded as direction-setting guidance; the next empirical finding should
+  come from the training-data separability audit and/or gender-focused
+  follow-up.
 
 ---
 

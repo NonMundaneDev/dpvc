@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-28 (Finding 39 updated with Joe perceptual review)
+**Last updated:** 2026-05-28 (May 28 Joe meeting alignment added)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -3093,14 +3093,14 @@ Artifacts:
 2. ~~**Does style control generalize across source speakers?**~~ → **Answered in Finding 6.** Brightness generalizes (7/9 styles); F0 does not. Some speaker-style combinations collapse.
 3. ~~**How do we evaluate emotion controllability?**~~ → **Answered in Finding 7.** emotion2vec Recall Rate + emo_sim (per EmoVoice) is the primary metric. Recall is 20% — training gap identified.
 4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Findings 30-35: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain, and the `sad/enunciated` strength guard keeps `47.0%` recall while improving WER/MOS. The decoder-prototype pilots preserve novelty but do not beat that guard, generated-audio failure mining localizes the remaining hard styles to `disgust`, `fear`, and `anger`, the failure-conditioned plus anti-neutral follow-ups confirm that embedding-space proxies do not escape neutral collapse, and the generated-audio strength grid shows that style-specific audio calibration can improve `anger` / `fear` rows but is not yet a safe global default.
-5. **Can we train age/gender and emotion knobs simultaneously?** Partly narrowed by Finding 37: gender has recoverable structure in the current embeddings and metadata-control latents, but age/accent are weak and first-pass scalar controls were not perceptually clear. The remaining question is whether a balanced gender-focused objective can produce listener-clear control without damaging style/identity behavior.
+5. **Can we train gender and selected emotion/style knobs simultaneously?** Partly narrowed by Finding 37 and the May 28 Joe meeting: gender has recoverable structure in the current embeddings and metadata-control latents, and Joe considers gender important enough to repair if unclear. The remaining question is whether a larger gender-known CommonVoice extraction plus a gender-focused objective can produce listener-clear control alone and then with the top separable styles. Age is now low-priority broad-bucket only, and accent should be out of scope for the current OpenVoice speaker-embedding VAE path.
 6. ~~**Can an independent speaker verifier confirm the novelty signal?**~~ -> **Partly answered in Finding 36.** ECAPA corroborates the current guard's identity shift, but the EER threshold is proxy-calibrated; a final paper/security claim still needs an independent labeled trial CSV.
 7. **Can an adversary re-identify speakers from F0 alone?** If so, embedding-only DP is insufficient — motivates joint protection.
 8. **What is the minimum speaker count for style learning?** We jumped from 3 to 91. Where's the threshold?
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **What stronger mixed-data intervention, beyond schedule choice and first-pass pseudo-label filtering, can recover recall?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Finding 32 shows that the first naive decoder-prototype objective does not learn that repair (`42.4%` recall, `0.2863` WER, `27` collapse files), the same guard repairs only WER/MOS (`0.2592`, `-0.1787`) while recall stays `42.4%`, and lowering the prototype weight to `0.005` still stays at `42.4%` recall with worse WER (`0.2782`). Finding 33 shows that a failure-conditioned `anger`/`disgust` target-dim teacher objective is insufficient (`39.4%` recall, `26` style-to-neutral collapses). Finding 34 shows that an anti-neutral prototype-margin proxy is also insufficient (`40.9%` recall, `25` style-to-neutral collapses). Finding 35 shows that actual generated-audio reranking can improve some hard style rows (`anger` `1/11 -> 3/11`, `fear` `3/11 -> 6/11`) but does not solve `disgust` and creates WER/MOS tradeoffs. Finding 38 then gates those candidates with Joe's perceptual review and promotes none. Finding 39 shows that the first generated-audio-calibrated training objective does not beat the current guard on aggregate metrics (`40.91%` recall, `0.2465` WER, `29` style-to-neutral collapses), and Joe's focused review hears `disgust` as neutral while `anger` is only subtly/source-dependently angry. The remaining mixed-data question is now narrower: which controls have enough perceptual training signal to support claims, and how should we audit/exclude weak labels instead of forcing them?
+12. **Which emotion/style controls are defensible headline claims?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Findings 32-35 and 38-39 show that repeated hard-style repair attempts do not safely promote `anger`, `disgust`, or `fear` as new presets. Joe's May 28 guidance reframes this from a model-improvement question into an evaluation-selection question: run the classifier on the original training data, compute per-label F1/confusion, and use that evidence to pick the top separable controls for the paper/demo while treating weak labels as limitations rather than forcing them.
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---
@@ -3161,6 +3161,40 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 37. CommonVoice metadata separability diagnostics show that gender is strongly recoverable in both raw OpenVoice embeddings and the metadata-control VAE latents (`macro_f1` about `0.87-0.91`), while age is weak and accent mostly weakens in the VAE latent space. This explains why first-pass age/gender controls should stay diagnostic: gender signal exists objectively, but perceptual control is not established yet.
 38. The generated-audio content-repair gate promotes no current hard-style strength candidate. The only objective-pass rows are blocked by Joe's perceptual review (`anger_s10` tied the reference; `fear_s7p5` lost to the reference due to unnatural pitch change), and `disgust` has no objective-pass repair row. This formally keeps the strength grid diagnostic and pushes the next repair toward generated-audio-calibrated training.
 39. The first generated-audio-calibrated training checkpoint is a useful diagnostic result: the trainer path works and ECAPA still sees strong identity movement (`0.3336` external novelty gain), but it drops below the current guard on aggregate recall (`40.91%` vs `46.97%`), WER (`0.2465` vs `0.2348`), novelty (`0.2351` vs `0.2726`), and collapse behavior (`37` vs `20` files with any collapse). Joe's focused review did not confirm `disgust`; he heard `disgust` as neutral for all rows and `anger` as only subtly/source-dependently angry. He also noted that many CREMA-D `disgust` training examples sound neutral, so the next step should audit and prioritize labels by perceptual training-signal strength rather than adding more latent-only pressure to weak labels.
+
+## May 28 Meeting Alignment with Joe
+
+The May 28 call did **not** add a new empirical result, but it changed the
+research task ordering. Joe's guidance was that the system is basically working
+and that the next cycle should be paper-facing: simplify the story, justify the
+evaluation, and select defensible controls rather than continuing open-ended
+model improvement.
+
+Updated alignment points:
+
+1. **Move from repair-first to evaluation-first.** Do not keep trying to make
+   `anger` or `disgust` stronger unless a training-data audit shows that the
+   label itself is separable enough to justify repair.
+2. **Choose headline emotions by training-data separability.** Run the
+   classifier on the original labeled training examples, compute per-label
+   F1/confusion, and use that evidence to select the top controls for the
+   paper/demo.
+3. **Treat gender as the metadata control worth repairing.** Gender is
+   perceptually important and objectively recoverable in the current embedding
+   diagnostics, so the next metadata follow-up should use many more
+   gender-known CommonVoice rows and test gender-only before gender plus
+   emotion.
+4. **Exclude accent for the current architecture.** Joe expects accent to live
+   in the content representation for systems like OpenVoice, not in the speaker
+   embedding. Since this VAE manipulates speaker embeddings, accent control is
+   out of scope rather than an expected failure.
+5. **Keep age low priority and broad-bucket only.** Fine-grained age is not a
+   realistic perceptual control; if tested, age should be reframed as a small
+   classification problem over broad buckets.
+
+This means the next paper-relevant artifacts should be a training-data
+separability audit, a bounded gender-focused follow-up, and a simpler methods /
+evaluation writeup around the current reference checkpoint.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion
