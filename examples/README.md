@@ -103,6 +103,27 @@ artifacts:
 - `results/listening_mixed_teacher_cvrare_strength_grid_disgust_s10.html`
 - `results/listening_mixed_teacher_cvrare_strength_grid_fear_s7p5.html`
 
+Run the source training-data style separability audit used for paper/demo
+control selection:
+
+```bash
+python scripts/audit_training_style_separability.py \
+    --offline \
+    --out-prefix results/training_style_separability
+```
+
+This evaluates original CREMA-D / Expresso training clips, not generated
+outputs, and writes:
+
+- `results/training_style_separability_rows.csv`
+- `results/training_style_separability_by_label.csv`
+- `results/training_style_separability_confusion.csv`
+- `results/training_style_separability_summary.md`
+
+Current readout: CREMA-D emotions are strongly separable in source clips, but
+source separability is only the first gate. Generated-output metrics and
+listening evidence still decide which controls become headline claims.
+
 To rebuild the A/B review dashboard:
 
 ```bash

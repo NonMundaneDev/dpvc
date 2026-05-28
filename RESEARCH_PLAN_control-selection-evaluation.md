@@ -133,11 +133,21 @@ Expected artifacts:
 
 Validation:
 
-- The script runs from documented commands with no hardcoded local paths.
-- The summary explicitly discusses `disgust`, `anger`, `sad`, `whisper`, and
+- [x] The script runs from documented commands with no hardcoded local paths.
+- [x] The summary explicitly discusses `disgust`, `anger`, `sad`, `whisper`, and
   any other candidate headline controls.
-- The shortlist explains why each selected control is defensible.
-- Weak labels are preserved as limitations, not silently discarded.
+- [x] The source-data audit explains why each separable control is fair to
+  evaluate.
+- [x] Weak labels are preserved as limitations, not silently discarded.
+
+Current result:
+
+- Implemented in `scripts/audit_training_style_separability.py`.
+- Full run wrote `results/training_style_separability_*` artifacts on `828`
+  source clips.
+- Finding 40 records the paper-facing interpretation: source-label separability
+  is a first gate, while generated-output metrics and listening decide headline
+  claims.
 
 Stop/continue rule:
 

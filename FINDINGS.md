@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-28 (May 28 Joe meeting alignment added)
+**Last updated:** 2026-05-28 (training-data control-selection audit added)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -3100,7 +3100,7 @@ Artifacts:
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
 10. **How to prevent collapses?** 9% of speaker-style combinations produce unintelligible output in the combined-only model, and the `cv500` CommonVoice run adds a second collapse mode: style washing back to neutral. CommonVoice finetune ablation shows that coarse whole-module freezing is not enough, CommonVoice objective ablation shows that simple scalar loss-weight schedules are not enough, CommonVoice rich-objective ablation shows that the first teacher/anchor supervision family still does not fix the neutral-collapse pattern, and CommonVoice partial-label pretraining shows that weak metadata / pseudo-label supervision mostly trades controllability for stronger intelligibility instead of escaping the collapse basin. Can we use better pseudo labels, stronger pretraining objectives, prototype/teacher-space targets, or detect/reject bad combinations?
 11. **How stable are the ablation conclusions across seeds?** evaluation ablation matrix used a single deterministic seed and one validation corpus. We should add repeated-seed confidence intervals before freezing paper tables.
-12. **Which emotion/style controls are defensible headline claims?** Finding 30 shows that stronger rare-class supply is the first intervention that materially recovers recall: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup` reaches `47.0%` recall and `0.2995` novelty gain. Finding 31 shows that a narrow style-strength guard can preserve that recall while reducing the quality/content cost (`0.2348` mean styled WER, `-0.2081` MOS delta). Findings 32-35 and 38-39 show that repeated hard-style repair attempts do not safely promote `anger`, `disgust`, or `fear` as new presets. Joe's May 28 guidance reframes this from a model-improvement question into an evaluation-selection question: run the classifier on the original training data, compute per-label F1/confusion, and use that evidence to pick the top separable controls for the paper/demo while treating weak labels as limitations rather than forcing them.
+12. **Which emotion/style controls are defensible headline claims?** Partly answered by Finding 40. The source training-data audit shows that the six CREMA-D-aligned emotions are separable before conversion (`0.7692-0.9451` direct recall), while `confused` is weak and Expresso-only `enunciated` / `whisper` require non-emotion perceptual framing. The remaining shortlist decision should intersect that source-label evidence with generated-output metrics and listening evidence. Findings 32-35 and 38-39 still show that repeated hard-style repair attempts do not safely promote `anger`, `disgust`, or `fear` as new presets by themselves.
 13. **How high can style strength go before useful control turns into collapse?** The first non-Trump sweep (Finding 19) shows that `5.0` is not a hard ceiling: `7.5` is a reasonable stronger setting for `whisper` and `confused` on the current 4-speaker panel, while `10.0-12.5` push novelty higher at a clear WER/MOS cost. The open question is whether that pattern holds on a broader source panel and on the `combined` checkpoint, not just `mixed_quality_labeled_guarded`.
 
 ---
@@ -3161,6 +3161,75 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 37. CommonVoice metadata separability diagnostics show that gender is strongly recoverable in both raw OpenVoice embeddings and the metadata-control VAE latents (`macro_f1` about `0.87-0.91`), while age is weak and accent mostly weakens in the VAE latent space. This explains why first-pass age/gender controls should stay diagnostic: gender signal exists objectively, but perceptual control is not established yet.
 38. The generated-audio content-repair gate promotes no current hard-style strength candidate. The only objective-pass rows are blocked by Joe's perceptual review (`anger_s10` tied the reference; `fear_s7p5` lost to the reference due to unnatural pitch change), and `disgust` has no objective-pass repair row. This formally keeps the strength grid diagnostic and pushes the next repair toward generated-audio-calibrated training.
 39. The first generated-audio-calibrated training checkpoint is a useful diagnostic result: the trainer path works and ECAPA still sees strong identity movement (`0.3336` external novelty gain), but it drops below the current guard on aggregate recall (`40.91%` vs `46.97%`), WER (`0.2465` vs `0.2348`), novelty (`0.2351` vs `0.2726`), and collapse behavior (`37` vs `20` files with any collapse). Joe's focused review did not confirm `disgust`; he heard `disgust` as neutral for all rows and `anger` as only subtly/source-dependently angry. He also noted that many CREMA-D `disgust` training examples sound neutral, so the next step should audit and prioritize labels by perceptual training-signal strength rather than adding more latent-only pressure to weak labels.
+40. The source training-data separability audit gives the first control-selection evidence after Joe's May 28 pivot: CREMA-D emotion labels are mostly strong before conversion (`anger=0.9451`, `disgust=0.9341`, `fear=0.7692`, `happy=0.9053`, `neutral=0.9263`, `sad=0.8842` direct recall), while `confused` is weak (`0.2703` embedding F1) and Expresso-only `enunciated` / `whisper` are supported but quality-sensitive (`0.5000` / `0.5161` embedding F1). This supports a shortlist workflow: source separability decides which controls are fair to evaluate, but generated-output metrics and perceptual review decide which controls become headline claims.
+
+## Finding 40: Source Training Labels Are Mostly Separable, But Generated Claims Still Need Perceptual Gating
+
+**Question.** After Joe's May 28 feedback, should we keep trying to repair the
+hard emotion controls, or should we first identify which source labels are
+strong enough to support paper/demo claims?
+
+**Method.** We audited the original labeled training clips, not generated
+outputs. The script `scripts/audit_training_style_separability.py` loads cached
+CREMA-D and Expresso source clips using the same row policies as the current
+training setup:
+
+- CREMA-D: one clip per speaker/emotion (`speaker_emotion`)
+- Expresso: the mixed-data `unified_balanced` policy with Expresso-only styles
+  capped at `90`
+- evaluator: `iic/emotion2vec_plus_large`
+- direct recall: only for labels with an emotion2vec category
+- embedding F1: held-out nearest-centroid classifier over emotion2vec
+  embeddings, including labels without direct emotion2vec categories
+
+The full source-aligned run evaluated `828` clips:
+
+| Style | Support | Source datasets | Direct recall | Embedding F1 | Interpretation |
+| --- | ---: | --- | ---: | ---: | --- |
+| `anger` | `91` | CREMA-D | `0.9451` | `0.9545` | strong source label |
+| `disgust` | `91` | CREMA-D | `0.9341` | `0.9091` | strong source label, but generated perceptual evidence remains weak |
+| `fear` | `91` | CREMA-D | `0.7692` | `0.7027` | source-separable, quality-sensitive after conversion |
+| `happy` | `95` | CREMA-D, Expresso | `0.9053` | `0.8889` | strong source label |
+| `neutral` | `95` | CREMA-D, Expresso | `0.9263` | `0.9091` | strong source label |
+| `sad` | `95` | CREMA-D, Expresso | `0.8842` | `0.7925` | strong source label |
+| `confused` | `90` | Expresso | n/a | `0.2703` | weak / diagnostic |
+| `enunciated` | `90` | Expresso | n/a | `0.5000` | supported but quality-sensitive |
+| `whisper` | `90` | Expresso | n/a | `0.5161` | supported but quality-sensitive |
+
+**Interpretation.**
+
+1. **The labeled CREMA-D emotion controls are not invisible to the evaluator.**
+   Source clips for `anger`, `disgust`, `fear`, `happy`, `neutral`, and `sad`
+   are separable before conversion. This means generated-output weakness is
+   not simply because emotion2vec cannot recognize the source labels.
+2. **`confused` should not be a headline emotion/style claim yet.** It has no
+   direct emotion2vec category and only weak embedding-space F1 (`0.2703`).
+   Keep it diagnostic unless a perceptual/demo story makes it useful.
+3. **`enunciated` and `whisper` are plausible non-emotion controls, but need
+   perceptual framing.** Their embedding F1s (`0.5000` and `0.5161`) are
+   meaningfully above the weak `confused` result, but they do not have direct
+   emotion2vec labels. They should be evaluated as articulation/voice-quality
+   controls, not emotion-recall controls.
+4. **Source separability does not override Joe's generated-audio listening
+   feedback.** `disgust` is strong in the classifier audit, but Joe still heard
+   generated `disgust` as neutral in the focused panel. That means the next
+   claim-selection step must intersect source separability with generated
+   recall/WER/MOS/novelty and perceptual review.
+
+**Implication for the paper.** The paper should not present every trained knob
+as equally successful. It should use source-label separability to justify which
+controls are fair to evaluate, then use generated-output metrics and listening
+evidence to decide which controls become headline claims. The safest next
+artifact is a control shortlist, not another open-ended hard-style repair run.
+
+**Evidence files.**
+
+- `scripts/audit_training_style_separability.py`
+- `tests/test_audit_training_style_separability.py`
+- `results/training_style_separability_rows.csv`
+- `results/training_style_separability_by_label.csv`
+- `results/training_style_separability_confusion.csv`
+- `results/training_style_separability_summary.md`
 
 ## May 28 Meeting Alignment with Joe
 

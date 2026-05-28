@@ -378,6 +378,10 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_ratings.csv` | subjective rating template | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | perceptual follow-up for Finding 39 |
 | `listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_stephen_2026-05-28.md` | Stephen's informal first-listener review of `anger` and `disgust` | manual perceptual review | perceptual follow-up for Finding 39 |
 | `listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_joe_2026-05-28.md` | Joe's focused review: `disgust` sounds neutral; early `anger` rows are slightly angry | manual perceptual review | FINDINGS Finding 39 |
+| `training_style_separability_rows.csv` | `828` source training clips scored by emotion2vec | [`scripts/audit_training_style_separability.py`](../scripts/audit_training_style_separability.py) | FINDINGS Finding 40 |
+| `training_style_separability_by_label.csv` | source-label direct recall / embedding F1 control-selection table | [`scripts/audit_training_style_separability.py`](../scripts/audit_training_style_separability.py) | FINDINGS Finding 40 |
+| `training_style_separability_confusion.csv` | direct emotion2vec and held-out embedding-classifier confusion counts | [`scripts/audit_training_style_separability.py`](../scripts/audit_training_style_separability.py) | FINDINGS Finding 40 |
+| `training_style_separability_summary.md` | Markdown source-label separability interpretation | [`scripts/audit_training_style_separability.py`](../scripts/audit_training_style_separability.py) | FINDINGS Finding 40 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.
@@ -444,6 +448,11 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
   source-dependent `anger` signal in early CREMA-D rows. He also found many
   CREMA-D `disgust` training examples sound neutral, so future work should not
   keep forcing `disgust` without stronger perceptual training data.
+- The source training-data separability audit is now the first control-selection
+  artifact after Joe's May 28 pivot. It shows that the six CREMA-D emotion
+  labels are separable before conversion, while `confused` is weak and
+  `enunciated` / `whisper` need non-emotion perceptual framing. This should
+  drive the paper/demo shortlist before more model repair.
 - `listening_evidence_demo_index.html` is the first page to open for local
   perceptual review. It links to the current guard, the high-novelty checkpoint,
   Joe's priority A/B gate, and embeds a small quick-listen panel.

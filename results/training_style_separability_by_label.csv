@@ -1,0 +1,10 @@
+unified_style,support,datasets,target_e2v,direct_support,direct_correct,direct_recall,embedding_precision,embedding_recall,embedding_f1,embedding_test_support,verdict
+anger,91,CREMA-D,angry,91,86,0.9451,1.0000,0.9130,0.9545,23,headline candidate
+confused,90,Expresso,,0,0,,0.3333,0.2273,0.2703,22,diagnostic / weak
+disgust,91,CREMA-D,disgusted,91,85,0.9341,0.9524,0.8696,0.9091,23,headline candidate
+enunciated,90,Expresso,,0,0,,0.4615,0.5455,0.5000,22,supported but quality-sensitive
+fear,91,CREMA-D,fearful,91,70,0.7692,0.9286,0.5652,0.7027,23,headline candidate
+happy,95,"CREMA-D,Expresso",happy,95,86,0.9053,0.9524,0.8333,0.8889,24,headline candidate
+neutral,95,"CREMA-D,Expresso",neutral,95,88,0.9263,1.0000,0.8333,0.9091,24,headline candidate
+sad,95,"CREMA-D,Expresso",sad,95,84,0.8842,0.7241,0.8750,0.7925,24,headline candidate
+whisper,90,Expresso,,0,0,,0.4000,0.7273,0.5161,22,supported but quality-sensitive

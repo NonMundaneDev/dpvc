@@ -27,8 +27,8 @@ Immediate next queue:
 3. treat Joe's first priority A/B listening review as a perceptual gate: four rows sounded identical to the guard, one row preferred the guard, and no metric-selected candidate won perceptually
 4. use the generated-audio content-repair gate to block all current hard-style strength candidates from preset promotion; keep `anger_s10` and `fear_s7p5` diagnostic until a candidate wins both objective and listening gates
 5. use the canonical evidence packet, paper-method packet, and metric guide to explain what already works; treat the first CommonVoice age/gender listening panel as diagnostic because it sounded identical or like generic speaker/timbre shifts
-6. the generated-audio-calibrated objective plan now selects `anger` and `disgust` for training repair while blocking `fear`; the next model work is to train/evaluate `mixed_teacher_cvrare_audio_calibrated_labeled_warmup`, then listen before making any new paper claim
-7. external ECAPA speaker-verifier novelty validation corroborates the current guard's identity shift; the metadata separability probe shows gender is objectively separable but age/accent controls remain diagnostic, so later research work should target a narrow gender-focused follow-up only if needed, repeated-seed confidence intervals, and formal DP accounting
+6. the trained generated-audio-calibrated checkpoint is diagnostic, not a new reference: it verifies the trainer hook and preserves external speaker novelty, but loses to the current guard on recall/WER/novelty/collapse and Joe did not hear generated `disgust` as perceptually clear
+7. the new source training-data style separability audit supports the next paper-facing move: pick a defensible control shortlist by intersecting source-label separability, generated-output metrics, and perceptual review; only then return to a narrow gender-focused follow-up, repeated-seed confidence intervals, and formal DP accounting
 
 The dedicated next-step plans live in:
 
@@ -41,6 +41,7 @@ The dedicated next-step plans live in:
 - **[`IMPLEMENTATION_PLAN_metadata-separability-probe.md`](IMPLEMENTATION_PLAN_metadata-separability-probe.md)** — objective metadata separability diagnostic before more age/gender training
 - **[`IMPLEMENTATION_PLAN_generated-audio-content-repair.md`](IMPLEMENTATION_PLAN_generated-audio-content-repair.md)** — generated-audio content-repair gate for hard-style strength candidates
 - **[`IMPLEMENTATION_PLAN_generated-audio-calibrated-objective.md`](IMPLEMENTATION_PLAN_generated-audio-calibrated-objective.md)** — trainer-ready hard-style objective plan derived from generated-audio evidence
+- **[`IMPLEMENTATION_PLAN_control-selection-evaluation.md`](IMPLEMENTATION_PLAN_control-selection-evaluation.md)** — paper-facing control-selection plan after Joe's May 28 guidance
 
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. The current research branch also has first-pass CommonVoice metadata-control plumbing for age/gender scalar controls. That path trains and generates, but the first perceptual panel sounded identical or like generic speaker/timbre shifts. A follow-up separability probe shows gender is objectively recoverable in embeddings and VAE latents, while age/accent are weak; metadata controls therefore remain diagnostic infrastructure rather than paper-facing perceptual claims. Primary entry points:
 
@@ -48,6 +49,7 @@ We’ve extended the library with a **controllable** VAE that exposes 9 style kn
 - **[`FINDINGS.md`](FINDINGS.md)** — paper-facing findings with methodology and per-row takeaways.
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
+- **[`scripts/audit_training_style_separability.py`](scripts/audit_training_style_separability.py)** — source training-data control-selection audit used to decide which style labels are fair paper/demo candidates before more repair work.
 
 OpenVoice is the **canonical controllable pipeline**. ControlVC remains in the
 repository as a useful DP baseline and wrapper reference, but not as the

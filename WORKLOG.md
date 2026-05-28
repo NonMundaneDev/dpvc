@@ -1,7 +1,7 @@
 # Controllable DP Voice Conversion — Work Log
 
 **Last updated:** 2026-05-28
-**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`, `research/generated-audio-calibrated-objective`, `research/generated-audio-calibrated-training`
+**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`, `research/generated-audio-calibrated-objective`, `research/generated-audio-calibrated-training`, `research/control-selection-evaluation`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
 ---
@@ -117,9 +117,10 @@ Priority tags:
 - [x] `[DONE]` Listen to `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.html`; Stephen's first perceptual review said `disgust` sounded convincingly disgusted and intelligible, but Joe's focused review did not confirm it
 - [x] `[DONE]` Ask Joe for a focused perceptual confirmation on the audio-calibrated `disgust` and `anger` rows; Joe heard `disgust` as neutral across rows and `anger` as only slightly/source-dependently angry in early CREMA-D rows
 - [x] `[DONE]` Record the May 28 Joe meeting direction update; Joe said the system is basically working and the next work should focus on paper-facing evaluation, control selection, and simplification rather than more open-ended model improvement
-- [ ] `[NOW]` Run a training-data separability audit over CREMA-D/Expresso style labels, using classifier per-label F1/confusion on the original training audio to justify the top emotion/style controls for the paper/demo
-- [ ] `[NOW]` Run a narrow gender-focused CommonVoice follow-up with many more gender-known rows, testing gender-only first and then gender plus only the top separable styles; Joe considers gender important enough to repair if unclear
-- [ ] `[NOW]` Start paper-facing simplification around the current reference guard: document the control-selection rationale, keep `disgust` as a weak-label limitation unless the audit contradicts it, and stop adding model complexity that does not answer a reviewer-facing question
+- [x] `[DONE]` Run the first source training-data style separability audit on branch `research/control-selection-evaluation`; CREMA-D emotion labels are strongly separable by emotion2vec direct recall, while Expresso-only `confused` is weak and `enunciated` / `whisper` are quality-sensitive embedding-space controls
+- [ ] `[NOW]` Convert the separability audit into a paper/demo control shortlist by intersecting source-label separability with generated-output metrics and Joe/Stephen perceptual evidence; do not promote `disgust` solely from classifier separability because Joe heard generated `disgust` as neutral
+- [ ] `[SOON]` Run the gender-focused follow-up only after the control shortlist is explicit; gender remains the metadata control worth repairing, age is broad-bucket/low-priority, and accent stays out of scope for the current speaker-embedding VAE path
+- [ ] `[NOW]` Start paper-facing simplification around the current reference guard: document why the shortlist prioritizes controls that survive source separability, generated-output metrics, and perceptual review; keep `disgust` as source-separable but generated-perception-unconfirmed unless a stronger listening result changes that
 - [ ] `[SOON]` Mark accent explicitly out of scope for the current OpenVoice speaker-embedding VAE path, because Joe expects accent information to live in the content representation rather than the speaker embedding
 - [ ] `[SOON]` Reframe age as optional broad-bucket classification only, not continuous scalar control; keep it lower priority than gender and top-style selection
 - [ ] `[SOON]` Add an eval-suite preflight for `ffmpeg` / `torchcodec`, because WER evaluation required `PATH=/opt/homebrew/bin:$PATH` on this macOS machine even though the repo virtualenv was otherwise ready
@@ -4118,6 +4119,82 @@ FINDINGS.md review:
   recorded as direction-setting guidance; the next empirical finding should
   come from the training-data separability audit and/or gender-focused
   follow-up.
+
+---
+
+### 0.58 Training-Data Style Separability Audit (2026-05-28, branch `research/control-selection-evaluation`)
+
+Source artifacts:
+
+- `scripts/audit_training_style_separability.py`
+- `tests/test_audit_training_style_separability.py`
+- `results/training_style_separability_rows.csv`
+- `results/training_style_separability_by_label.csv`
+- `results/training_style_separability_confusion.csv`
+- `results/training_style_separability_summary.md`
+
+Goal:
+
+- Answer Joe's May 28 control-selection question with source-data evidence:
+  which labeled controls are separable in the original training clips, and
+  which labels should stay diagnostic rather than becoming open-ended repair
+  targets?
+
+Implementation:
+
+- Added a wrapper-style audit CLI that loads cached local CREMA-D and Expresso
+  datasets, mirrors the current training row policies, evaluates each source
+  clip with `iic/emotion2vec_plus_large`, and writes rows, per-label summary,
+  confusion counts, and a Markdown interpretation.
+- Decoded dataset audio with `soundfile` and passed NumPy waveforms directly
+  into FunASR, avoiding a hard runtime dependency on machine-level `ffmpeg` or
+  `torchcodec`.
+- Added a held-out nearest-centroid classifier over emotion2vec embeddings so
+  Expresso-only labels without direct emotion2vec classes (`confused`,
+  `enunciated`, `whisper`) can still be evaluated as embedding-space controls.
+
+Result:
+
+| Style | Support | Direct recall | Embedding F1 | Working interpretation |
+| --- | ---: | ---: | ---: | --- |
+| `anger` | 91 | `0.9451` | `0.9545` | source-label headline candidate |
+| `disgust` | 91 | `0.9341` | `0.9091` | source-label headline candidate, but generated-audio perceptual evidence remains weak |
+| `fear` | 91 | `0.7692` | `0.7027` | source-label headline candidate, generated-output quality still constrains claims |
+| `happy` | 95 | `0.9053` | `0.8889` | source-label headline candidate |
+| `neutral` | 95 | `0.9263` | `0.9091` | source-label headline candidate |
+| `sad` | 95 | `0.8842` | `0.7925` | source-label headline candidate |
+| `confused` | 90 | n/a | `0.2703` | weak / diagnostic |
+| `enunciated` | 90 | n/a | `0.5000` | supported but quality-sensitive |
+| `whisper` | 90 | n/a | `0.5161` | supported but quality-sensitive |
+
+Validation:
+
+- `Validation`: `python3 -m unittest tests/test_audit_training_style_separability.py`
+  passed (`6` tests).
+- `Validation`: `PYTHONPYCACHEPREFIX=/private/tmp/dpvc_pycache python3 -m py_compile scripts/audit_training_style_separability.py tests/test_audit_training_style_separability.py`
+  passed.
+- `Validation`: `.venv/bin/python scripts/audit_training_style_separability.py --offline --max-per-label 2 --min-class-count 2 --out-prefix results/training_style_separability_smoke`
+  passed and wrote smoke rows/by-label/confusion/summary artifacts.
+- `Validation`: `.venv/bin/python scripts/audit_training_style_separability.py --offline --out-prefix results/training_style_separability`
+  passed on `828` source clips and wrote the checked-in full audit artifacts.
+
+FINDINGS.md review:
+
+- Added Finding 40 because this is verified paper-facing evidence for control
+  selection. The finding is deliberately framed as source-label evidence, not
+  generated-output success.
+
+Next:
+
+- `[NOW]` Build a control shortlist that intersects source separability,
+  generated-output recall/WER/MOS/novelty, and perceptual review. This should
+  prevent the paper from overclaiming controls that are measurable in source
+  clips but subtle after conversion.
+- `[SOON]` Add a quieter/batched path to the generated-output emotion evaluator
+  or shared emotion2vec wrapper, because FunASR progress output is too noisy
+  for long collaborator-facing runs.
+- `[SOON]` Continue with the gender-focused follow-up only after the style
+  shortlist is explicit.
 
 ---
 

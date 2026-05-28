@@ -2,7 +2,7 @@
 
 **Recommended branch:** `research/control-selection-evaluation`
 **Motivation:** May 28 meeting with Joe Near
-**Status:** planned
+**Status:** in progress — Workstream 1 implemented and validated on branch `research/control-selection-evaluation`
 
 ## Goal
 
@@ -39,22 +39,33 @@ Question:
 
 Tasks:
 
-1. Identify the labeled training clips used for CREMA-D and Expresso style
+- [x] Identify the labeled training clips used for CREMA-D and Expresso style
    supervision.
-2. Run the current emotion classifier/evaluator on the original training audio,
+- [x] Run the current emotion classifier/evaluator on the original training audio,
    not generated outputs.
-3. Compute per-label support, precision, recall, F1, and confusion matrix.
-4. Rank labels by separability and support.
-5. Produce a Markdown summary that recommends headline controls and labels to
+- [x] Compute per-label support, precision, recall, F1, and confusion matrix.
+- [x] Rank labels by separability and support.
+- [x] Produce a Markdown summary that recommends headline controls and labels to
    demote to limitations/future work.
 
 Validation:
 
-- `results/training_style_separability_*.csv` exists with per-row predictions.
-- `results/training_style_separability_summary.md` exists with per-label F1 and
+- [x] `results/training_style_separability_*.csv` exists with per-row predictions.
+- [x] `results/training_style_separability_summary.md` exists with per-label F1 and
   confusion summary.
-- The summary explicitly justifies any top-3/top-k style choice.
-- `disgust` and `anger` are discussed directly, not buried in aggregate recall.
+- [x] The summary explicitly justifies separable, quality-sensitive, and weak
+  source-label groups.
+- [x] `disgust` and `anger` are discussed directly, not buried in aggregate recall.
+
+Result:
+
+- CREMA-D emotion labels are source-separable (`0.7692-0.9451` direct recall).
+- `confused` is weak (`0.2703` embedding F1).
+- `enunciated` and `whisper` are supported but quality-sensitive (`0.5000` and
+  `0.5161` embedding F1).
+- Source separability does not promote a control by itself; the next workstream
+  must intersect these results with generated-output metrics and listening
+  evidence.
 
 ## Workstream 2: Gender-Focused CommonVoice Follow-Up
 
@@ -148,3 +159,6 @@ Validation:
 - Add independent labeled speaker-verification trials for final EER/privacy
   claims.
 - Add formal DP accounting and privacy-utility curves before submission.
+- Add a quieter shared emotion2vec runner for long generated-output and
+  source-audit jobs; the current FunASR progress output is reproducible but too
+  noisy for collaborator-facing logs.
