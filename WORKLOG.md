@@ -3984,7 +3984,7 @@ Artifacts:
 - `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_ratings.csv`
 - `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_stephen_2026-05-28.md`
 - `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_joe_2026-05-28.md`
-- `MEETING_DEBRIEF_JOE_2026-05-28.md`
+- `ASYNC_FEEDBACK_JOE_2026-05-28.md`
 
 Implementation:
 
@@ -4013,7 +4013,8 @@ Result:
   - `disgust` sounds convincingly disgusted and remains intelligible
   - `anger` has some style change, but speech is distorted and less
     intelligible
-- Joe's focused review is the stronger current perceptual read:
+- Joe's pre-meeting focused Teams review is the stronger current perceptual
+  read:
   - all rows are subtle enough that he might not identify the intended emotion
     if asked cold
   - early `anger` rows up to `cremad_1076` sound slightly more angry, while

@@ -1,10 +1,10 @@
-# Post-Meeting / Async Feedback Debrief: Joe Near
+# Pre-Meeting Async Feedback: Joe Near
 
 **Date:** 2026-05-28
 **Context:** Joe reviewed the focused audio-calibrated `anger` / `disgust`
-listening bundle before the May 28 update conversation.
+listening bundle over Microsoft Teams before the May 28 update meeting.
 
-## 1. Executive Summary
+## 1. Executive Summary For The Upcoming Meeting
 
 Joe's feedback changes the next research direction. He did **not** hear
 `disgust` as a perceptually successful style. He heard the whole focused panel
@@ -24,7 +24,7 @@ discernible. The better direction is to distinguish:
 - labels that are weak or subtle in the training data and should be treated as
   limitations or excluded from headline claims.
 
-## 2. What Joe Said
+## 2. What Joe Said In Teams
 
 Joe's core points:
 
@@ -39,7 +39,7 @@ Joe's core points:
 - We should not spend too much effort making weak/subtle labels strongly
   discernible when the training data itself may not contain a major difference.
 
-## 3. Corrected Interpretation
+## 3. Interpretation To Bring Into The Meeting
 
 Before Joe's review, Stephen's first listening pass suggested:
 
@@ -73,9 +73,9 @@ This is a more defensible research claim. It also aligns with Joe's earlier
 point that the contribution is broader controllable speaker generation, not
 state-of-the-art emotion conversion.
 
-## 5. Updated Next Work
+## 5. Recommended Discussion Agenda
 
-Recommended order:
+Recommended order to discuss with Joe:
 
 1. Add a small training-data perceptual audit for the labels we keep trying to
    optimize, especially `disgust`, `anger`, and possibly `fear`.
@@ -84,8 +84,9 @@ Recommended order:
 3. Focus demos and paper examples on styles/attributes with clear signal.
 4. Treat subtle labels as limitations or future work unless additional data
    with stronger perceptual examples is added.
-5. Continue paper-methods documentation around the current reference result
-   instead of running another latent/prototype tweak for `disgust`.
+5. Confirm whether we should continue paper-methods documentation around the
+   current reference result instead of running another latent/prototype tweak
+   for `disgust`.
 
 ## 6. Communication Notes For Stephen
 
@@ -105,7 +106,7 @@ What to improve next time:
 - Keep emphasizing training-signal quality: the model cannot reliably amplify a
   perceptual distinction that the data labels do not clearly contain.
 
-## 7. Updated One-Sentence Status
+## 7. One-Sentence Status For The Meeting
 
 The audio-calibrated checkpoint is diagnostic: it does not create a robust
 perceptual `disgust` control, `anger` is only weakly/source-dependently audible,
