@@ -114,10 +114,12 @@ Priority tags:
 - [x] `[DONE]` Add a generated-audio content-repair gate for the hard-style strength grid; result: no `anger`, `disgust`, or `fear` candidate is promoted because the only objective-pass rows were blocked by Joe's perceptual review, and `disgust` has no objective-safe repair row
 - [x] `[DONE]` Build a generated-audio-calibrated objective plan and trainer hook for hard styles; the branch selects `anger`/`disgust`, blocks `fear`, and adds decoder-prototype style weights so non-target styles do not receive repair pressure
 - [x] `[DONE]` Train and evaluate `mixed_teacher_cvrare_audio_calibrated_labeled_warmup` from `results/generated_audio_calibrated_objective_plan.md`; result is a useful negative/diagnostic finding because it confirms the trainer path but loses recall and does not repair `anger`/`disgust` targeting versus the current `sad/enunciated` guard
-- [x] `[DONE]` Listen to `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.html`; Stephen's first perceptual review says `disgust` sounds convincingly disgusted and intelligible despite emotion2vec `0/11`, while `anger` has audible style pressure but weaker/distorted intelligibility
-- [ ] `[NOW]` Ask Joe for a focused perceptual confirmation on the audio-calibrated `disgust` and `anger` rows; this decides whether `disgust` is a metric-calibration miss or still a true control failure
+- [x] `[DONE]` Listen to `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.html`; Stephen's first perceptual review said `disgust` sounded convincingly disgusted and intelligible, but Joe's focused review did not confirm it
+- [x] `[DONE]` Ask Joe for a focused perceptual confirmation on the audio-calibrated `disgust` and `anger` rows; Joe heard `disgust` as neutral across rows and `anger` as only slightly/source-dependently angry in early CREMA-D rows
+- [ ] `[NOW]` Stop optimizing `disgust` as a hard-style repair target unless stronger perceptual training examples are added; Joe found many CREMA-D `disgust` training examples also sound neutral
+- [ ] `[NOW]` Add a small training-data perceptual audit / style-priority note before the next model run, so future optimization focuses on labels with clear human-audible signal instead of forcing subtle labels
 - [ ] `[SOON]` Add an eval-suite preflight for `ffmpeg` / `torchcodec`, because WER evaluation required `PATH=/opt/homebrew/bin:$PATH` on this macOS machine even though the repo virtualenv was otherwise ready
-- [ ] `[SOON]` Design the next repair around content-safe generated-audio feedback or selection, not more target-dim/prototype pressure, because the audio-calibrated checkpoint increased style-to-neutral collapse while still moving speaker identity
+- [ ] `[SOON]` Design the next repair around training-data label quality and content-safe generated-audio feedback, not more target-dim/prototype pressure, because the audio-calibrated checkpoint increased style-to-neutral collapse while still moving speaker identity and Joe heard weak hard-style perceptual signal
 - [ ] `[SOON]` Add a fear-specific diagnostic for the pitch-change artifact Joe heard in `fear_s7p5`, because fear can gain target recall but remains content/naturalness fragile
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
@@ -3981,6 +3983,8 @@ Artifacts:
 - `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.html`
 - `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_ratings.csv`
 - `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_stephen_2026-05-28.md`
+- `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_joe_2026-05-28.md`
+- `MEETING_DEBRIEF_JOE_2026-05-28.md`
 
 Implementation:
 
@@ -4009,13 +4013,22 @@ Result:
   - `disgust` sounds convincingly disgusted and remains intelligible
   - `anger` has some style change, but speech is distorted and less
     intelligible
+- Joe's focused review is the stronger current perceptual read:
+  - all rows are subtle enough that he might not identify the intended emotion
+    if asked cold
+  - early `anger` rows up to `cremad_1076` sound slightly more angry, while
+    later rows sound more neutral
+  - `disgust` sounds neutral across the focused panel
+  - many CREMA-D `disgust` training examples also sound neutral to him, so
+    forcing a strong `disgust` signal is likely the wrong objective without
+    stronger data
 - External ECAPA still sees strong identity movement:
   - mean styled external novelty gain vs baseline: `0.3336`
   - styled accept-as-source rate: `0.0909`
 - This is not a new reference checkpoint. It verifies the new trainer path but
   shows that the current generated-audio-calibrated loss mainly preserves
-  speaker movement and may be under-scored by emotion2vec for `disgust`; `anger`
-  remains a content-preservation problem.
+  speaker movement. Joe's review suggests `disgust` is a weak-training-signal
+  limitation rather than a simple emotion2vec calibration miss.
 
 Validation:
 
@@ -4034,23 +4047,26 @@ Validation:
 - `Validation`: Stephen performed a first perceptual review of the `anger` and
   `disgust` styles and recorded the result in
   `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_stephen_2026-05-28.md`.
+- `Validation`: Joe performed the focused review and the result is recorded in
+  `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_joe_2026-05-28.md`.
 
 FINDINGS.md review:
 
 - Updated with Finding 39 as a paper-facing diagnostic result: this
   training-side generated-audio-calibrated objective does not beat the existing
-  quality guard on aggregate metrics, but first perceptual review suggests
-  `disgust` may be a human-perceptual success that emotion2vec misses.
+  quality guard on aggregate metrics, and Joe's focused review suggests
+  `disgust` should be treated as a weak/neutral training-label limitation
+  rather than a current perceptual success.
 
 Next:
 
-- `[NOW]` Ask Joe to review `disgust` and `anger` on the audio-calibrated panel
-  before deciding whether to treat `disgust` as solved, metric-miscalibrated, or
-  still under-controlled.
+- `[NOW]` Add a training-data perceptual audit / style-priority note before the
+  next model run; include Joe's observation that many CREMA-D `disgust`
+  examples sound neutral.
 - `[SOON]` Add eval-suite dependency preflight for `ffmpeg` / `torchcodec`.
-- `[SOON]` Move the next repair toward content-safe generated-audio feedback,
-  sample selection, or a stronger objective that directly repairs `anger`
-  intelligibility, rather than another latent-only weight tweak.
+- `[SOON]` Move future demos/paper claims toward controls with clear perceptual
+  signal, and treat subtle hard emotion labels as limitations or future work
+  unless stronger labeled data is added.
 
 ---
 
