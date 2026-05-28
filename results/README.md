@@ -376,6 +376,7 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `eval_external_speaker_verifier_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.md` | external ECAPA summary | [`scripts/eval_external_speaker_verifier.py`](../scripts/eval_external_speaker_verifier.py) | FINDINGS Finding 39 |
 | `listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.html` | browser-playable listening panel for the trained audio-calibrated checkpoint | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | perceptual follow-up for Finding 39 |
 | `listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_ratings.csv` | subjective rating template | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | perceptual follow-up for Finding 39 |
+| `listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_stephen_2026-05-28.md` | Stephen's informal first-listener review of `anger` and `disgust` | manual perceptual review | perceptual follow-up for Finding 39 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.
@@ -433,6 +434,11 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
   (`40.91%` vs `46.97%`), WER (`0.2465` vs `0.2348`), OpenVoice novelty
   (`0.2351` vs `0.2726`), and collapse count (`37` vs `20` files with any
   collapse). `disgust` remains at `0/11` recall.
+- Stephen's first listening pass complicates the `disgust` interpretation:
+  `disgust` sounds convincingly disgusted and intelligible despite the
+  emotion2vec miss, while `anger` carries some style change but distorts
+  intelligibility. Ask Joe to review those two styles before deciding whether
+  `disgust` needs more style pressure or metric calibration.
 - `listening_evidence_demo_index.html` is the first page to open for local
   perceptual review. It links to the current guard, the high-novelty checkpoint,
   Joe's priority A/B gate, and embeds a small quick-listen panel.

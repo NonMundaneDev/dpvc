@@ -114,7 +114,8 @@ Priority tags:
 - [x] `[DONE]` Add a generated-audio content-repair gate for the hard-style strength grid; result: no `anger`, `disgust`, or `fear` candidate is promoted because the only objective-pass rows were blocked by Joe's perceptual review, and `disgust` has no objective-safe repair row
 - [x] `[DONE]` Build a generated-audio-calibrated objective plan and trainer hook for hard styles; the branch selects `anger`/`disgust`, blocks `fear`, and adds decoder-prototype style weights so non-target styles do not receive repair pressure
 - [x] `[DONE]` Train and evaluate `mixed_teacher_cvrare_audio_calibrated_labeled_warmup` from `results/generated_audio_calibrated_objective_plan.md`; result is a useful negative/diagnostic finding because it confirms the trainer path but loses recall and does not repair `anger`/`disgust` targeting versus the current `sad/enunciated` guard
-- [ ] `[NOW]` Listen to `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.html` before any further training; prioritize `anger` and `disgust` rows to check whether the objective created perceptual style changes or mostly generic timbre/identity shifts
+- [x] `[DONE]` Listen to `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.html`; Stephen's first perceptual review says `disgust` sounds convincingly disgusted and intelligible despite emotion2vec `0/11`, while `anger` has audible style pressure but weaker/distorted intelligibility
+- [ ] `[NOW]` Ask Joe for a focused perceptual confirmation on the audio-calibrated `disgust` and `anger` rows; this decides whether `disgust` is a metric-calibration miss or still a true control failure
 - [ ] `[SOON]` Add an eval-suite preflight for `ffmpeg` / `torchcodec`, because WER evaluation required `PATH=/opt/homebrew/bin:$PATH` on this macOS machine even though the repo virtualenv was otherwise ready
 - [ ] `[SOON]` Design the next repair around content-safe generated-audio feedback or selection, not more target-dim/prototype pressure, because the audio-calibrated checkpoint increased style-to-neutral collapse while still moving speaker identity
 - [ ] `[SOON]` Add a fear-specific diagnostic for the pitch-change artifact Joe heard in `fear_s7p5`, because fear can gain target recall but remains content/naturalness fragile
@@ -3979,6 +3980,7 @@ Artifacts:
 - `results/eval_external_speaker_verifier_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.md`
 - `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.html`
 - `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_ratings.csv`
+- `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_stephen_2026-05-28.md`
 
 Implementation:
 
@@ -4003,13 +4005,17 @@ Result:
 - Targeted hard styles did not improve:
   - `anger`: `3/11` recall
   - `disgust`: `0/11` recall
+- Stephen's first perceptual review complicates the metric story:
+  - `disgust` sounds convincingly disgusted and remains intelligible
+  - `anger` has some style change, but speech is distorted and less
+    intelligible
 - External ECAPA still sees strong identity movement:
   - mean styled external novelty gain vs baseline: `0.3336`
   - styled accept-as-source rate: `0.0909`
 - This is not a new reference checkpoint. It verifies the new trainer path but
   shows that the current generated-audio-calibrated loss mainly preserves
-  speaker movement rather than reliably moving decoded audio into the target
-  hard-style regions.
+  speaker movement and may be under-scored by emotion2vec for `disgust`; `anger`
+  remains a content-preservation problem.
 
 Validation:
 
@@ -4025,21 +4031,26 @@ Validation:
 - `Validation`: WER evaluation required `PATH=/opt/homebrew/bin:$PATH` so
   local `ffmpeg` was visible; add a preflight check before asking Joe or a new
   collaborator to rerun the suite.
+- `Validation`: Stephen performed a first perceptual review of the `anger` and
+  `disgust` styles and recorded the result in
+  `results/listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_stephen_2026-05-28.md`.
 
 FINDINGS.md review:
 
-- Updated with Finding 39 as a paper-facing negative result: this training-side
-  generated-audio-calibrated objective does not beat the existing quality guard
-  and should not be promoted as the next reference.
+- Updated with Finding 39 as a paper-facing diagnostic result: this
+  training-side generated-audio-calibrated objective does not beat the existing
+  quality guard on aggregate metrics, but first perceptual review suggests
+  `disgust` may be a human-perceptual success that emotion2vec misses.
 
 Next:
 
-- `[NOW]` Listen to the new audio-calibrated panel and mark whether the extra
-  identity movement is perceptually useful or mostly generic timbre shift.
+- `[NOW]` Ask Joe to review `disgust` and `anger` on the audio-calibrated panel
+  before deciding whether to treat `disgust` as solved, metric-miscalibrated, or
+  still under-controlled.
 - `[SOON]` Add eval-suite dependency preflight for `ffmpeg` / `torchcodec`.
 - `[SOON]` Move the next repair toward content-safe generated-audio feedback,
-  sample selection, or a stronger objective that directly penalizes
-  style-to-neutral decoded audio, rather than another latent-only weight tweak.
+  sample selection, or a stronger objective that directly repairs `anger`
+  intelligibility, rather than another latent-only weight tweak.
 
 ---
 
