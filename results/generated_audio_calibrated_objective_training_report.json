@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "objective_name": "generated_audio_calibrated_hard_style_repair",
+  "reference_condition": "mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard",
+  "selected_styles": [
+    "anger",
+    "disgust"
+  ],
+  "blocked_styles": [
+    "fear"
+  ],
+  "applied_overrides": {
+    "style_teacher_target_mode": "target_dim",
+    "style_teacher_require_label": true,
+    "style_teacher_style_weights": "anger=2,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0",
+    "decoder_prototype_style_weights": "anger=2,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0",
+    "decoder_prototype_style_strengths": "anger=5,confused=0,disgust=5,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0",
+    "anti_neutral_styles": "anger,disgust",
+    "anti_neutral_style_weights": "anger=2,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0",
+    "anti_neutral_style_strengths": "anger=5,confused=0,disgust=5,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0"
+  }
+}

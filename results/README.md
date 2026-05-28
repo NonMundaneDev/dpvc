@@ -367,6 +367,15 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `generated_audio_calibrated_objective_plan.csv` | style-level training plan selecting `anger`/`disgust` and blocking `fear` | [`scripts/plan_generated_audio_calibrated_objective.py`](../scripts/plan_generated_audio_calibrated_objective.py) | Trainer-ready follow-up to Finding 38 |
 | `generated_audio_calibrated_objective_plan.md` | recommended command and interpretation for the next hard-style repair checkpoint | [`scripts/plan_generated_audio_calibrated_objective.py`](../scripts/plan_generated_audio_calibrated_objective.py) | Trainer-ready follow-up to Finding 38 |
 | `generated_audio_calibrated_objective_plan.json` | machine-readable generated-audio objective-plan payload for `openvoice_train_vae_mixed.py --generated-audio-objective-plan` | [`scripts/plan_generated_audio_calibrated_objective.py`](../scripts/plan_generated_audio_calibrated_objective.py) | Trainer-ready follow-up to Finding 38 |
+| `generated_audio_calibrated_objective_training_report.json` | trainer-applied objective plan for `mixed_teacher_cvrare_audio_calibrated_labeled_warmup` | [`examples/openvoice_train_vae_mixed.py`](../examples/openvoice_train_vae_mixed.py) | FINDINGS Finding 39 |
+| `eval_emotion_mixed_teacher_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.csv` | `110` generated rows | [`examples/eval_emotion.py`](../examples/eval_emotion.py) | FINDINGS Finding 39 |
+| `eval_novelty_mixed_teacher_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.csv` | `110` generated rows | [`examples/eval_novelty.py`](../examples/eval_novelty.py) | FINDINGS Finding 39 |
+| `eval_wer_mixed_teacher_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.csv` | `110` generated rows | [`examples/eval_wer.py`](../examples/eval_wer.py) | FINDINGS Finding 39 |
+| `eval_mos_mixed_teacher_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.csv` | `110` generated rows | [`examples/eval_mos.py`](../examples/eval_mos.py) | FINDINGS Finding 39 |
+| `eval_external_speaker_verifier_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.csv` | `110` generated rows plus proxy-trial thresholding | [`scripts/eval_external_speaker_verifier.py`](../scripts/eval_external_speaker_verifier.py) | FINDINGS Finding 39 |
+| `eval_external_speaker_verifier_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.md` | external ECAPA summary | [`scripts/eval_external_speaker_verifier.py`](../scripts/eval_external_speaker_verifier.py) | FINDINGS Finding 39 |
+| `listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.html` | browser-playable listening panel for the trained audio-calibrated checkpoint | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | perceptual follow-up for Finding 39 |
+| `listening_mixed_teacher_cvrare_audio_calibrated_labeled_warmup_ratings.csv` | subjective rating template | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | perceptual follow-up for Finding 39 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.
@@ -418,6 +427,12 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
   sounded identical to the current guard and `1/5` preferred the guard because
   the candidate had an unnatural pitch change. Keep `anger_s10` and
   `fear_s7p5` diagnostic for now rather than promoting them as presets.
+- The trained audio-calibrated checkpoint is also diagnostic rather than a new
+  reference: it verifies the trainer hook and keeps strong external speaker
+  novelty (`0.3336` ECAPA gain), but falls below the current guard on recall
+  (`40.91%` vs `46.97%`), WER (`0.2465` vs `0.2348`), OpenVoice novelty
+  (`0.2351` vs `0.2726`), and collapse count (`37` vs `20` files with any
+  collapse). `disgust` remains at `0/11` recall.
 - `listening_evidence_demo_index.html` is the first page to open for local
   perceptual review. It links to the current guard, the high-novelty checkpoint,
   Joe's priority A/B gate, and embeds a small quick-listen panel.
