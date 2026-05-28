@@ -1,0 +1,55 @@
+{
+  "blocked_styles": [
+    "fear"
+  ],
+  "notes": [
+    "This plan is for training repair, not preset promotion.",
+    "A style must have clean generated-audio failures before receiving loss pressure.",
+    "Styles blocked by Joe's perceptual review stay diagnostic until new audio wins."
+  ],
+  "objective_name": "generated_audio_calibrated_hard_style_repair",
+  "recommended_command": "python examples/openvoice_train_vae_mixed.py \\\n  --embeddings embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \\\n  --output embeddings/openvoice_vae_mixed_teacher_cvrare_audio_calibrated_labeled_warmup.pt \\\n  --schedule labeled_warmup \\\n  --schedule-epochs 1500 \\\n  --epochs 3000 \\\n  --lr 1e-6 \\\n  --style-teacher-checkpoint embeddings/openvoice_vae_combined.pt \\\n  --style-teacher-weight 0.0 \\\n  --style-teacher-weight-final 0.25 \\\n  --decoder-prototype-weight 0.0 \\\n  --decoder-prototype-weight-final 0.005 \\\n  --decoder-prototype-datasets CommonVoice \\\n  --decoder-prototype-source true \\\n  --anti-neutral-weight 0.0 \\\n  --anti-neutral-weight-final 0.005 \\\n  --anti-neutral-mode prototype_margin \\\n  --anti-neutral-datasets CommonVoice \\\n  --generated-audio-objective-plan results/generated_audio_calibrated_objective_plan.json \\\n  --generated-audio-objective-report results/generated_audio_calibrated_objective_training_report.json",
+  "reference_condition": "mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard",
+  "selected_styles": [
+    "anger",
+    "disgust"
+  ],
+  "source_failure_targets": "results/eval_mixed_teacher_failure_conditioned_targets.json",
+  "source_gate": "results/generated_audio_content_repair_gate.json",
+  "style_plan": {
+    "anger": {
+      "action": "train_conservative_repair",
+      "reason": "gate keeps preset diagnostic, but clean generated-audio failures exist",
+      "selected": true,
+      "strength": 5.0,
+      "style": "anger",
+      "weight": 2.0
+    },
+    "disgust": {
+      "action": "train_content_repair",
+      "reason": "gate found no safe preset, but clean generated-audio failures exist",
+      "selected": true,
+      "strength": 5.0,
+      "style": "disgust",
+      "weight": 3.0
+    },
+    "fear": {
+      "action": "blocked_no_clean_targets",
+      "reason": "failure target selector found 0/11 clean rows",
+      "selected": false,
+      "strength": 0.0,
+      "style": "fear",
+      "weight": 0.0
+    }
+  },
+  "trainer_overrides": {
+    "anti_neutral_style_strengths": "anger=5,confused=0,disgust=5,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0",
+    "anti_neutral_style_weights": "anger=2,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0",
+    "anti_neutral_styles": "anger,disgust",
+    "decoder_prototype_style_strengths": "anger=5,confused=0,disgust=5,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0",
+    "decoder_prototype_style_weights": "anger=2,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0",
+    "style_teacher_require_label": true,
+    "style_teacher_style_weights": "anger=2,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0",
+    "style_teacher_target_mode": "target_dim"
+  }
+}

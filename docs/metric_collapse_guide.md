@@ -147,6 +147,9 @@ Current status:
 - `anger_s10` / `fear_s7p5`: diagnostic candidates only; Joe heard no
   perceptual win in the five-row review and the generated-audio content-repair
   gate promotes no current hard-style strength preset.
+- generated-audio objective plan: selects `anger` and `disgust` for training
+  repair, blocks `fear`, and still requires generated-audio evaluation plus
+  listening before it can become a paper result.
 - CommonVoice age/gender controls: implemented diagnostic infrastructure only;
   the first perceptual gate failed; separability probing says gender has
   objective structure, while age/accent remain weak or diagnostic.

@@ -350,6 +350,39 @@ def build_metadata_controls(data, args, supported_styles, device):
     return metadata_targets, metadata_mask, dims, report
 
 
+def load_generated_audio_objective_plan(path):
+    with Path(path).open(encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def apply_generated_audio_objective_plan(args, plan):
+    overrides = dict(plan.get("trainer_overrides") or {})
+    fields = [
+        "style_teacher_target_mode",
+        "style_teacher_require_label",
+        "style_teacher_style_weights",
+        "decoder_prototype_style_weights",
+        "decoder_prototype_style_strengths",
+        "anti_neutral_styles",
+        "anti_neutral_style_weights",
+        "anti_neutral_style_strengths",
+    ]
+    applied = {}
+    for field in fields:
+        if field in overrides:
+            setattr(args, field, overrides[field])
+            applied[field] = overrides[field]
+
+    return {
+        "enabled": True,
+        "objective_name": plan.get("objective_name", ""),
+        "reference_condition": plan.get("reference_condition", ""),
+        "selected_styles": list(plan.get("selected_styles") or []),
+        "blocked_styles": list(plan.get("blocked_styles") or []),
+        "applied_overrides": applied,
+    }
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
@@ -444,6 +477,21 @@ def main():
         "--metadata-control-report",
         default=None,
         help="Optional JSON path for the metadata-control training config/report",
+    )
+    ap.add_argument(
+        "--generated-audio-objective-plan",
+        default=None,
+        help=(
+            "Optional JSON plan produced by "
+            "scripts/plan_generated_audio_calibrated_objective.py. The plan "
+            "sets hard-style teacher/prototype/anti-neutral objective flags "
+            "from generated-audio evidence."
+        ),
+    )
+    ap.add_argument(
+        "--generated-audio-objective-report",
+        default=None,
+        help="Optional JSON path recording applied generated-audio objective overrides",
     )
     ap.add_argument(
         "--style-teacher-checkpoint",
@@ -562,6 +610,15 @@ def main():
         help=(
             "Optional per-style strengths for decoder-prototype loss, e.g. "
             "sad=3.5,enunciated=2.5"
+        ),
+    )
+    ap.add_argument(
+        "--decoder-prototype-style-weights",
+        default="",
+        help=(
+            "Optional per-style row weights for decoder-prototype loss. Use "
+            "this for generated-audio-calibrated hard-style repair so "
+            "non-target styles do not receive prototype pressure."
         ),
     )
     ap.add_argument(
@@ -686,6 +743,24 @@ def main():
         help="Optional dataset masses at the end of a non-static schedule",
     )
     args = ap.parse_args()
+    generated_audio_objective_report = {"enabled": False}
+    if args.generated_audio_objective_plan:
+        generated_audio_plan = load_generated_audio_objective_plan(
+            args.generated_audio_objective_plan
+        )
+        generated_audio_objective_report = apply_generated_audio_objective_plan(
+            args,
+            generated_audio_plan,
+        )
+        print(f"Generated-audio objective plan: {args.generated_audio_objective_plan}")
+        print(
+            "Generated-audio selected styles: "
+            f"{generated_audio_objective_report['selected_styles']}"
+        )
+        print(
+            "Generated-audio blocked styles: "
+            f"{generated_audio_objective_report['blocked_styles']}"
+        )
     anti_neutral_requested = (
         args.anti_neutral_weight > 0
         or (args.anti_neutral_weight_final or 0.0) > 0
@@ -866,6 +941,7 @@ def main():
     decoder_prototype_strengths = None
     decoder_prototype_counts = None
     decoder_prototype_strength_map = None
+    decoder_prototype_style_weights = None
     if decoder_prototype_requested:
         prototype_sources = parse_label_sources(args.decoder_prototype_source)
         decoder_prototype_targets, decoder_prototype_counts = build_decoder_prototypes(
@@ -882,7 +958,24 @@ def main():
             args.decoder_prototype_datasets,
             device,
         )
-        decoder_prototype_row_weights = style_label_row_weights
+        if args.decoder_prototype_style_weights:
+            decoder_prototype_row_weights, decoder_prototype_style_weights = (
+                build_style_teacher_row_weights(
+                    style_targets,
+                    style_label_mask,
+                    style_label_confidence,
+                    supported_styles,
+                    args.decoder_prototype_style_weights,
+                    confidence_power=0.0,
+                    require_label=True,
+                )
+            )
+            if style_label_row_weights is not None:
+                decoder_prototype_row_weights = (
+                    decoder_prototype_row_weights * style_label_row_weights
+                )
+        else:
+            decoder_prototype_row_weights = style_label_row_weights
         decoder_prototype_strength_map = parse_style_strengths(
             args.decoder_prototype_style_strengths,
             supported_styles,
@@ -963,6 +1056,8 @@ def main():
         print(f"Decoder prototype datasets: {args.decoder_prototype_datasets}")
         print(f"Decoder prototype control mode: {args.decoder_prototype_control_mode}")
         print(f"Decoder prototype strengths: {decoder_prototype_strength_map}")
+        if args.decoder_prototype_style_weights:
+            print(f"Decoder prototype style weights: {decoder_prototype_style_weights}")
 
     trainable_params, total_params = format_param_count(model)
     print(f"Freeze encoder: {args.freeze_encoder}")
@@ -1037,6 +1132,12 @@ def main():
         with report_path.open("w", encoding="utf-8") as handle:
             json.dump(metadata_control_report, handle, indent=2)
         print(f"Saved metadata-control report to {report_path}")
+    if args.generated_audio_objective_report:
+        report_path = Path(args.generated_audio_objective_report)
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        with report_path.open("w", encoding="utf-8") as handle:
+            json.dump(generated_audio_objective_report, handle, indent=2)
+        print(f"Saved generated-audio objective report to {report_path}")
 
 
 if __name__ == '__main__':

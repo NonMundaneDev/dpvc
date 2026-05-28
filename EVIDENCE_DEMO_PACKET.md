@@ -163,8 +163,8 @@ Avoid saying:
 
 The next research branch should be targeted rather than exploratory:
 
-- generated-audio-calibrated training repair for hard styles, because the
-  current strength-grid gate promotes no preset;
+- train/evaluate the generated-audio-calibrated hard-style objective plan,
+  which currently selects `anger`/`disgust` and blocks `fear`;
 - narrow gender-focused metadata-control follow-up only if we need a metadata
   appendix;
 - repeated-seed confidence intervals before final tables;

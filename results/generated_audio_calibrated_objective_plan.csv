@@ -1,0 +1,4 @@
+style,selected,action,weight,strength,reason
+anger,True,train_conservative_repair,2.0,5.0,"gate keeps preset diagnostic, but clean generated-audio failures exist"
+disgust,True,train_content_repair,3.0,5.0,"gate found no safe preset, but clean generated-audio failures exist"
+fear,False,blocked_no_clean_targets,0.0,0.0,failure target selector found 0/11 clean rows

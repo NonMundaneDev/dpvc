@@ -143,6 +143,39 @@ Joe's first filled-rating artifact is:
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv`
 - `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`
 
+To rebuild the conservative content-repair gate:
+
+```bash
+python scripts/select_generated_audio_content_repairs.py \
+    --priority-csv results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority.csv \
+    --ratings results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_ratings_joe_2026-05-19.csv \
+    --out-csv results/generated_audio_content_repair_gate.csv \
+    --out-md results/generated_audio_content_repair_gate.md \
+    --out-json results/generated_audio_content_repair_gate.json
+```
+
+To convert that gate into the next trainer-ready hard-style objective plan:
+
+```bash
+python scripts/plan_generated_audio_calibrated_objective.py \
+    --gate-json results/generated_audio_content_repair_gate.json \
+    --failure-target-json results/eval_mixed_teacher_failure_conditioned_targets.json \
+    --out-json results/generated_audio_calibrated_objective_plan.json \
+    --out-md results/generated_audio_calibrated_objective_plan.md \
+    --out-csv results/generated_audio_calibrated_objective_plan.csv
+```
+
+Current objective-plan readout:
+
+- `anger`: selected for conservative repair pressure
+- `disgust`: selected for content-repair pressure
+- `fear`: blocked until clean target supply or a pitch-artifact diagnostic is
+  available
+
+The recommended training command is recorded in:
+
+- `results/generated_audio_calibrated_objective_plan.md`
+
 ## Full Pipeline
 
 ### 0. Environment Setup
@@ -1744,6 +1777,11 @@ Anti-neutral public CLI notes:
   `--anti-neutral-datasets` select which labeled rows contribute to the loss.
 - `--anti-neutral-weight-final` ramps the loss under non-static schedules in
   the same way as the style-teacher and decoder-prototype objectives.
+- `--generated-audio-objective-plan` loads the generated-audio-calibrated
+  objective JSON and applies style-teacher, decoder-prototype, and anti-neutral
+  style weights from evidence artifacts.
+- `--decoder-prototype-style-weights` prevents non-target styles from receiving
+  decoder-prototype repair pressure when the objective is intentionally narrow.
 
 Decoder-prototype result readout:
 

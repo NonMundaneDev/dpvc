@@ -27,7 +27,8 @@ Immediate next queue:
 3. treat Joe's first priority A/B listening review as a perceptual gate: four rows sounded identical to the guard, one row preferred the guard, and no metric-selected candidate won perceptually
 4. use the generated-audio content-repair gate to block all current hard-style strength candidates from preset promotion; keep `anger_s10` and `fear_s7p5` diagnostic until a candidate wins both objective and listening gates
 5. use the canonical evidence packet, paper-method packet, and metric guide to explain what already works; treat the first CommonVoice age/gender listening panel as diagnostic because it sounded identical or like generic speaker/timbre shifts
-6. external ECAPA speaker-verifier novelty validation now corroborates the current guard's identity shift; the metadata separability probe shows gender is objectively separable but age/accent controls remain diagnostic, so next research work should target generated-audio/content repair for hard styles, a narrow gender-focused follow-up only if needed, repeated-seed confidence intervals, and formal DP accounting
+6. the generated-audio-calibrated objective plan now selects `anger` and `disgust` for training repair while blocking `fear`; the next model work is to train/evaluate `mixed_teacher_cvrare_audio_calibrated_labeled_warmup`, then listen before making any new paper claim
+7. external ECAPA speaker-verifier novelty validation corroborates the current guard's identity shift; the metadata separability probe shows gender is objectively separable but age/accent controls remain diagnostic, so later research work should target a narrow gender-focused follow-up only if needed, repeated-seed confidence intervals, and formal DP accounting
 
 The dedicated next-step plans live in:
 
@@ -39,6 +40,7 @@ The dedicated next-step plans live in:
 - **[`IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md`](IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md)** — age/gender metadata-control plan and audit results
 - **[`IMPLEMENTATION_PLAN_metadata-separability-probe.md`](IMPLEMENTATION_PLAN_metadata-separability-probe.md)** — objective metadata separability diagnostic before more age/gender training
 - **[`IMPLEMENTATION_PLAN_generated-audio-content-repair.md`](IMPLEMENTATION_PLAN_generated-audio-content-repair.md)** — generated-audio content-repair gate for hard-style strength candidates
+- **[`IMPLEMENTATION_PLAN_generated-audio-calibrated-objective.md`](IMPLEMENTATION_PLAN_generated-audio-calibrated-objective.md)** — trainer-ready hard-style objective plan derived from generated-audio evidence
 
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. The current research branch also has first-pass CommonVoice metadata-control plumbing for age/gender scalar controls. That path trains and generates, but the first perceptual panel sounded identical or like generic speaker/timbre shifts. A follow-up separability probe shows gender is objectively recoverable in embeddings and VAE latents, while age/accent are weak; metadata controls therefore remain diagnostic infrastructure rather than paper-facing perceptual claims. Primary entry points:
 
@@ -290,6 +292,7 @@ See also:
 - `scripts/plan_commonvoice_rare_supply_expansion.py` — preflights local CommonVoice corpus size/speaker availability and emits a go/no-go command plan before rebuilding rare-class pseudo labels.
 - `scripts/analyze_mixed_teacher_style_diagnostics.py` — joins label supply, teacher/student latent geometry, generated metrics, and collapse rows for mixed-teacher conditions.
 - `scripts/select_generated_audio_content_repairs.py` — applies the conservative generated-audio repair gate to hard-style strength candidates using objective content/style/speaker checks plus Joe's perceptual review.
+- `scripts/plan_generated_audio_calibrated_objective.py` — turns the generated-audio repair gate plus clean failure targets into trainer-ready style weights, strengths, and a recommended hard-style repair command.
 - `scripts/build_listening_report.py` — creates an HTML listening report plus subjective-rating CSV from any generation manifest.
 - `scripts/prepare_ablation_embeddings.py` — builds the `cremad_only` and `expresso_only` evaluation ablation datasets in the unified label format.
 - `scripts/run_ablation_inference.py` — generates the evaluation ablation matrix corpora, including the naive unlabeled-latent baseline.

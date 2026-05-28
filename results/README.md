@@ -364,6 +364,9 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `generated_audio_content_repair_gate.csv` | `33` hard-style strength rows with objective and perceptual gate decisions | [`scripts/select_generated_audio_content_repairs.py`](../scripts/select_generated_audio_content_repairs.py) | FINDINGS Finding 38 |
 | `generated_audio_content_repair_gate.md` | gate summary: `0` promoted candidates, `2` perceptually blocked objective-pass rows | [`scripts/select_generated_audio_content_repairs.py`](../scripts/select_generated_audio_content_repairs.py) | FINDINGS Finding 38 |
 | `generated_audio_content_repair_gate.json` | machine-readable promoted-profile payload; currently empty because no preset passes | [`scripts/select_generated_audio_content_repairs.py`](../scripts/select_generated_audio_content_repairs.py) | FINDINGS Finding 38 |
+| `generated_audio_calibrated_objective_plan.csv` | style-level training plan selecting `anger`/`disgust` and blocking `fear` | [`scripts/plan_generated_audio_calibrated_objective.py`](../scripts/plan_generated_audio_calibrated_objective.py) | Trainer-ready follow-up to Finding 38 |
+| `generated_audio_calibrated_objective_plan.md` | recommended command and interpretation for the next hard-style repair checkpoint | [`scripts/plan_generated_audio_calibrated_objective.py`](../scripts/plan_generated_audio_calibrated_objective.py) | Trainer-ready follow-up to Finding 38 |
+| `generated_audio_calibrated_objective_plan.json` | machine-readable generated-audio objective-plan payload for `openvoice_train_vae_mixed.py --generated-audio-objective-plan` | [`scripts/plan_generated_audio_calibrated_objective.py`](../scripts/plan_generated_audio_calibrated_objective.py) | Trainer-ready follow-up to Finding 38 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.

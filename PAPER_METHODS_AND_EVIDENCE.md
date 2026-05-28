@@ -300,7 +300,7 @@ important for the paper.
 
 The immediate next moves should be targeted, not broad blind training runs:
 
-- design a generated-audio-calibrated content repair loop for hard styles, since the current gate promotes no strength-grid preset;
+- train and evaluate the generated-audio-calibrated hard-style objective plan, since the current gate promotes no strength-grid preset and the plan now selects `anger`/`disgust` while blocking `fear`;
 - run a narrow gender-focused metadata-control follow-up only if needed;
 - add repeated-seed confidence intervals before freezing paper tables.
 
@@ -309,7 +309,7 @@ The immediate next moves should be targeted, not broad blind training runs:
 1. Paper-method documentation and evidence cleanup.
 2. Metadata separability probe before more age/gender training.
 3. Independent labeled speaker-verification trial CSV for final EER.
-4. Generated-audio-calibrated training repair for `anger`, `disgust`, and `fear`, starting from the styles blocked by `results/generated_audio_content_repair_gate.md`.
+4. Train/evaluate `mixed_teacher_cvrare_audio_calibrated_labeled_warmup` from `results/generated_audio_calibrated_objective_plan.md`, then listen before adding any new claim.
 5. Repeated-seed confidence intervals for final candidate tables.
 6. Formal DP accounting and privacy-utility curves.
 

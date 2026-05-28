@@ -1,7 +1,7 @@
 # Controllable DP Voice Conversion — Work Log
 
 **Last updated:** 2026-05-28
-**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`
+**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`, `research/generated-audio-calibrated-objective`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
 ---
@@ -112,7 +112,8 @@ Priority tags:
 - [x] `[DONE]` Add an external speaker-verifier / EER-style novelty validation branch; SpeechBrain ECAPA corroborates the current guard's identity shift with mean styled external novelty gain `0.3594` and only `6/99` styled rows accepted as source at the derived proxy threshold
 - [x] `[DONE]` Add a metadata separability probe before more age/gender training; result: gender is strongly separable in raw embeddings and VAE latents, but age is weak and accent mostly washes out in the metadata-control latent space, so more scalar age/accent training should wait for better labels or a stronger perceptual target
 - [x] `[DONE]` Add a generated-audio content-repair gate for the hard-style strength grid; result: no `anger`, `disgust`, or `fear` candidate is promoted because the only objective-pass rows were blocked by Joe's perceptual review, and `disgust` has no objective-safe repair row
-- [ ] `[SOON]` Build a true generated-audio-calibrated training objective for hard styles, because strength-grid reranking is now formally gated as diagnostic rather than a promoted content repair
+- [x] `[DONE]` Build a generated-audio-calibrated objective plan and trainer hook for hard styles; the branch selects `anger`/`disgust`, blocks `fear`, and adds decoder-prototype style weights so non-target styles do not receive repair pressure
+- [ ] `[SOON]` Train and evaluate `mixed_teacher_cvrare_audio_calibrated_labeled_warmup` from `results/generated_audio_calibrated_objective_plan.md`, then build a listening panel before making any new paper claim
 - [ ] `[SOON]` Add a fear-specific diagnostic for the pitch-change artifact Joe heard in `fear_s7p5`, because fear can gain target recall but remains content/naturalness fragile
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
@@ -3878,6 +3879,79 @@ Next:
   pitch-change artifact Joe heard.
 - `[SOON]` Use the content-repair gate before any future style-strength preset
   is promoted.
+
+---
+
+### 0.55 Generated-Audio-Calibrated Objective Plan (2026-05-28, branch `research/generated-audio-calibrated-objective`)
+
+Goal:
+
+- Convert the generated-audio content-repair gate into a trainer-ready
+  hard-style repair objective without promoting any current strength preset.
+
+Artifacts:
+
+- `IMPLEMENTATION_PLAN_generated-audio-calibrated-objective.md`
+- `scripts/plan_generated_audio_calibrated_objective.py`
+- `tests/test_plan_generated_audio_calibrated_objective.py`
+- `results/generated_audio_calibrated_objective_plan.csv`
+- `results/generated_audio_calibrated_objective_plan.md`
+- `results/generated_audio_calibrated_objective_plan.json`
+
+Implementation:
+
+- Added a planner that combines
+  `results/generated_audio_content_repair_gate.json` with
+  `results/eval_mixed_teacher_failure_conditioned_targets.json`.
+- Selected `anger` for conservative repair pressure because it has clean
+  generated-audio style-to-neutral failures but no perceptual preset win.
+- Selected `disgust` for content-repair pressure because the gate found no
+  safe strength-grid repair row.
+- Blocked `fear` because the target selector still has `0/11` clean reference
+  rows and Joe heard an unnatural pitch shift in the best metric row.
+- Added `--generated-audio-objective-plan` and
+  `--generated-audio-objective-report` to the mixed trainer.
+- Added `--decoder-prototype-style-weights` so decoder-prototype loss can be
+  restricted to the evidence-selected hard styles instead of leaking to every
+  pseudo-labeled CommonVoice style.
+- Added inference alias `mixed_teacher_cvrare_audio_calibrated_labeled_warmup`
+  for the future checkpoint.
+
+Result:
+
+- This branch is an implementation/reproducibility step, not a new model
+  result.
+- Trainer-ready selected styles: `anger`, `disgust`
+- Blocked style: `fear`
+- Plan overrides:
+  - style-teacher target mode: `target_dim`
+  - style-teacher row weights:
+    `anger=2,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0`
+  - decoder-prototype style weights:
+    `anger=2,confused=0,disgust=3,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0`
+  - decoder/anti-neutral strengths:
+    `anger=5,confused=0,disgust=5,enunciated=0,fear=0,happy=0,neutral=0,sad=0,whisper=0`
+
+Validation:
+
+- `Validation`: `.venv/bin/python -m unittest tests.test_plan_generated_audio_calibrated_objective`
+- `Validation`: `.venv/bin/python scripts/plan_generated_audio_calibrated_objective.py --gate-json results/generated_audio_content_repair_gate.json --failure-target-json results/eval_mixed_teacher_failure_conditioned_targets.json --out-json results/generated_audio_calibrated_objective_plan.json --out-md results/generated_audio_calibrated_objective_plan.md --out-csv results/generated_audio_calibrated_objective_plan.csv`
+- `Validation`: one-epoch trainer smoke on the real mixed artifact with the
+  generated-audio plan loaded, writing only temporary outputs under
+  `/private/tmp`.
+- `Validation`: one-epoch CommonVoice-only smoke exercised nonzero
+  style-teacher, decoder-prototype, and anti-neutral repair losses with the
+  plan-applied `anger`/`disgust` rows.
+
+Next:
+
+- `[SOON]` Train the full
+  `mixed_teacher_cvrare_audio_calibrated_labeled_warmup` checkpoint from the
+  recommended command in `results/generated_audio_calibrated_objective_plan.md`.
+- `[SOON]` Run generated-audio evaluation, external speaker verification, and a
+  listening panel before adding any new paper-facing finding.
+- `[SOON]` Add a fear-specific pitch/artifact diagnostic before allowing `fear`
+  into this objective.
 
 ---
 
