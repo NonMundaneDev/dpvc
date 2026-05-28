@@ -109,13 +109,14 @@ Priority tags:
 - [x] `[DONE]` Listen to `results/listening_metadata_w010_labeled_warmup.html`; local perceptual review found the variants sounded identical or like generic speaker/timbre shifts, so this first metadata-control checkpoint is diagnostic rather than a perceptual age/gender-control win
 - [x] `[DONE]` Start paper-method documentation for architecture, data mixture, training schedule, and evaluation justification; see `PAPER_METHODS_AND_EVIDENCE.md` and `IMPLEMENTATION_PLAN_paper-methods-and-evidence.md`
 - [x] `[DONE]` Do not spend WER/MOS/novelty compute on the first metadata-control checkpoint unless needed for documentation; the perceptual gate failed, so metrics would likely characterize generic speaker shift rather than useful age/gender control
-- [ ] `[NOW]` Add an external speaker-verifier / EER-style novelty validation branch, because the paper should not rely only on native OpenVoice embedding-space novelty for identity-shift evidence
+- [x] `[DONE]` Add an external speaker-verifier / EER-style novelty validation branch; SpeechBrain ECAPA corroborates the current guard's identity shift with mean styled external novelty gain `0.3594` and only `6/99` styled rows accepted as source at the derived proxy threshold
 - [ ] `[NOW]` Add a metadata separability probe before more age/gender training, because the first direct scalar metadata controls behaved like generic timbre/identity shifts rather than perceptible age/gender controls
 - [ ] `[SOON]` Add a fear-specific diagnostic or content-repair path, because fear failures remain real but are not clean positive style targets under the current selection rule
 - [ ] `[SOON]` Do not use the decoded-teacher `teacher_margin` anti-neutral proxy without calibration; smoke diagnostics showed zero loss on the selected `anger`/`disgust` rows even though generated audio still collapsed toward neutral
 - [ ] `[SOON]` Revisit agreement-style filtering with class-specific secondary support only after richer style-space supervision is planned, because the current single-teacher and hybrid row-label paths improve novelty slightly but stay in the same neutral / baseline-identity basin
 - [ ] `[SOON]` Compare strict pseudo-label filtering against looser confidence-only or minimally filtered CommonVoice pseudo labels, because Joe's May 14 question raised a valid possibility that filtering may discard useful breadth once all CommonVoice rows have weak labels
 - [ ] `[SOON]` Before retrying age/gender controls, probe whether OpenVoice speaker embeddings contain recoverable age/gender signal and design a balanced metadata objective; otherwise direct scalar supervision may keep acting as a generic timbre/identity knob
+- [ ] `[SOON]` Build an independent labeled speaker-verification trial CSV for final EER, because the current ECAPA threshold is derived from source-vs-baseline proxy trials
 - [ ] `[SOON]` Add repeated-seed confidence intervals for the current reference tables before freezing final paper claims, because most ablations so far use deterministic single-seed comparisons
 - [ ] `[SOON]` Add formal DP accounting and privacy-utility curves before submission; the current strongest evidence is controllability/quality, while privacy accounting remains an explicit paper task
 - [x] `[DONE]` Convert the hand-authored per-style strength profiles into a small reproducible grid/optimizer over style strengths; the first grid is intentionally narrow and should be expanded only after perceptual review confirms the ranked cells sound useful
@@ -3647,11 +3648,12 @@ Validation:
   `results/listening_evidence_demo_index.html`.
 - `Validation`: docs do not promote `anger_s10`, `fear_s7p5`, or first-pass
   age/gender controls as paper/demo wins.
-- `Validation`: `FINDINGS.md` remains unchanged.
+- `Validation`: the docs-only 0.51 commit left `FINDINGS.md` unchanged; the
+  later 0.52 external-verifier run adds Finding 36.
 
 Next:
 
-- `[NOW]` Add an external speaker-verifier / EER-style novelty validation
+- `[DONE]` Add an external speaker-verifier / EER-style novelty validation
   branch so identity-shift evidence does not depend only on native OpenVoice
   embedding-space novelty.
 - `[NOW]` Add a metadata separability probe before more age/gender training.
@@ -3660,6 +3662,75 @@ Next:
 - `[SOON]` Add repeated-seed confidence intervals before final tables.
 - `[SOON]` Add formal DP accounting and privacy-utility curves before paper
   submission.
+
+---
+
+### 0.52 External Speaker-Verifier Novelty Validation (2026-05-28, branch `research/external-speaker-verifier`)
+
+Goal:
+
+- Add an external speaker-verifier check so identity-shift evidence does not
+  depend only on OpenVoice's native embedding space.
+
+Artifacts:
+
+- `scripts/eval_external_speaker_verifier.py`
+- `tests/test_external_speaker_verifier.py`
+- `results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.csv`
+- `results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.md`
+- `IMPLEMENTATION_PLAN_external-speaker-verifier.md`
+
+Implementation:
+
+- Added a manifest-driven external verifier script using SpeechBrain
+  ECAPA-TDNN (`speechbrain/spkrec-ecapa-voxceleb`).
+- Added optional dependency group `speaker-verifier = ["speechbrain"]`.
+- Added support for:
+  - per-row source/generated ECAPA similarity;
+  - baseline-relative external novelty gain;
+  - EER-style thresholding from a real `--trial-csv`;
+  - derived proxy trials from source-vs-baseline and source-vs-other-baseline
+    pairs when a real trial CSV is not available.
+- Used `soundfile` for audio loading to avoid torchaudio/torchcodec decoder
+  drift in the local environment.
+
+Result:
+
+- Condition:
+  `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`
+- Rows: `110`
+- Styled rows: `99`
+- Backend: SpeechBrain ECAPA
+- Derived proxy trials: `121`
+- Proxy EER: `0.0000`
+- Proxy threshold: `0.4647`
+- Mean styled external novelty gain vs baseline: `0.3594`
+- Styled accept-as-source rate at proxy threshold: `0.0606` (`6/99`)
+
+Interpretation:
+
+- This is a paper-facing corroboration that the current quality-balanced guard
+  moves speaker identity away from the source under an external verifier, not
+  only under OpenVoice's native embedding metric.
+- The EER threshold is proxy-calibrated from the current generated panel, so it
+  should not be presented as a final formal speaker-verification benchmark.
+- A final privacy/security claim still needs an independent labeled trial CSV
+  and privacy-utility curves.
+
+Validation:
+
+- `Validation`: `.venv/bin/python -m unittest tests.test_external_speaker_verifier`
+- `Validation`: `.venv/bin/python scripts/eval_external_speaker_verifier.py --manifest output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/generation_manifest.jsonl --backend speechbrain-ecapa --derive-proxy-trials --out results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.csv --summary-out results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.md`
+- `Validation`: `FINDINGS.md` Finding 36 records the result with the proxy
+  threshold caveat.
+
+Next:
+
+- `[NOW]` Add a metadata separability probe before more age/gender training.
+- `[SOON]` Build an independent labeled speaker-verification trial CSV for
+  final EER.
+- `[SOON]` Combine external accept-as-source rates with WER/MOS/style recall
+  into privacy-utility curves.
 
 ---
 

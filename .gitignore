@@ -31,3 +31,4 @@ test_cli_output*.wav
 embeddings/
 output/
 processed/
+pretrained_models/

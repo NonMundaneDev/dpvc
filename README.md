@@ -27,7 +27,7 @@ Immediate next queue:
 3. treat Joe's first priority A/B listening review as a perceptual gate: four rows sounded identical to the guard, one row preferred the guard, and no metric-selected candidate won perceptually
 4. do not promote `anger_s10` or `fear_s7p5` as checked-in style presets yet; keep the generated-audio grid as a diagnostic artifact
 5. use the canonical evidence packet, paper-method packet, and metric guide to explain what already works; treat the first CommonVoice age/gender listening panel as diagnostic because it sounded identical or like generic speaker/timbre shifts
-6. next research work should be targeted: external speaker-verifier novelty validation, metadata separability probing before more age/gender training, generated-audio/content repair for hard styles, repeated-seed confidence intervals, and formal DP accounting
+6. external ECAPA speaker-verifier novelty validation now corroborates the current guard's identity shift; next research work should target metadata separability probing before more age/gender training, generated-audio/content repair for hard styles, repeated-seed confidence intervals, and formal DP accounting
 
 The dedicated next-step plans live in:
 
@@ -304,6 +304,7 @@ plus our speaker-novelty proof:
 
 - `examples/eval_emotion.py` — emotion2vec_plus_large Recall Rate + emo_sim (target alignment)
 - `examples/eval_novelty.py` — OpenVoice native speaker-embedding novelty vs source and vs baseline conversion (speaker shift / proof of novelty)
+- `scripts/eval_external_speaker_verifier.py` — SpeechBrain ECAPA external speaker-verifier similarity, baseline-relative novelty gain, and optional EER-style accept-as-source thresholding
 - `examples/eval_wer.py` — OpenAI Whisper drift-from-baseline Word Error Rate (content preservation)
 - `examples/eval_mos.py` — torchaudio SQUIM_SUBJECTIVE predicted MOS (naturalness)
 

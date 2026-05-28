@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-24 (Finding 35 now includes Joe's first priority A/B listening review)
+**Last updated:** 2026-05-28 (Finding 36 adds external ECAPA speaker-verifier novelty validation)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -2751,6 +2751,76 @@ Recommended listening artifacts:
 
 ---
 
+## Finding 36: An External ECAPA Speaker Verifier Corroborates Identity Shift for the Current Guard
+
+### Setup
+
+Finding 11 used OpenVoice's native speaker-embedding space to measure speaker
+novelty. Finding 36 asks whether a separate speaker-verification model sees the
+same qualitative identity shift for the current quality-balanced reference:
+
+- condition: `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`
+- manifest: `output/mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard_eval/generation_manifest.jsonl`
+- backend: SpeechBrain ECAPA-TDNN (`speechbrain/spkrec-ecapa-voxceleb`)
+- rows: `110`
+- styled rows: `99`
+- source speakers: `11`
+
+The run used derived proxy EER trials:
+
+- positives: source audio vs same-source baseline conversion
+- negatives: source audio vs other-source baseline conversions
+- trial count: `121`
+
+This threshold is useful for diagnostic accept-as-source rates, but it is not a
+substitute for an independent labeled speaker-verification trial set.
+
+### Result
+
+| Metric | Value |
+|--------|-------|
+| Proxy EER | `0.0000` |
+| Proxy threshold | `0.4647` |
+| Positive proxy trials | `11` |
+| Negative proxy trials | `110` |
+| Mean styled external novelty gain vs baseline | `0.3594` |
+| Styled accept-as-source rate at proxy threshold | `0.0606` (`6/99`) |
+
+Per-style summary:
+
+| Style | Mean external novelty gain vs baseline | Accept-as-source rate |
+|-------|----------------------------------------|-----------------------|
+| `anger` | `0.3563` | `0.0000` |
+| `confused` | `0.3121` | `0.0909` |
+| `disgust` | `0.3612` | `0.0909` |
+| `enunciated` | `0.3100` | `0.0909` |
+| `fear` | `0.4454` | `0.0000` |
+| `happy` | `0.4508` | `0.0000` |
+| `neutral` | `0.2716` | `0.1818` |
+| `sad` | `0.2834` | `0.0909` |
+| `whisper` | `0.4434` | `0.0000` |
+
+### Implication
+
+This finding strengthens the identity-shift part of the paper story. The
+current `sad/enunciated` guard is not only novel in OpenVoice's native
+embedding space; an external ECAPA verifier also sees the styled outputs as
+farther from the source than the same-source baseline conversion in almost all
+rows.
+
+The caveat is important: the reported EER threshold is proxy-calibrated from
+the current generated panel. The paper can use this as external corroboration
+of the novelty signal, but a final privacy/security claim should still add an
+independent labeled trial CSV and privacy-utility curves.
+
+Artifacts:
+
+- `scripts/eval_external_speaker_verifier.py`
+- `results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.csv`
+- `results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.md`
+
+---
+
 ## Open Questions
 
 1. **What are the formal privacy guarantees?** We need to compute epsilon for each noise level and report privacy-utility curves.
@@ -2758,7 +2828,7 @@ Recommended listening artifacts:
 3. ~~**How do we evaluate emotion controllability?**~~ → **Answered in Finding 7.** emotion2vec Recall Rate + emo_sim (per EmoVoice) is the primary metric. Recall is 20% — training gap identified.
 4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Findings 30-35: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain, and the `sad/enunciated` strength guard keeps `47.0%` recall while improving WER/MOS. The decoder-prototype pilots preserve novelty but do not beat that guard, generated-audio failure mining localizes the remaining hard styles to `disgust`, `fear`, and `anger`, the failure-conditioned plus anti-neutral follow-ups confirm that embedding-space proxies do not escape neutral collapse, and the generated-audio strength grid shows that style-specific audio calibration can improve `anger` / `fear` rows but is not yet a safe global default.
 5. **Can we train age/gender and emotion knobs simultaneously?** CommonVoice has age/gender, CREMA-D has emotion. Can a single VAE learn all at once when each training stage only labels a subset? Unknown — Joe flagged this as an open research question.
-6. **Can an independent speaker verifier confirm the novelty signal?** Finding 11 uses OpenVoice's native embedding space. The next step is an external speaker encoder / EER-style check.
+6. ~~**Can an independent speaker verifier confirm the novelty signal?**~~ -> **Partly answered in Finding 36.** ECAPA corroborates the current guard's identity shift, but the EER threshold is proxy-calibrated; a final paper/security claim still needs an independent labeled trial CSV.
 7. **Can an adversary re-identify speakers from F0 alone?** If so, embedding-only DP is insufficient — motivates joint protection.
 8. **What is the minimum speaker count for style learning?** We jumped from 3 to 91. Where's the threshold?
 9. **Can we interpolate between styles?** E.g., 50% happy + 50% sad — does the output sound bittersweet?
@@ -2821,6 +2891,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 33. Failure-conditioned target-dim style-teacher supervision is a useful negative result: `mixed_teacher_cvrare_failure_targeted_style_teacher_labeled_warmup` keeps novelty high (`0.2960`) and slightly reduces content collapse (`1`), but recall drops to `39.4%` and style-to-neutral collapse rises to `26`. Clean target selection alone does not force decoded audio out of the neutral basin, so the next objective needs an explicit anti-neutral or generated-audio-calibrated output signal.
 34. Anti-neutral prototype-margin supervision is also a useful negative result: `mixed_teacher_cvrare_antineutral_labeled_warmup` slightly improves over the failure-targeted target-dim run (`40.9%` recall, `0.2962` novelty, `0.2609` WER), but still loses to the current `sad/enunciated` guard on recall (`47.0%`), WER (`0.2348`), style-to-neutral collapse (`18` vs `25`), and any-collapse files (`20` vs `27`). Embedding-space anti-neutral proxies are not enough; the next calibration signal must come from generated audio itself.
 35. The first generated-audio style-strength grid confirms that audio-calibrated reranking is the right next lens but not a solved default: `anger_s10` improves anger recall from `1/11` to `3/11` with moderate WER cost, `fear_s7p5` improves fear recall from `3/11` to `6/11` but has high WER (`0.5231`), and `disgust_s10` raises novelty while failing to improve recall and severely hurting MOS (`-0.6039`). Joe's first five-row listening review found `0/5` candidate wins (`4` ties and `1` reference preference), so these objective gains should stay diagnostic rather than become checked-in style presets.
+36. External ECAPA speaker-verifier validation corroborates the identity-shift signal for the current `sad/enunciated` guard: mean styled external novelty gain versus baseline is `0.3594`, and only `6/99` styled rows are accepted as source at the derived proxy threshold. This supports the paper's identity-shift claim, with the caveat that final EER/privacy claims still need independent labeled speaker-verification trials.
 
 **Evaluation approach (per Joe, April 16 + EmoVoice paper):**
 - **Primary:** emotion2vec Recall Rate + emo_sim (per EmoVoice pipeline) — measures whether generated outputs express the intended emotion

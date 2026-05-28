@@ -36,6 +36,9 @@ eval = [
     "openai-whisper",   # ASR for eval_wer.py
     "jiwer",            # WER computation for eval_wer.py
 ]
+speaker-verifier = [
+    "speechbrain",      # ECAPA-TDNN external speaker verifier for eval_external_speaker_verifier.py
+]
 
 [project.urls]
 Repository = "https://github.com/uvm-plaid/dpvc"

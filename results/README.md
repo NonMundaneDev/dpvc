@@ -26,6 +26,13 @@ of perceptible age/gender control.
 | `listening_metadata_w010_labeled_warmup_ratings.csv` | subjective rating template | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Rating sheet for the metadata-control smoke panel |
 | `listening_metadata_w010_labeled_warmup.md` | listening instructions, outcome, and interpretation rules | manual summary | Worklog-only perceptual smoke outcome |
 
+External speaker-verifier artifacts from 2026-05-28:
+
+| File | Rows | Script | Backs |
+|------|------|--------|-------|
+| `eval_external_speaker_verifier_cvrare_sad_enunc_guard.csv` | 110 | [`scripts/eval_external_speaker_verifier.py`](../scripts/eval_external_speaker_verifier.py) | Finding 36 external ECAPA novelty validation |
+| `eval_external_speaker_verifier_cvrare_sad_enunc_guard.md` | summary | [`scripts/eval_external_speaker_verifier.py`](../scripts/eval_external_speaker_verifier.py) | Finding 36 summary and caveats |
+
 Validation-scale CommonVoice pretraining comparison artifacts from 2026-04-28:
 
 | File | Rows | Script | Backs |

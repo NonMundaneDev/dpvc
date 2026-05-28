@@ -55,6 +55,9 @@ Why it matters:
 
 - It preserves the expanded rare-supply recall result at about `47%`.
 - It improves content/naturalness relative to the unguarded expanded checkpoint.
+- It now has external ECAPA speaker-verifier support for identity shift:
+  `0.3594` mean styled novelty gain vs baseline and `6/99` styled rows accepted
+  as source at a proxy threshold.
 - It is the safest current reference for listening demos.
 
 ### Tier 2: Strongest High-Novelty / High-Recall Checkpoint
@@ -102,6 +105,8 @@ Use these findings to explain why this research line is substantial:
   perceptibly distinct controls, with `whisper` especially strong and robust.
 - `FINDINGS.md` Finding 30 / 31: expanded rare-supply mixed teacher reaches
   paper-relevant recall while exposing the quality tradeoff.
+- `FINDINGS.md` Finding 36: an external ECAPA speaker verifier corroborates
+  the current guard's identity shift, with a proxy-threshold caveat.
 - `FINDINGS.md` Finding 35: generated-audio strength reranking is diagnostic,
   not a safe default.
 

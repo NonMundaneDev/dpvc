@@ -56,6 +56,8 @@ baseline conversion?
 Primary numeric metric:
 
 - OpenVoice embedding-space novelty gain versus baseline.
+- SpeechBrain ECAPA external speaker-verifier similarity and baseline-relative
+  novelty gain.
 
 Collapse name:
 
@@ -122,6 +124,9 @@ can become a demo or paper claim.
 Current status:
 
 - `cvrare_sad_enunc_guard`: paper/demo reference candidate.
+- external ECAPA verifier: corroborates the current guard's identity shift
+  (`0.3594` mean styled novelty gain vs baseline; `6/99` styled rows accepted
+  as source at a proxy threshold).
 - `anger_s10` / `fear_s7p5`: diagnostic candidates only; Joe heard no
   perceptual win in the five-row review.
 - CommonVoice age/gender controls: implemented diagnostic infrastructure only;
