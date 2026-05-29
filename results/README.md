@@ -385,6 +385,9 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `control_selection_perceptual_evidence.csv` | structured Joe/Stephen listening evidence used by the shortlist gate | manual evidence ledger | FINDINGS Finding 41 |
 | `control_selection_recommendation.csv` | paper-facing per-style shortlist table | [`scripts/build_control_selection_recommendation.py`](../scripts/build_control_selection_recommendation.py) | FINDINGS Finding 41 |
 | `control_selection_recommendation.md` | Markdown control-selection recommendation and next listening queue | [`scripts/build_control_selection_recommendation.py`](../scripts/build_control_selection_recommendation.py) | FINDINGS Finding 41 |
+| `commonvoice_gender_followup_preflight.md` | local CommonVoice gender-readiness summary | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Worklog-only preflight for the future gender-only follow-up |
+| `commonvoice_gender_followup_preflight.json` | machine-readable gender-readiness summary | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Worklog-only preflight for the future gender-only follow-up |
+| `commonvoice_gender_followup_speakers.csv` | deterministic gender-balanced speaker manifest | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Input contract for a future gender-only branch |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.

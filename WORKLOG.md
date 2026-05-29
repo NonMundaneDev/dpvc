@@ -1,7 +1,7 @@
 # Controllable DP Voice Conversion — Work Log
 
 **Last updated:** 2026-05-29
-**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`, `research/generated-audio-calibrated-objective`, `research/generated-audio-calibrated-training`, `research/control-selection-evaluation`, `research/control-shortlist`
+**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`, `research/generated-audio-calibrated-objective`, `research/generated-audio-calibrated-training`, `research/control-selection-evaluation`, `research/control-shortlist`, `research/control-feedback-gender-preflight`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
 ---
@@ -119,8 +119,9 @@ Priority tags:
 - [x] `[DONE]` Record the May 28 Joe meeting direction update; Joe said the system is basically working and the next work should focus on paper-facing evaluation, control selection, and simplification rather than more open-ended model improvement
 - [x] `[DONE]` Run the first source training-data style separability audit on branch `research/control-selection-evaluation`; CREMA-D emotion labels are strongly separable by emotion2vec direct recall, while Expresso-only `confused` is weak and `enunciated` / `whisper` are quality-sensitive embedding-space controls
 - [x] `[DONE]` Convert the separability audit into a paper/demo control shortlist on branch `research/control-shortlist`; current result promotes no fully paper-ready style claim yet, makes `neutral` and `sad` candidate headline controls pending focused listening, keeps `happy` / `enunciated` / `whisper` quality-sensitive, and keeps `anger` / `disgust` / `fear` / `confused` diagnostic or limitation controls
-- [ ] `[NOW]` Run a focused listening pass on the shortlist from `results/control_selection_recommendation.md`, starting with `neutral` and `sad`, then checking `happy`, `whisper`, and `enunciated` only as quality-sensitive candidates
-- [ ] `[SOON]` Run the gender-focused follow-up only after the control shortlist is explicit; gender remains the metadata control worth repairing, age is broad-bucket/low-priority, and accent stays out of scope for the current speaker-embedding VAE path
+- [ ] `[NOW]` Wait for Joe's focused `neutral`/`sad` listening feedback, ingest it with `scripts/ingest_control_selection_feedback.py`, and rerun `scripts/build_control_selection_recommendation.py` so the shortlist changes only through the ledgered perceptual gate
+- [x] `[DONE]` Preflight the local CommonVoice gender follow-up before training; `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` has enough balanced gender-known speaker coverage for a gender-only follow-up manifest, but this is data-readiness only
+- [ ] `[SOON]` Run the gender-focused follow-up only after the control shortlist listening gate is resolved; gender remains the metadata control worth repairing, age is broad-bucket/low-priority, and accent stays out of scope for the current speaker-embedding VAE path
 - [x] `[DONE]` Start paper-facing simplification around the current reference guard by adding a conservative shortlist gate: source separability decides which labels are fair to evaluate, generated-output metrics decide which labels are plausible, and listening evidence decides which labels can become headline claims
 - [ ] `[SOON]` Mark accent explicitly out of scope for the current OpenVoice speaker-embedding VAE path, because Joe expects accent information to live in the content representation rather than the speaker embedding
 - [ ] `[SOON]` Reframe age as optional broad-bucket classification only, not continuous scalar control; keep it lower priority than gender and top-style selection
@@ -4266,6 +4267,91 @@ Next:
   quality-sensitive secondary/demo controls.
 - `[SOON]` Start the gender-focused CommonVoice follow-up after the style
   shortlist listening gate is resolved.
+
+---
+
+### 0.60 Listening Feedback Ingestion and Gender Follow-Up Preflight (2026-05-29, branch `research/control-feedback-gender-preflight`)
+
+Source artifacts:
+
+- `scripts/ingest_control_selection_feedback.py`
+- `tests/test_ingest_control_selection_feedback.py`
+- `scripts/preflight_commonvoice_gender_followup.py`
+- `tests/test_preflight_commonvoice_gender_followup.py`
+- `results/commonvoice_gender_followup_preflight.md`
+- `results/commonvoice_gender_followup_preflight.json`
+- `results/commonvoice_gender_followup_speakers.csv`
+- `IMPLEMENTATION_PLAN_control-feedback-gender-preflight.md`
+
+Goal:
+
+- Keep working while Joe reviews the `neutral`/`sad` listening bundle by
+  making his eventual feedback ingestible and by preparing, but not yet
+  training, the narrow gender-only CommonVoice follow-up Joe identified as the
+  most plausible metadata-control repair path.
+
+Implementation:
+
+- Added a feedback-ingestion CLI that turns a filled focused-listening ratings
+  CSV or plain-text Joe response into structured rows for
+  `results/control_selection_perceptual_evidence.csv`.
+- The ingestion tool supports manual `STYLE=STATUS` overrides for Teams-style
+  text replies, preserves canonical style order, and can optionally rerun the
+  conservative control-selection recommendation.
+- Added a local CommonVoice gender preflight that reads `validated.tsv` plus
+  `clips/`, normalizes binary gender metadata, verifies local clip
+  availability, and emits a deterministic speaker manifest for a future
+  gender-only extraction/training branch.
+- The gender script explicitly treats the result as metadata/data-readiness,
+  not as a perceptual gender-control finding.
+
+Result:
+
+- Feedback ingestion smoke-tested against the empty Joe bundle ratings sheet
+  and correctly left `neutral` / `sad` as `needs_review`.
+- Local CommonVoice gender preflight result:
+  - corpus: `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en`
+  - local clips / validated rows: `40000` / `40000`
+  - gender-known local clips: `5291`
+  - gender-known local speakers: `2775`
+  - female clips / speakers: `907` / `494`
+  - male clips / speakers: `4384` / `2281`
+  - deterministic selected plan: `994` speakers and `1788` clips
+  - recommendation: `GO` for a gender-only follow-up preflight
+
+Key interpretation:
+
+- This unblocks the next practical step without short-cutting the science:
+  when Joe replies, we can update the paper-control shortlist through a
+  reproducible ledger rather than hand-editing interpretation text.
+- The CommonVoice corpus is sufficient for a narrow gender-only follow-up, but
+  the first metadata listening panel already failed perceptually. Any future
+  gender claim still needs a new checkpoint, a listening panel, and objective
+  evaluation before it enters `FINDINGS.md` as a control result.
+
+Validation:
+
+- `Validation`: `python3 -m unittest tests.test_ingest_control_selection_feedback tests.test_preflight_commonvoice_gender_followup` passed (`10` tests).
+- `Validation`: `env PYTHONPYCACHEPREFIX=/private/tmp/dpvc_pycache python3 -m py_compile scripts/ingest_control_selection_feedback.py scripts/preflight_commonvoice_gender_followup.py tests/test_ingest_control_selection_feedback.py tests/test_preflight_commonvoice_gender_followup.py` passed.
+- `Validation`: `python3 scripts/preflight_commonvoice_gender_followup.py` wrote the JSON/Markdown/CSV artifacts and returned `GO`.
+- `Validation`: `python3 scripts/ingest_control_selection_feedback.py --ratings-csv results/joe_control_shortlist_neutral_sad_review_bundle_2026-05-29/ratings_neutral_sad.csv --out-ledger /private/tmp/control_selection_perceptual_evidence_smoke.csv` wrote a temp ledger and kept both styles at `needs_review`.
+
+FINDINGS.md review:
+
+- Reviewed after this branch. No new `FINDINGS.md` entry was added because the
+  branch produced reproducibility/data-readiness evidence and an ingestion
+  path, not a new verified generated-audio or perceptual control finding.
+
+Next:
+
+- `[NOW]` When Joe replies, save or transcribe his feedback, run
+  `scripts/ingest_control_selection_feedback.py` against the real perceptual
+  ledger, and rerun `scripts/build_control_selection_recommendation.py`.
+- `[SOON]` If the `neutral`/`sad` listening gate is positive or clearly
+  bounded, start the gender-only CommonVoice extraction/training branch from
+  `results/commonvoice_gender_followup_speakers.csv`.
+- `[SOON]` Keep age and accent out of the next training branch unless there is
+  a separate, explicit data-readiness and perceptual target rationale.
 
 ---
 

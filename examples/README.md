@@ -141,6 +141,46 @@ Current readout: no style is fully paper-ready yet under the conservative gate;
 `neutral` and `sad` are the next focused-listening candidates, while `anger`,
 `disgust`, and `fear` stay diagnostic under current Joe-reviewed evidence.
 
+When Joe or Stephen completes a focused listening review, ingest it into the
+structured perceptual ledger instead of editing the recommendation by hand.
+For a filled ratings CSV:
+
+```bash
+python scripts/ingest_control_selection_feedback.py \
+    --ratings-csv results/joe_control_shortlist_neutral_sad_review_bundle_2026-05-29/ratings_neutral_sad.csv \
+    --rerun-recommendation
+```
+
+For a Teams-style plain-text reply, save the reply to a small text file and
+classify each style explicitly:
+
+```bash
+python scripts/ingest_control_selection_feedback.py \
+    --feedback-text /path/to/joe_feedback.txt \
+    --style-status neutral=supported \
+    --style-status sad=mixed \
+    --style-summary neutral="Joe heard the neutral control as clearly neutral." \
+    --style-summary sad="Joe heard the sad control as subtle and source-dependent." \
+    --rerun-recommendation
+```
+
+Before starting the next gender-only metadata branch, run the local
+CommonVoice readiness preflight:
+
+```bash
+python scripts/preflight_commonvoice_gender_followup.py \
+    --corpus-path /Users/steve/datasets/cv-corpus-21.0-2025-03-14/en
+```
+
+This writes:
+
+- `results/commonvoice_gender_followup_preflight.md`
+- `results/commonvoice_gender_followup_preflight.json`
+- `results/commonvoice_gender_followup_speakers.csv`
+
+The current preflight returns `GO` for data readiness, but it is not a
+perceptual gender-control claim.
+
 To rebuild the A/B review dashboard:
 
 ```bash

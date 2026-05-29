@@ -1,0 +1,41 @@
+{
+  "clips_per_speaker": 2,
+  "corpus_path": "/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en",
+  "counts": {
+    "clip_counts_by_gender": {
+      "female": 907,
+      "male": 4384
+    },
+    "multi_clip_speakers_by_gender": {
+      "female": 294,
+      "male": 1490
+    },
+    "single_clip_speakers_by_gender": {
+      "female": 200,
+      "male": 791
+    },
+    "speaker_counts_by_gender": {
+      "female": 494,
+      "male": 2281
+    }
+  },
+  "gender_known_local_rows": 5291,
+  "gender_known_local_speakers": 2775,
+  "local_clip_files": 40000,
+  "out_speakers": "results/commonvoice_gender_followup_speakers.csv",
+  "recommendation": "GO: enough balanced gender-known speaker coverage for a gender-only follow-up preflight.",
+  "seed": 42,
+  "selected_clip_counts_by_gender": {
+    "female": 788,
+    "male": 1000
+  },
+  "selected_clips_total": 1788,
+  "selected_speaker_counts_by_gender": {
+    "female": 494,
+    "male": 500
+  },
+  "selected_speakers_total": 994,
+  "speaker_cap_per_gender": 500,
+  "validated_rows": 40000,
+  "validated_tsv": "/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en/validated.tsv"
+}

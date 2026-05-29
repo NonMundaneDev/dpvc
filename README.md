@@ -42,6 +42,7 @@ The dedicated next-step plans live in:
 - **[`IMPLEMENTATION_PLAN_generated-audio-content-repair.md`](IMPLEMENTATION_PLAN_generated-audio-content-repair.md)** — generated-audio content-repair gate for hard-style strength candidates
 - **[`IMPLEMENTATION_PLAN_generated-audio-calibrated-objective.md`](IMPLEMENTATION_PLAN_generated-audio-calibrated-objective.md)** — trainer-ready hard-style objective plan derived from generated-audio evidence
 - **[`IMPLEMENTATION_PLAN_control-selection-evaluation.md`](IMPLEMENTATION_PLAN_control-selection-evaluation.md)** — paper-facing control-selection plan after Joe's May 28 guidance
+- **[`IMPLEMENTATION_PLAN_control-feedback-gender-preflight.md`](IMPLEMENTATION_PLAN_control-feedback-gender-preflight.md)** — current feedback-ingestion and gender-readiness preflight plan
 
 We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. The current research branch also has first-pass CommonVoice metadata-control plumbing for age/gender scalar controls. That path trains and generates, but the first perceptual panel sounded identical or like generic speaker/timbre shifts. A follow-up separability probe shows gender is objectively recoverable in embeddings and VAE latents, while age/accent are weak; metadata controls therefore remain diagnostic infrastructure rather than paper-facing perceptual claims. Primary entry points:
 
@@ -51,6 +52,8 @@ We’ve extended the library with a **controllable** VAE that exposes 9 style kn
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 - **[`scripts/audit_training_style_separability.py`](scripts/audit_training_style_separability.py)** — source training-data control-selection audit used to decide which style labels are fair paper/demo candidates before more repair work.
 - **[`scripts/build_control_selection_recommendation.py`](scripts/build_control_selection_recommendation.py)** — paper-facing shortlist builder that intersects source separability, generated metrics, collapse diagnostics, external novelty, and perceptual evidence.
+- **[`scripts/ingest_control_selection_feedback.py`](scripts/ingest_control_selection_feedback.py)** — structured ingestion path for Joe/Stephen focused-listening feedback before rerunning the shortlist gate.
+- **[`scripts/preflight_commonvoice_gender_followup.py`](scripts/preflight_commonvoice_gender_followup.py)** — local CommonVoice gender-readiness preflight for a future gender-only metadata follow-up.
 
 OpenVoice is the **canonical controllable pipeline**. ControlVC remains in the
 repository as a useful DP baseline and wrapper reference, but not as the
