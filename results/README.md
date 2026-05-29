@@ -382,6 +382,9 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `training_style_separability_by_label.csv` | source-label direct recall / embedding F1 control-selection table | [`scripts/audit_training_style_separability.py`](../scripts/audit_training_style_separability.py) | FINDINGS Finding 40 |
 | `training_style_separability_confusion.csv` | direct emotion2vec and held-out embedding-classifier confusion counts | [`scripts/audit_training_style_separability.py`](../scripts/audit_training_style_separability.py) | FINDINGS Finding 40 |
 | `training_style_separability_summary.md` | Markdown source-label separability interpretation | [`scripts/audit_training_style_separability.py`](../scripts/audit_training_style_separability.py) | FINDINGS Finding 40 |
+| `control_selection_perceptual_evidence.csv` | structured Joe/Stephen listening evidence used by the shortlist gate | manual evidence ledger | FINDINGS Finding 41 |
+| `control_selection_recommendation.csv` | paper-facing per-style shortlist table | [`scripts/build_control_selection_recommendation.py`](../scripts/build_control_selection_recommendation.py) | FINDINGS Finding 41 |
+| `control_selection_recommendation.md` | Markdown control-selection recommendation and next listening queue | [`scripts/build_control_selection_recommendation.py`](../scripts/build_control_selection_recommendation.py) | FINDINGS Finding 41 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.
@@ -453,6 +456,12 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
   labels are separable before conversion, while `confused` is weak and
   `enunciated` / `whisper` need non-emotion perceptual framing. This should
   drive the paper/demo shortlist before more model repair.
+- The first control-selection recommendation now narrows the style-control
+  claim set conservatively: no style is fully paper-ready without focused
+  listening evidence; `neutral` and `sad` are the first candidate headline
+  controls to listen to, `happy` / `enunciated` / `whisper` are quality-sensitive
+  secondary controls, and `anger` / `confused` / `disgust` / `fear` remain
+  diagnostic or limitation controls under current evidence.
 - `listening_evidence_demo_index.html` is the first page to open for local
   perceptual review. It links to the current guard, the high-novelty checkpoint,
   Joe's priority A/B gate, and embeds a small quick-listen panel.

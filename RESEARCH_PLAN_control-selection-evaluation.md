@@ -180,9 +180,22 @@ Expected artifacts:
 
 Validation:
 
-- Every headline control has objective and perceptual justification.
-- Every excluded control has a defensible reason.
-- The recommendation reduces, not expands, the number of active claims.
+- [x] Every headline control has objective and perceptual justification.
+- [x] Every excluded control has a defensible reason.
+- [x] The recommendation reduces, not expands, the number of active claims.
+
+Current result:
+
+- Implemented in `scripts/build_control_selection_recommendation.py`.
+- Full run wrote `results/control_selection_recommendation.csv` and
+  `results/control_selection_recommendation.md`.
+- No style control is promoted as fully paper-ready yet because no style has
+  both strong objective evidence and positive focused listening evidence
+  recorded.
+- `neutral` and `sad` are candidate headline controls pending focused listening.
+- `happy`, `enunciated`, and `whisper` are supported but quality-sensitive.
+- `anger`, `confused`, `disgust`, and `fear` are diagnostic or limitation
+  controls under current evidence.
 
 Decision gate:
 

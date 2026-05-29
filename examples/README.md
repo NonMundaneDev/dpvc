@@ -124,6 +124,23 @@ Current readout: CREMA-D emotions are strongly separable in source clips, but
 source separability is only the first gate. Generated-output metrics and
 listening evidence still decide which controls become headline claims.
 
+Build the conservative paper/demo control-selection recommendation:
+
+```bash
+python scripts/build_control_selection_recommendation.py
+```
+
+This intersects source separability, current-reference generated metrics,
+collapse diagnostics, external speaker novelty, and the structured perceptual
+ledger. It writes:
+
+- `results/control_selection_recommendation.csv`
+- `results/control_selection_recommendation.md`
+
+Current readout: no style is fully paper-ready yet under the conservative gate;
+`neutral` and `sad` are the next focused-listening candidates, while `anger`,
+`disgust`, and `fear` stay diagnostic under current Joe-reviewed evidence.
+
 To rebuild the A/B review dashboard:
 
 ```bash

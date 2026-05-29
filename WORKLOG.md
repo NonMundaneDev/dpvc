@@ -1,7 +1,7 @@
 # Controllable DP Voice Conversion — Work Log
 
-**Last updated:** 2026-05-28
-**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`, `research/generated-audio-calibrated-objective`, `research/generated-audio-calibrated-training`, `research/control-selection-evaluation`
+**Last updated:** 2026-05-29
+**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`, `research/generated-audio-calibrated-objective`, `research/generated-audio-calibrated-training`, `research/control-selection-evaluation`, `research/control-shortlist`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
 ---
@@ -118,9 +118,10 @@ Priority tags:
 - [x] `[DONE]` Ask Joe for a focused perceptual confirmation on the audio-calibrated `disgust` and `anger` rows; Joe heard `disgust` as neutral across rows and `anger` as only slightly/source-dependently angry in early CREMA-D rows
 - [x] `[DONE]` Record the May 28 Joe meeting direction update; Joe said the system is basically working and the next work should focus on paper-facing evaluation, control selection, and simplification rather than more open-ended model improvement
 - [x] `[DONE]` Run the first source training-data style separability audit on branch `research/control-selection-evaluation`; CREMA-D emotion labels are strongly separable by emotion2vec direct recall, while Expresso-only `confused` is weak and `enunciated` / `whisper` are quality-sensitive embedding-space controls
-- [ ] `[NOW]` Convert the separability audit into a paper/demo control shortlist by intersecting source-label separability with generated-output metrics and Joe/Stephen perceptual evidence; do not promote `disgust` solely from classifier separability because Joe heard generated `disgust` as neutral
+- [x] `[DONE]` Convert the separability audit into a paper/demo control shortlist on branch `research/control-shortlist`; current result promotes no fully paper-ready style claim yet, makes `neutral` and `sad` candidate headline controls pending focused listening, keeps `happy` / `enunciated` / `whisper` quality-sensitive, and keeps `anger` / `disgust` / `fear` / `confused` diagnostic or limitation controls
+- [ ] `[NOW]` Run a focused listening pass on the shortlist from `results/control_selection_recommendation.md`, starting with `neutral` and `sad`, then checking `happy`, `whisper`, and `enunciated` only as quality-sensitive candidates
 - [ ] `[SOON]` Run the gender-focused follow-up only after the control shortlist is explicit; gender remains the metadata control worth repairing, age is broad-bucket/low-priority, and accent stays out of scope for the current speaker-embedding VAE path
-- [ ] `[NOW]` Start paper-facing simplification around the current reference guard: document why the shortlist prioritizes controls that survive source separability, generated-output metrics, and perceptual review; keep `disgust` as source-separable but generated-perception-unconfirmed unless a stronger listening result changes that
+- [x] `[DONE]` Start paper-facing simplification around the current reference guard by adding a conservative shortlist gate: source separability decides which labels are fair to evaluate, generated-output metrics decide which labels are plausible, and listening evidence decides which labels can become headline claims
 - [ ] `[SOON]` Mark accent explicitly out of scope for the current OpenVoice speaker-embedding VAE path, because Joe expects accent information to live in the content representation rather than the speaker embedding
 - [ ] `[SOON]` Reframe age as optional broad-bucket classification only, not continuous scalar control; keep it lower priority than gender and top-style selection
 - [ ] `[SOON]` Add an eval-suite preflight for `ffmpeg` / `torchcodec`, because WER evaluation required `PATH=/opt/homebrew/bin:$PATH` on this macOS machine even though the repo virtualenv was otherwise ready
@@ -4195,6 +4196,76 @@ Next:
   for long collaborator-facing runs.
 - `[SOON]` Continue with the gender-focused follow-up only after the style
   shortlist is explicit.
+
+---
+
+### 0.59 Control Shortlist and Paper Claim Selection (2026-05-29, branch `research/control-shortlist`)
+
+Source artifacts:
+
+- `scripts/build_control_selection_recommendation.py`
+- `tests/test_build_control_selection_recommendation.py`
+- `results/control_selection_perceptual_evidence.csv`
+- `results/control_selection_recommendation.csv`
+- `results/control_selection_recommendation.md`
+
+Goal:
+
+- Convert source-label separability into a conservative paper/demo shortlist by
+  intersecting source evidence, generated-output metrics, collapse diagnostics,
+  external speaker novelty, and available perceptual evidence.
+
+Implementation:
+
+- Added a reproducible recommendation CLI that reads the checked-in current
+  guard metrics, source separability table, generated-audio collapse table,
+  ECAPA external-novelty table, and an explicit perceptual-evidence ledger.
+- Added a small perceptual-evidence CSV so Joe/Stephen listening evidence is
+  structured input to the recommendation, not hidden in narrative text.
+- Implemented conservative claim gating: source separability alone cannot
+  promote a control; generated-output metrics and positive focused listening
+  are required before a style becomes a headline paper claim.
+
+Result:
+
+| Bucket | Styles | Interpretation |
+| --- | --- | --- |
+| `candidate_headline_pending_listening` | `neutral`, `sad` | strong source and generated metrics, but no focused listening confirmation recorded yet |
+| `supported_but_quality_sensitive` | `enunciated`, `happy`, `whisper` | plausible secondary/demo controls, but quality or source-strength caveats prevent headline status |
+| `diagnostic_or_limitation` | `anger`, `confused`, `disgust`, `fear` | do not use as headline claims under current evidence |
+
+Key interpretation:
+
+- No style control is promoted as fully paper-ready yet because the conservative
+  gate requires positive focused listening evidence and none is recorded for
+  the candidate headline controls.
+- `neutral` and `sad` are the cleanest next listening targets.
+- `disgust` remains source-separable but generated-perception-unconfirmed; Joe
+  heard generated `disgust` as neutral, so it stays diagnostic unless stronger
+  listening evidence changes the gate.
+
+Validation:
+
+- `Validation`: `python3 scripts/build_control_selection_recommendation.py`
+  passed and wrote `results/control_selection_recommendation.csv` /
+  `results/control_selection_recommendation.md`.
+- `Validation`: `python3 -m unittest tests/test_build_control_selection_recommendation.py`
+  passed (`5` tests).
+
+FINDINGS.md review:
+
+- Added Finding 41 because this is verified paper-facing evidence: it narrows
+  the claim set and defines the next listening gate before any more training.
+
+Next:
+
+- `[NOW]` Focused listening on `neutral` and `sad` in the current reference
+  guard; if they are perceptually clear, they can become the first headline
+  style controls.
+- `[SOON]` Listen to `happy`, `whisper`, and `enunciated` only as
+  quality-sensitive secondary/demo controls.
+- `[SOON]` Start the gender-focused CommonVoice follow-up after the style
+  shortlist listening gate is resolved.
 
 ---
 

@@ -28,7 +28,7 @@ Immediate next queue:
 4. use the generated-audio content-repair gate to block all current hard-style strength candidates from preset promotion; keep `anger_s10` and `fear_s7p5` diagnostic until a candidate wins both objective and listening gates
 5. use the canonical evidence packet, paper-method packet, and metric guide to explain what already works; treat the first CommonVoice age/gender listening panel as diagnostic because it sounded identical or like generic speaker/timbre shifts
 6. the trained generated-audio-calibrated checkpoint is diagnostic, not a new reference: it verifies the trainer hook and preserves external speaker novelty, but loses to the current guard on recall/WER/novelty/collapse and Joe did not hear generated `disgust` as perceptually clear
-7. the new source training-data style separability audit supports the next paper-facing move: pick a defensible control shortlist by intersecting source-label separability, generated-output metrics, and perceptual review; only then return to a narrow gender-focused follow-up, repeated-seed confidence intervals, and formal DP accounting
+7. the control-selection recommendation now narrows the paper/demo shortlist: `neutral` and `sad` are candidate headline controls pending focused listening; `happy`, `enunciated`, and `whisper` are quality-sensitive secondary controls; `anger`, `confused`, `disgust`, and `fear` stay diagnostic/limitation controls under current evidence
 
 The dedicated next-step plans live in:
 
@@ -50,6 +50,7 @@ We’ve extended the library with a **controllable** VAE that exposes 9 style kn
 - **[`WORKLOG.md`](WORKLOG.md)** — roadmap and progress tracking.
 - **[`results/`](results/)** — raw evaluation CSVs (emotion2vec Recall/emo_sim, WER, predicted MOS) backing the findings.
 - **[`scripts/audit_training_style_separability.py`](scripts/audit_training_style_separability.py)** — source training-data control-selection audit used to decide which style labels are fair paper/demo candidates before more repair work.
+- **[`scripts/build_control_selection_recommendation.py`](scripts/build_control_selection_recommendation.py)** — paper-facing shortlist builder that intersects source separability, generated metrics, collapse diagnostics, external novelty, and perceptual evidence.
 
 OpenVoice is the **canonical controllable pipeline**. ControlVC remains in the
 repository as a useful DP baseline and wrapper reference, but not as the
@@ -295,6 +296,7 @@ See also:
 - `scripts/analyze_mixed_teacher_style_diagnostics.py` — joins label supply, teacher/student latent geometry, generated metrics, and collapse rows for mixed-teacher conditions.
 - `scripts/select_generated_audio_content_repairs.py` — applies the conservative generated-audio repair gate to hard-style strength candidates using objective content/style/speaker checks plus Joe's perceptual review.
 - `scripts/plan_generated_audio_calibrated_objective.py` — turns the generated-audio repair gate plus clean failure targets into trainer-ready style weights, strengths, and a recommended hard-style repair command.
+- `scripts/build_control_selection_recommendation.py` — builds the conservative style-control shortlist from checked-in source/generation/perceptual evidence before any more model training.
 - `scripts/build_listening_report.py` — creates an HTML listening report plus subjective-rating CSV from any generation manifest.
 - `scripts/prepare_ablation_embeddings.py` — builds the `cremad_only` and `expresso_only` evaluation ablation datasets in the unified label format.
 - `scripts/run_ablation_inference.py` — generates the evaluation ablation matrix corpora, including the naive unlabeled-latent baseline.

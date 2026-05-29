@@ -2,7 +2,7 @@
 
 **Recommended branch:** `research/control-selection-evaluation`
 **Motivation:** May 28 meeting with Joe Near
-**Status:** in progress — Workstream 1 implemented and validated on branch `research/control-selection-evaluation`
+**Status:** in progress — Workstream 1 implemented on `research/control-selection-evaluation`; Workstream 2 implemented on `research/control-shortlist`
 
 ## Goal
 
@@ -67,7 +67,44 @@ Result:
   must intersect these results with generated-output metrics and listening
   evidence.
 
-## Workstream 2: Gender-Focused CommonVoice Follow-Up
+## Workstream 2: Control Shortlist and Paper Claim Selection
+
+Question:
+
+- Which controls belong in the headline paper/demo story?
+
+Tasks:
+
+- [x] Combine source separability with the current reference guard's generated
+  emotion, WER, MOS, external-novelty, and collapse metrics.
+- [x] Add an explicit perceptual-evidence ledger so Joe/Stephen listening notes
+  are machine-readable input to the recommendation.
+- [x] Categorize controls into headline, candidate-headline-pending-listening,
+  supported-but-quality-sensitive, and diagnostic/limitation buckets.
+- [x] Create a paper-facing control-selection table and Markdown
+  recommendation.
+
+Validation:
+
+- [x] `results/control_selection_recommendation.csv` exists with one row per
+  style and the source/generated/perceptual gates.
+- [x] `results/control_selection_recommendation.md` exists with bucket counts,
+  interpretation, and the next listening queue.
+- [x] No style is promoted as fully paper-ready without positive focused
+  listening evidence.
+- [x] Every excluded/deprioritized control has a defensible reason.
+
+Result:
+
+- `neutral` and `sad` are candidate headline controls pending focused
+  listening.
+- `happy`, `enunciated`, and `whisper` are supported but quality-sensitive.
+- `anger`, `confused`, `disgust`, and `fear` are diagnostic or limitation
+  controls under current evidence.
+- The recommendation reduces the active paper claim set and blocks more
+  training for weak hard-style labels until listening evidence changes.
+
+## Workstream 3: Gender-Focused CommonVoice Follow-Up
 
 Question:
 
@@ -78,8 +115,7 @@ Tasks:
 1. Extract a larger local CommonVoice subset with known gender metadata.
 2. Report gender-known row counts before training.
 3. Train/evaluate gender-only control first, without emotion interaction.
-4. Test gender plus only the top separable emotion/style controls from
-   Workstream 1.
+4. Test gender plus only the shortlisted controls from Workstream 2.
 5. If gender remains unclear, run one bounded latent-dimension comparison to
    check whether the current low-dimensional VAE is capacity-limited.
 6. Build a small listening panel for gender-only and gender-plus-style outputs.
@@ -93,7 +129,7 @@ Validation:
 - The failure mode is categorized as data shortage, control interaction, or
   latent-capacity limitation if gender still fails.
 
-## Workstream 3: Age and Accent Scope Cleanup
+## Workstream 4: Age and Accent Scope Cleanup
 
 Question:
 
@@ -116,7 +152,7 @@ Validation:
 - No headline claim depends on age or accent unless a later validated result
   supports it.
 
-## Workstream 4: Paper Simplification
+## Workstream 5: Paper Simplification
 
 Question:
 
@@ -146,8 +182,9 @@ Validation:
 - Gender has a bounded, evidence-backed status: working, not working because of
   data, not working because of control interaction, or not working because of
   capacity.
-- `disgust` is no longer pursued as a repair target unless the training-data
-  audit contradicts Joe's perception and shows strong separability.
+- `disgust` is no longer pursued as a repair target unless generated-output
+  listening evidence contradicts Joe's current neutral-perception review; source
+  separability alone is not enough.
 - The repo docs explain why accent is out of scope and age is low priority.
 - The paper path is simpler after the work, not more complicated.
 

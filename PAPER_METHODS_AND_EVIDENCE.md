@@ -1,7 +1,7 @@
 # Paper Methods and Evidence Packet
 
-**Date:** 2026-05-28
-**Branch:** `docs/paper-methods-and-evidence`
+**Date:** 2026-05-29
+**Branch:** `docs/paper-methods-and-evidence`, updated by `research/control-shortlist`
 **Purpose:** turn the current research state into a paper-facing methods and
 evidence outline before starting another training branch.
 
@@ -16,15 +16,19 @@ The strongest current paper story is:
 > quality-balanced demo is the expanded rare-supply checkpoint with the
 > `cvrare_sad_enunc_guard` inference profile. Recent stronger style-strength
 > candidates and first-pass CommonVoice age/gender controls are diagnostic, not
-> promoted results. Metadata separability probing shows gender is objectively
-> recoverable, but age/accent controls remain too weak or non-perceptual for a
-> headline claim.
+> promoted results. The current conservative control shortlist marks `neutral`
+> and `sad` as candidate headline controls pending focused listening;
+> `happy`, `enunciated`, and `whisper` are quality-sensitive secondary
+> candidates; hard emotions remain limitations under current evidence.
+> Metadata separability probing shows gender is objectively recoverable, but
+> age/accent controls remain too weak or non-perceptual for a headline claim.
 
 This should be the paper-writing posture:
 
 - lead with controllable speaker generation / anonymization, not perfect
   emotion conversion;
-- present emotion/style as the best validated controllable attribute family;
+- present emotion/style as a selected-control result, not as "all nine controls
+  work";
 - present CommonVoice age/gender controls as implemented infrastructure and
   future work, because the first listening panel did not show perceptible
   age/gender control and the separability probe supports only a narrow
@@ -195,6 +199,7 @@ The key rule for paper writing:
 | Naive CommonVoice pretraining is not enough. | Findings 10-16 show CommonVoice improves WER/content but tends to wash out style or identity without better supervision. | `FINDINGS.md` Findings 10-16 | Negative results narrow the method; they are not the final CommonVoice result. |
 | Mixed-data training needed rare-class CommonVoice supply. | Finding 30 shows expanded rare supply produced the first large recall jump. | `FINDINGS.md` Finding 30 | The unguarded run has WER/MOS quality cost. |
 | The best current quality-balanced result preserves the recall gain while reducing quality damage. | Finding 31 shows `cvrare_sad_enunc_guard` keeps `47.0%` recall, improves WER to `0.2348`, improves MOS delta to `-0.2081`, and reduces any-collapse files to `20`. | `FINDINGS.md` Finding 31; `results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html` | It is an inference-side calibration profile, not a final learned repair objective. |
+| Style-control claims should be selected, not blanket. | Finding 41 narrows the shortlist: `neutral` and `sad` are candidate headline controls pending listening; `happy`, `enunciated`, and `whisper` are quality-sensitive; `anger`, `confused`, `disgust`, and `fear` are diagnostic/limitations. | `results/control_selection_recommendation.md`; `FINDINGS.md` Finding 41 | No style is fully paper-ready without positive focused listening evidence. |
 | External speaker verification corroborates identity shift. | Finding 36 shows ECAPA mean styled novelty gain of `0.3594` and only `6/99` styled rows accepted as source at a proxy threshold. | `FINDINGS.md` Finding 36; `results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.md` | The threshold is proxy-calibrated; final EER needs independent labeled trials. |
 | Stronger metric-selected style settings should not be promoted yet. | Finding 35 plus Joe's five-row review showed `0/5` candidate wins; Finding 38 formalizes this as a content-repair gate and promotes `0/33` hard-style strength rows. | `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`; `results/generated_audio_content_repair_gate.md` | The grid remains useful for diagnostics and candidate mining, but not preset selection. |
 | CommonVoice age/gender controls are implemented but not perceptually validated. | The metadata-control branch trained and generated a panel, local listening found identical/generic timbre shifts, and Finding 37 shows gender is separable while age/accent remain weak. | `results/listening_metadata_w010_labeled_warmup.md`; `results/commonvoice_metadata_separability_mixed_metadata_base.md`; `IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md` | Treat as future work, not a current paper result; a narrow gender-focused follow-up is more defensible than broad age/accent controls. |
@@ -204,8 +209,10 @@ The key rule for paper writing:
 Use these as the core paper/evidence backbone:
 
 - OpenVoice speaker embeddings can support controllable style directions.
-- Style control is perceptible for several styles, with `whisper` especially
-  strong.
+- Style control should be claimed selectively: `neutral` and `sad` are the
+  current candidate headline controls pending focused listening, while
+  `happy`, `enunciated`, and `whisper` remain quality-sensitive secondary
+  candidates.
 - Expanded rare-class CommonVoice supply changed the mixed-data outcome from
   low-recall diagnostic runs to a serious `47.0%` recall result.
 - The `cvrare_sad_enunc_guard` profile is the current best recall/quality
@@ -219,7 +226,9 @@ Use these as the core paper/evidence backbone:
 Do not claim:
 
 - age/gender controls work perceptually;
+- all nine style controls work equally well;
 - `anger_s10` or `fear_s7p5` are better presets;
+- `disgust` is a confirmed perceptual success;
 - objective classifier wins are sufficient without listening;
 - formal privacy accounting is already complete;
 - the current method is the final best architecture.
@@ -300,23 +309,26 @@ important for the paper.
 
 The immediate next moves should be targeted, not broad blind training runs:
 
-- train and evaluate the generated-audio-calibrated hard-style objective plan, since the current gate promotes no strength-grid preset and the plan now selects `anger`/`disgust` while blocking `fear`;
-- run a narrow gender-focused metadata-control follow-up only if needed;
+- run focused listening on the control shortlist, starting with `neutral` and
+  `sad` in the current reference guard;
+- run a narrow gender-focused metadata-control follow-up after the style
+  shortlist listening gate is resolved;
 - add repeated-seed confidence intervals before freezing paper tables.
 
 ## Next Research Queue
 
-1. Paper-method documentation and evidence cleanup.
-2. Metadata separability probe before more age/gender training.
+1. Focused listening on the control shortlist (`neutral`, `sad`, then
+   quality-sensitive secondary controls).
+2. Narrow gender-focused metadata-control follow-up after the style shortlist
+   listening gate.
 3. Independent labeled speaker-verification trial CSV for final EER.
-4. Train/evaluate `mixed_teacher_cvrare_audio_calibrated_labeled_warmup` from `results/generated_audio_calibrated_objective_plan.md`, then listen before adding any new claim.
-5. Repeated-seed confidence intervals for final candidate tables.
-6. Formal DP accounting and privacy-utility curves.
+4. Repeated-seed confidence intervals for final candidate tables.
+5. Formal DP accounting and privacy-utility curves.
 
 ## Validation
 
 - This packet does not add a new model result.
-- It reuses verified findings and listening artifacts already recorded in
-  `FINDINGS.md`, `WORKLOG.md`, and `results/`.
-- `FINDINGS.md` should not be changed by this documentation branch unless a
-  new verified experiment is added later.
+- It now points to the verified control-shortlist artifact in
+  `results/control_selection_recommendation.md`.
+- Future edits should update `FINDINGS.md` only when a new empirical or
+  paper-facing evidence artifact is verified.
