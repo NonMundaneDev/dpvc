@@ -3162,7 +3162,8 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 38. The generated-audio content-repair gate promotes no current hard-style strength candidate. The only objective-pass rows are blocked by Joe's perceptual review (`anger_s10` tied the reference; `fear_s7p5` lost to the reference due to unnatural pitch change), and `disgust` has no objective-pass repair row. This formally keeps the strength grid diagnostic and pushes the next repair toward generated-audio-calibrated training.
 39. The first generated-audio-calibrated training checkpoint is a useful diagnostic result: the trainer path works and ECAPA still sees strong identity movement (`0.3336` external novelty gain), but it drops below the current guard on aggregate recall (`40.91%` vs `46.97%`), WER (`0.2465` vs `0.2348`), novelty (`0.2351` vs `0.2726`), and collapse behavior (`37` vs `20` files with any collapse). Joe's focused review did not confirm `disgust`; he heard `disgust` as neutral for all rows and `anger` as only subtly/source-dependently angry. He also noted that many CREMA-D `disgust` training examples sound neutral, so the next step should audit and prioritize labels by perceptual training-signal strength rather than adding more latent-only pressure to weak labels.
 40. The source training-data separability audit gives the first control-selection evidence after Joe's May 28 pivot: CREMA-D emotion labels are mostly strong before conversion (`anger=0.9451`, `disgust=0.9341`, `fear=0.7692`, `happy=0.9053`, `neutral=0.9263`, `sad=0.8842` direct recall), while `confused` is weak (`0.2703` embedding F1) and Expresso-only `enunciated` / `whisper` are supported but quality-sensitive (`0.5000` / `0.5161` embedding F1). This supports a shortlist workflow: source separability decides which controls are fair to evaluate, but generated-output metrics and perceptual review decide which controls become headline claims.
-41. The first paper-facing control shortlist narrows the current style claims: no style is fully paper-ready yet under the conservative gate because positive focused listening evidence is not recorded; `neutral` and `sad` are candidate headline controls pending listening, `happy`, `enunciated`, and `whisper` are supported but quality-sensitive, and `anger`, `confused`, `disgust`, and `fear` remain diagnostic/limitation controls.
+41. The first paper-facing control shortlist narrows the current style claims before listening: `neutral` and `sad` are candidate headline controls pending focused review, `happy`, `enunciated`, and `whisper` are supported but quality-sensitive, and `anger`, `confused`, `disgust`, and `fear` remain diagnostic/limitation controls.
+42. Joe's focused neutral/sad review resolves the first perceptual gate: `neutral` and `sad` are now headline controls under the conservative recommendation. `neutral` is clearly supported; `sad` is perceptible but subtle/source-dependent. The paper should claim two headline style controls, not all nine.
 
 ## Finding 40: Source Training Labels Are Mostly Separable, But Generated Claims Still Need Perceptual Gating
 
@@ -3288,6 +3289,53 @@ listening result changes the gate.
 - `results/control_selection_perceptual_evidence.csv`
 - `results/control_selection_recommendation.csv`
 - `results/control_selection_recommendation.md`
+
+## Finding 42: Focused Listening Confirms Neutral and Sad as Headline Controls
+
+**Question.** Do the two candidate headline controls from Finding 41 survive a
+focused human listening gate?
+
+**Method.** We sent Joe a self-contained five-row listening bundle for the
+current `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`
+reference. Each row contained source, baseline, neutral output, and sad output.
+The task was to judge whether `neutral` and `sad` sound perceptibly controlled
+while preserving intelligibility and naturalness.
+
+Joe's June 8 feedback was recorded in
+`results/listening_control_shortlist_neutral_sad_joe_2026-06-08.md`, then
+ingested with `scripts/ingest_control_selection_feedback.py` into
+`results/control_selection_perceptual_evidence.csv`. The control-selection
+recommendation was then rebuilt from the ledger.
+
+**Result.**
+
+| Style | New perceptual status | Updated bucket | Interpretation |
+| --- | --- | --- | --- |
+| `neutral` | `supported` | `headline_control` | Joe heard all neutral rows as neutral, intelligible, and reasonably natural. |
+| `sad` | `supported` | `headline_control` | Joe heard sad rows as sad for the most part; the effect is perceptible but subtle, and one row is less obvious. |
+
+Updated recommendation counts:
+
+| Bucket | Count | Styles |
+| --- | ---: | --- |
+| `headline_control` | `2` | `neutral`, `sad` |
+| `supported_but_quality_sensitive` | `3` | `enunciated`, `happy`, `whisper` |
+| `diagnostic_or_limitation` | `4` | `anger`, `confused`, `disgust`, `fear` |
+
+**Implication for the paper.** The current system now has two defensible
+headline style controls under the conservative gate: `neutral` and `sad`.
+The claim should remain narrow. We should not say all controls work, and the
+`sad` result should be described as perceptible but subtle / source-dependent.
+Hard emotions remain limitations under current evidence.
+
+**Evidence files.**
+
+- `results/listening_control_shortlist_neutral_sad_joe_2026-06-08.md`
+- `results/control_selection_perceptual_evidence.csv`
+- `results/control_selection_recommendation.csv`
+- `results/control_selection_recommendation.md`
+- `scripts/ingest_control_selection_feedback.py`
+- `scripts/build_control_selection_recommendation.py`
 
 ## May 28 Meeting Alignment with Joe
 

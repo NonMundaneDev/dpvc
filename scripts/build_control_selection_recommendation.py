@@ -486,7 +486,8 @@ def write_markdown(rows: Sequence[Dict[str, object]], path: str | Path, args: ar
         lines.append("Paper-ready headline controls:")
         lines.append("")
         for row in headline:
-            lines.append(f"- `{row['style']}`: {row['paper_claim_status']}")
+            summary = row.get("perceptual_summary") or row["paper_claim_status"]
+            lines.append(f"- `{row['style']}`: {summary}")
     else:
         lines.append("No style control is promoted as fully paper-ready by this conservative gate yet, because no current style has both strong objective evidence and positive focused listening evidence recorded.")
 
@@ -505,22 +506,28 @@ def write_markdown(rows: Sequence[Dict[str, object]], path: str | Path, args: ar
         for row in diagnostic:
             lines.append(f"- `{row['style']}`: {row['perceptual_summary'] or row['rationale']}")
 
-    lines.extend(
-        [
-            "",
-            "## Next Listening Queue",
-            "",
-            "Use the existing browser report for the current reference guard:",
-            "",
-            "```bash",
-            "python3 -m http.server 8000",
-            "# open http://localhost:8000/results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html",
-            "```",
-            "",
-            "Listen first to the `candidate_headline_pending_listening` rows, then the quality-sensitive rows. A control should become a headline claim only if a listener can hear the intended control without major intelligibility or naturalness loss.",
-            "",
-        ]
-    )
+    lines.extend(["", "## Next Listening Queue", ""])
+    if pending:
+        lines.extend(
+            [
+                "Use the existing browser report for the current reference guard:",
+                "",
+                "```bash",
+                "python3 -m http.server 8000",
+                "# open http://localhost:8000/results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html",
+                "```",
+                "",
+                "Listen first to the `candidate_headline_pending_listening` rows, then the quality-sensitive rows. A control should become a headline claim only if a listener can hear the intended control without major intelligibility or naturalness loss.",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "No candidate headline rows are waiting on focused listening. The next optional listening work is quality-sensitive secondary controls (`happy`, `whisper`, `enunciated`) or a new gender-only metadata-control panel after training.",
+                "",
+            ]
+        )
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines), encoding="utf-8")

@@ -1,4 +1,7 @@
+import argparse
+import tempfile
 import unittest
+from pathlib import Path
 
 from scripts.build_control_selection_recommendation import (
     classify_generated_gate,
@@ -6,6 +9,7 @@ from scripts.build_control_selection_recommendation import (
     classify_source_gate,
     mean,
     to_float,
+    write_markdown,
 )
 
 
@@ -58,6 +62,40 @@ class ControlSelectionRecommendationTest(unittest.TestCase):
         self.assertIsNone(to_float(""))
         self.assertAlmostEqual(mean([1.0, 2.0, 3.0]), 2.0)
         self.assertIsNone(mean([]))
+
+    def test_markdown_next_queue_handles_no_pending_headline_rows(self):
+        rows = [
+            {
+                "style": "neutral",
+                "recommendation_bucket": "headline_control",
+                "source_gate": "source_separable",
+                "generated_gate": "generated_strong",
+                "generated_direct_recall": 0.9,
+                "generated_mean_wer": 0.1,
+                "generated_mean_mos_delta": -0.1,
+                "generated_mean_external_novelty": 0.2,
+                "perceptual_status": "supported",
+                "paper_claim_status": "paper-ready headline control",
+                "perceptual_summary": "Joe confirmed neutral.",
+            }
+        ]
+        args = argparse.Namespace(
+            source="source.csv",
+            emotion="emotion.csv",
+            wer="wer.csv",
+            mos="mos.csv",
+            novelty="novelty.csv",
+            collapse="collapse.csv",
+            collapse_condition="condition",
+            perceptual="perceptual.csv",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "recommendation.md"
+            write_markdown(rows, out, args)
+            text = out.read_text(encoding="utf-8")
+
+        self.assertIn("No candidate headline rows are waiting", text)
+        self.assertIn("Joe confirmed neutral.", text)
 
 
 if __name__ == "__main__":

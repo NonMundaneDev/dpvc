@@ -382,9 +382,10 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `training_style_separability_by_label.csv` | source-label direct recall / embedding F1 control-selection table | [`scripts/audit_training_style_separability.py`](../scripts/audit_training_style_separability.py) | FINDINGS Finding 40 |
 | `training_style_separability_confusion.csv` | direct emotion2vec and held-out embedding-classifier confusion counts | [`scripts/audit_training_style_separability.py`](../scripts/audit_training_style_separability.py) | FINDINGS Finding 40 |
 | `training_style_separability_summary.md` | Markdown source-label separability interpretation | [`scripts/audit_training_style_separability.py`](../scripts/audit_training_style_separability.py) | FINDINGS Finding 40 |
-| `control_selection_perceptual_evidence.csv` | structured Joe/Stephen listening evidence used by the shortlist gate | manual evidence ledger | FINDINGS Finding 41 |
-| `control_selection_recommendation.csv` | paper-facing per-style shortlist table | [`scripts/build_control_selection_recommendation.py`](../scripts/build_control_selection_recommendation.py) | FINDINGS Finding 41 |
-| `control_selection_recommendation.md` | Markdown control-selection recommendation and next listening queue | [`scripts/build_control_selection_recommendation.py`](../scripts/build_control_selection_recommendation.py) | FINDINGS Finding 41 |
+| `listening_control_shortlist_neutral_sad_joe_2026-06-08.md` | Joe's focused review: neutral sounds neutral; sad is perceptible but subtle | manual perceptual review | FINDINGS Finding 42 |
+| `control_selection_perceptual_evidence.csv` | structured Joe/Stephen listening evidence used by the shortlist gate | manual evidence ledger | FINDINGS Findings 41-42 |
+| `control_selection_recommendation.csv` | paper-facing per-style shortlist table | [`scripts/build_control_selection_recommendation.py`](../scripts/build_control_selection_recommendation.py) | FINDINGS Findings 41-42 |
+| `control_selection_recommendation.md` | Markdown control-selection recommendation and next listening queue | [`scripts/build_control_selection_recommendation.py`](../scripts/build_control_selection_recommendation.py) | FINDINGS Findings 41-42 |
 | `commonvoice_gender_followup_preflight.md` | local CommonVoice gender-readiness summary | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Worklog-only preflight for the future gender-only follow-up |
 | `commonvoice_gender_followup_preflight.json` | machine-readable gender-readiness summary | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Worklog-only preflight for the future gender-only follow-up |
 | `commonvoice_gender_followup_speakers.csv` | deterministic gender-balanced speaker manifest | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Input contract for a future gender-only branch |
@@ -459,12 +460,10 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
   labels are separable before conversion, while `confused` is weak and
   `enunciated` / `whisper` need non-emotion perceptual framing. This should
   drive the paper/demo shortlist before more model repair.
-- The first control-selection recommendation now narrows the style-control
-  claim set conservatively: no style is fully paper-ready without focused
-  listening evidence; `neutral` and `sad` are the first candidate headline
-  controls to listen to, `happy` / `enunciated` / `whisper` are quality-sensitive
-  secondary controls, and `anger` / `confused` / `disgust` / `fear` remain
-  diagnostic or limitation controls under current evidence.
+- Joe's focused neutral/sad review resolves the first control-selection gate:
+  `neutral` and `sad` are now headline controls under the conservative
+  recommendation. The `sad` claim should carry the caveat that the sadness is
+  perceptible but subtle and source-dependent.
 - `listening_evidence_demo_index.html` is the first page to open for local
   perceptual review. It links to the current guard, the high-novelty checkpoint,
   Joe's priority A/B gate, and embeds a small quick-listen panel.

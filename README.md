@@ -28,7 +28,7 @@ Immediate next queue:
 4. use the generated-audio content-repair gate to block all current hard-style strength candidates from preset promotion; keep `anger_s10` and `fear_s7p5` diagnostic until a candidate wins both objective and listening gates
 5. use the canonical evidence packet, paper-method packet, and metric guide to explain what already works; treat the first CommonVoice age/gender listening panel as diagnostic because it sounded identical or like generic speaker/timbre shifts
 6. the trained generated-audio-calibrated checkpoint is diagnostic, not a new reference: it verifies the trainer hook and preserves external speaker novelty, but loses to the current guard on recall/WER/novelty/collapse and Joe did not hear generated `disgust` as perceptually clear
-7. the control-selection recommendation now narrows the paper/demo shortlist: `neutral` and `sad` are candidate headline controls pending focused listening; `happy`, `enunciated`, and `whisper` are quality-sensitive secondary controls; `anger`, `confused`, `disgust`, and `fear` stay diagnostic/limitation controls under current evidence
+7. Joe's focused listening review now resolves the first control-selection gate: `neutral` and `sad` are headline controls, with `sad` described as perceptible but subtle; `happy`, `enunciated`, and `whisper` stay quality-sensitive secondary controls, and `anger`, `confused`, `disgust`, and `fear` stay diagnostic/limitation controls
 
 The dedicated next-step plans live in:
 

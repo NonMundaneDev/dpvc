@@ -137,9 +137,10 @@ ledger. It writes:
 - `results/control_selection_recommendation.csv`
 - `results/control_selection_recommendation.md`
 
-Current readout: no style is fully paper-ready yet under the conservative gate;
-`neutral` and `sad` are the next focused-listening candidates, while `anger`,
-`disgust`, and `fear` stay diagnostic under current Joe-reviewed evidence.
+Current readout: Joe's focused review now supports `neutral` and `sad` as the
+first headline controls. Keep the wording narrow: `neutral` is clearly
+supported, while `sad` is perceptible but subtle. `anger`, `disgust`, and
+`fear` stay diagnostic under current Joe-reviewed evidence.
 
 When Joe or Stephen completes a focused listening review, ingest it into the
 structured perceptual ledger instead of editing the recommendation by hand.
@@ -158,7 +159,7 @@ classify each style explicitly:
 python scripts/ingest_control_selection_feedback.py \
     --feedback-text /path/to/joe_feedback.txt \
     --style-status neutral=supported \
-    --style-status sad=mixed \
+    --style-status sad=supported \
     --style-summary neutral="Joe heard the neutral control as clearly neutral." \
     --style-summary sad="Joe heard the sad control as subtle and source-dependent." \
     --rerun-recommendation

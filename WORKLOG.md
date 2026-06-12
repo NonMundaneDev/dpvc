@@ -119,9 +119,9 @@ Priority tags:
 - [x] `[DONE]` Record the May 28 Joe meeting direction update; Joe said the system is basically working and the next work should focus on paper-facing evaluation, control selection, and simplification rather than more open-ended model improvement
 - [x] `[DONE]` Run the first source training-data style separability audit on branch `research/control-selection-evaluation`; CREMA-D emotion labels are strongly separable by emotion2vec direct recall, while Expresso-only `confused` is weak and `enunciated` / `whisper` are quality-sensitive embedding-space controls
 - [x] `[DONE]` Convert the separability audit into a paper/demo control shortlist on branch `research/control-shortlist`; current result promotes no fully paper-ready style claim yet, makes `neutral` and `sad` candidate headline controls pending focused listening, keeps `happy` / `enunciated` / `whisper` quality-sensitive, and keeps `anger` / `disgust` / `fear` / `confused` diagnostic or limitation controls
-- [ ] `[NOW]` Wait for Joe's focused `neutral`/`sad` listening feedback, ingest it with `scripts/ingest_control_selection_feedback.py`, and rerun `scripts/build_control_selection_recommendation.py` so the shortlist changes only through the ledgered perceptual gate
+- [x] `[DONE]` Ingest Joe's focused `neutral`/`sad` listening feedback with `scripts/ingest_control_selection_feedback.py`; the shortlist now promotes `neutral` and `sad` to headline controls, with `sad` explicitly caveated as perceptible but subtle
 - [x] `[DONE]` Preflight the local CommonVoice gender follow-up before training; `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` has enough balanced gender-known speaker coverage for a gender-only follow-up manifest, but this is data-readiness only
-- [ ] `[SOON]` Run the gender-focused follow-up only after the control shortlist listening gate is resolved; gender remains the metadata control worth repairing, age is broad-bucket/low-priority, and accent stays out of scope for the current speaker-embedding VAE path
+- [ ] `[NOW]` Start the gender-focused follow-up from `results/commonvoice_gender_followup_speakers.csv`; gender remains the metadata control worth repairing, age is broad-bucket/low-priority, and accent stays out of scope for the current speaker-embedding VAE path
 - [x] `[DONE]` Start paper-facing simplification around the current reference guard by adding a conservative shortlist gate: source separability decides which labels are fair to evaluate, generated-output metrics decide which labels are plausible, and listening evidence decides which labels can become headline claims
 - [ ] `[SOON]` Mark accent explicitly out of scope for the current OpenVoice speaker-embedding VAE path, because Joe expects accent information to live in the content representation rather than the speaker embedding
 - [ ] `[SOON]` Reframe age as optional broad-bucket classification only, not continuous scalar control; keep it lower priority than gender and top-style selection
@@ -4352,6 +4352,79 @@ Next:
   `results/commonvoice_gender_followup_speakers.csv`.
 - `[SOON]` Keep age and accent out of the next training branch unless there is
   a separate, explicit data-readiness and perceptual target rationale.
+
+---
+
+### 0.61 Neutral/Sad Focused Listening Gate Resolved (2026-06-13, branch `research/control-feedback-gender-preflight`)
+
+Source artifacts:
+
+- `results/listening_control_shortlist_neutral_sad_joe_2026-06-08.md`
+- `results/control_selection_perceptual_evidence.csv`
+- `results/control_selection_recommendation.csv`
+- `results/control_selection_recommendation.md`
+- `scripts/build_control_selection_recommendation.py`
+- `tests/test_build_control_selection_recommendation.py`
+
+Goal:
+
+- Convert Joe's focused Teams feedback on the neutral/sad review bundle into
+  structured paper-facing evidence, then rerun the conservative shortlist gate.
+
+Implementation:
+
+- Recorded Joe's review as a Markdown evidence artifact.
+- Ingested the feedback through `scripts/ingest_control_selection_feedback.py`
+  instead of hand-editing the recommendation.
+- Classified `neutral=supported` because Joe heard all neutral rows as neutral
+  and all reviewed outputs as intelligible / reasonably natural.
+- Classified `sad=supported` because Joe heard sad rows as sad for the most
+  part, while preserving the caveat that row 4 was less obvious and the effect
+  is perceptible but subtle.
+- Patched `scripts/build_control_selection_recommendation.py` so the Markdown
+  footer no longer tells us to listen to pending headline rows when no pending
+  headline rows remain.
+
+Result:
+
+- The control-selection bucket counts are now:
+  - `headline_control`: `2` (`neutral`, `sad`)
+  - `supported_but_quality_sensitive`: `3` (`enunciated`, `happy`, `whisper`)
+  - `diagnostic_or_limitation`: `4` (`anger`, `confused`, `disgust`, `fear`)
+- `neutral` is now a paper/demo headline control.
+- `sad` is now a paper/demo headline control with a clear wording caveat:
+  perceptible, intelligible, and natural, but somewhat subtle / source-dependent.
+
+Key interpretation:
+
+- The paper story can now say the current system has two defensible style
+  controls, not merely identity shift plus pending style evidence.
+- The stronger claim is still narrow: do not say all nine controls work.
+- The next scientific step is the gender-only CommonVoice follow-up, not more
+  hard-emotion repair.
+
+Validation:
+
+- `Validation`: `python3 scripts/ingest_control_selection_feedback.py --feedback-text results/listening_control_shortlist_neutral_sad_joe_2026-06-08.md --evidence-path results/listening_control_shortlist_neutral_sad_joe_2026-06-08.md --style-status neutral=supported --style-status sad=supported --style-summary neutral="Joe confirmed all neutral outputs sound neutral; all reviewed outputs were intelligible and reasonably natural." --style-summary sad="Joe heard sad outputs as sad for the most part; row 4 was less obvious, and the sadness is perceptible but subtle." --rerun-recommendation` wrote the updated ledger and recommendation.
+- `Validation`: `python3 scripts/build_control_selection_recommendation.py`
+  reran after the Markdown footer patch and produced `headline_control: 2`.
+- `Validation`: `python3 -m unittest tests.test_ingest_control_selection_feedback tests.test_preflight_commonvoice_gender_followup tests.test_build_control_selection_recommendation` passed (`16` tests).
+- `Validation`: `env PYTHONPYCACHEPREFIX=/private/tmp/dpvc_pycache python3 -m py_compile scripts/ingest_control_selection_feedback.py scripts/preflight_commonvoice_gender_followup.py scripts/build_control_selection_recommendation.py tests/test_ingest_control_selection_feedback.py tests/test_preflight_commonvoice_gender_followup.py tests/test_build_control_selection_recommendation.py` passed.
+- `Validation`: `git diff --check` passed.
+
+FINDINGS.md review:
+
+- Added Finding 42 because this is verified paper-facing perceptual evidence
+  that changes the claim status for `neutral` and `sad`.
+
+Next:
+
+- `[NOW]` Begin the gender-only CommonVoice follow-up from
+  `results/commonvoice_gender_followup_speakers.csv`.
+- `[SOON]` Update the next Joe meeting brief around the new concise claim:
+  current reference supports identity shift plus two perceptually confirmed
+  headline style controls (`neutral`, `sad`), while harder emotions remain
+  limitations.
 
 ---
 
