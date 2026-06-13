@@ -26,6 +26,23 @@ of perceptible age/gender control.
 | `listening_metadata_w010_labeled_warmup_ratings.csv` | subjective rating template | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Rating sheet for the metadata-control smoke panel |
 | `listening_metadata_w010_labeled_warmup.md` | listening instructions, outcome, and interpretation rules | manual summary | Worklog-only perceptual smoke outcome |
 
+CommonVoice gender-only available-subset follow-up artifacts from 2026-06-13:
+
+This is the first gender-only candidate after the neutral/sad control gate. It
+is not yet paper-facing evidence because no perceptual or objective
+gender-control result has been verified. It also reuses the already-extracted
+expanded CommonVoice artifact and therefore matches `1181/1788` preflight
+manifest clips, not the full preflight-selected plan.
+
+| File | Rows | Script | Backs |
+|------|------|--------|-------|
+| `commonvoice_gender_followup_artifact.md` | summary | [`scripts/build_commonvoice_gender_followup_artifact.py`](../scripts/build_commonvoice_gender_followup_artifact.py) | Worklog-only available-subset artifact report |
+| `commonvoice_gender_followup_artifact.json` | summary | [`scripts/build_commonvoice_gender_followup_artifact.py`](../scripts/build_commonvoice_gender_followup_artifact.py) | Machine-readable available-subset coverage report |
+| `openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup_report.json` | training config | [`examples/openvoice_train_vae_mixed.py`](../examples/openvoice_train_vae_mixed.py) | Gender-only candidate checkpoint record |
+| `listening_gender_followup_available_w005_labeled_warmup.html` | 4-source browser listening panel | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Perceptual gate for the gender-only candidate |
+| `listening_gender_followup_available_w005_labeled_warmup_ratings.csv` | 8 scoreable rows | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Rating sheet for female/male controls |
+| `gender_followup_available_w005_review_bundle_2026-06-13.zip` | 28 files | manual bundle | Self-contained local/Joe review bundle |
+
 External speaker-verifier artifacts from 2026-05-28:
 
 | File | Rows | Script | Backs |

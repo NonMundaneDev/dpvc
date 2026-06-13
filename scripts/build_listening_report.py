@@ -192,7 +192,11 @@ def write_rating_template(path, rows):
         writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         for row in rows:
-            if row.get("style") == "baseline":
+            if (
+                row.get("style") == "baseline"
+                and not row.get("gender_control")
+                and not row.get("age_control")
+            ):
                 continue
             writer.writerow(
                 {

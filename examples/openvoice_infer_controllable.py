@@ -211,6 +211,11 @@ def parse_args():
                     help="Target style (e.g., happy, whisper, anger)")
     ap.add_argument("--all-styles", action="store_true",
                     help="Generate all 9 styles plus a baseline")
+    ap.add_argument(
+        "--baseline-only",
+        action="store_true",
+        help="Generate only the baseline/anonymized output, optionally with metadata controls",
+    )
     ap.add_argument("--style-strength", type=float, default=5.0,
                     help="Control strength (default: 5.0, higher = stronger style effect)")
     ap.add_argument("--noise-level", type=float, default=0.0,
@@ -252,10 +257,11 @@ def parse_args():
     )
     args = ap.parse_args()
 
-    if args.style and args.all_styles:
-        ap.error("Choose either --style <name> or --all-styles, not both")
-    if not args.style and not args.all_styles:
-        ap.error("Specify --style <name> or --all-styles")
+    selected_modes = sum(bool(value) for value in [args.style, args.all_styles, args.baseline_only])
+    if selected_modes > 1:
+        ap.error("Choose only one of --style <name>, --all-styles, or --baseline-only")
+    if selected_modes == 0:
+        ap.error("Specify --style <name>, --all-styles, or --baseline-only")
     requested_dims = []
     if args.gender_control:
         requested_dims.append(args.gender_control_dim)
@@ -294,7 +300,62 @@ def main():
     suffix = metadata_suffix(metadata_record)
     records = []
 
-    if args.all_styles:
+    if args.baseline_only:
+        out_root = Path(args.out)
+        suffix_part = f"_{suffix}" if suffix else ""
+        if args.source_dir:
+            for source in sources:
+                out_path = out_root / f"{source.stem}_baseline{suffix_part}.wav"
+                print(f"Generating baseline for {source.name} -> {out_path}")
+                run_one(
+                    anonymizer,
+                    source,
+                    out_path,
+                    None,
+                    0.0,
+                    args.noise_level,
+                    seed,
+                    metadata_control_features,
+                )
+                records.append(build_record(
+                    source=source,
+                    output_file=out_path,
+                    style="baseline",
+                    style_idx=None,
+                    strength=0.0,
+                    noise_level=args.noise_level,
+                    seed=seed,
+                    vae_checkpoint=args.vae_checkpoint,
+                    latent_dims=args.latent_dims,
+                    metadata_record=metadata_record,
+                ))
+        else:
+            source = sources[0]
+            print(f"Generating baseline for {source.name} -> {out_root}")
+            print(f"Noise: {args.noise_level}")
+            run_one(
+                anonymizer,
+                source,
+                out_root,
+                None,
+                0.0,
+                args.noise_level,
+                seed,
+                metadata_control_features,
+            )
+            records.append(build_record(
+                source=source,
+                output_file=out_root,
+                style="baseline",
+                style_idx=None,
+                strength=0.0,
+                noise_level=args.noise_level,
+                seed=seed,
+                vae_checkpoint=args.vae_checkpoint,
+                latent_dims=args.latent_dims,
+                metadata_record=metadata_record,
+            ))
+    elif args.all_styles:
         out_dir = Path(args.out)
         for source in sources:
             src_stem = source.stem

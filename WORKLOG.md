@@ -1,7 +1,7 @@
 # Controllable DP Voice Conversion — Work Log
 
-**Last updated:** 2026-05-29
-**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`, `research/generated-audio-calibrated-objective`, `research/generated-audio-calibrated-training`, `research/control-selection-evaluation`, `research/control-shortlist`, `research/control-feedback-gender-preflight`
+**Last updated:** 2026-06-13
+**Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`, `research/generated-audio-calibrated-objective`, `research/generated-audio-calibrated-training`, `research/control-selection-evaluation`, `research/control-shortlist`, `research/control-feedback-gender-preflight`, `research/commonvoice-gender-followup`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
 ---
@@ -121,7 +121,8 @@ Priority tags:
 - [x] `[DONE]` Convert the separability audit into a paper/demo control shortlist on branch `research/control-shortlist`; current result promotes no fully paper-ready style claim yet, makes `neutral` and `sad` candidate headline controls pending focused listening, keeps `happy` / `enunciated` / `whisper` quality-sensitive, and keeps `anger` / `disgust` / `fear` / `confused` diagnostic or limitation controls
 - [x] `[DONE]` Ingest Joe's focused `neutral`/`sad` listening feedback with `scripts/ingest_control_selection_feedback.py`; the shortlist now promotes `neutral` and `sad` to headline controls, with `sad` explicitly caveated as perceptible but subtle
 - [x] `[DONE]` Preflight the local CommonVoice gender follow-up before training; `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` has enough balanced gender-known speaker coverage for a gender-only follow-up manifest, but this is data-readiness only
-- [ ] `[NOW]` Start the gender-focused follow-up from `results/commonvoice_gender_followup_speakers.csv`; gender remains the metadata control worth repairing, age is broad-bucket/low-priority, and accent stays out of scope for the current speaker-embedding VAE path
+- [x] `[DONE]` Start the gender-focused follow-up from `results/commonvoice_gender_followup_speakers.csv`; branch `research/commonvoice-gender-followup` builds an available-subset artifact, trains the first gender-only checkpoint, and creates a review bundle for perceptual gating
+- [ ] `[NOW]` Listen to `results/gender_followup_available_w005_review_bundle_2026-06-13.zip` locally before sending broader claims to Joe; promote gender only if female/male controls sound perceptible and not just like generic timbre/identity shifts
 - [x] `[DONE]` Start paper-facing simplification around the current reference guard by adding a conservative shortlist gate: source separability decides which labels are fair to evaluate, generated-output metrics decide which labels are plausible, and listening evidence decides which labels can become headline claims
 - [ ] `[SOON]` Mark accent explicitly out of scope for the current OpenVoice speaker-embedding VAE path, because Joe expects accent information to live in the content representation rather than the speaker embedding
 - [ ] `[SOON]` Reframe age as optional broad-bucket classification only, not continuous scalar control; keep it lower priority than gender and top-style selection
@@ -133,6 +134,7 @@ Priority tags:
 - [ ] `[SOON]` Compare strict pseudo-label filtering against looser confidence-only or minimally filtered CommonVoice pseudo labels, because Joe's May 14 question raised a valid possibility that filtering may discard useful breadth once all CommonVoice rows have weak labels
 - [ ] `[SOON]` If metadata controls stay in scope, run a narrow gender-focused balanced-control follow-up rather than another broad age/gender/accent sweep; the separability probe shows gender has objective structure, while the first listening panel still says perceptual controllability is unproven
 - [ ] `[SOON]` Add per-dimension metadata latent diagnostics for dims `9-10` and free dims `11-14`, because the separability probe confirms gender survives in `vae_mu` but does not prove the intended scalar control dim is the one carrying the signal
+- [ ] `[SOON]` Extract the 607 missing clips from `results/commonvoice_gender_followup_speakers.csv` before treating the gender follow-up as the full preflight plan; the current available-subset artifact matched `1181/1788` selected clips from the already-extracted expanded CommonVoice artifact
 - [ ] `[SOON]` Do not retry age/accent scalar controls without better labels, class balancing, or explicit perceptual/acoustic targets; the current probe finds weak age structure and weak-to-moderate accent structure that does not survive strongly in metadata-control latents
 - [ ] `[SOON]` Build an independent labeled speaker-verification trial CSV for final EER, because the current ECAPA threshold is derived from source-vs-baseline proxy trials
 - [ ] `[SOON]` Add repeated-seed confidence intervals for the current reference tables before freezing final paper claims, because most ablations so far use deterministic single-seed comparisons
@@ -4425,6 +4427,152 @@ Next:
   current reference supports identity shift plus two perceptually confirmed
   headline style controls (`neutral`, `sad`), while harder emotions remain
   limitations.
+
+---
+
+### 0.62 CommonVoice Gender-Only Follow-Up Candidate (2026-06-13, branch `research/commonvoice-gender-followup`)
+
+Source artifacts:
+
+- `results/commonvoice_gender_followup_speakers.csv`
+- `embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt`
+- `embeddings/openvoice_commonvoice_gender_followup_available_emb.pt`
+- `embeddings/openvoice_mixed_gender_followup_available_base.pt`
+- `embeddings/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup.pt`
+- `results/commonvoice_gender_followup_artifact.md`
+- `results/commonvoice_gender_followup_artifact.json`
+- `results/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup_report.json`
+- `results/listening_gender_followup_available_w005_labeled_warmup.html`
+- `results/listening_gender_followup_available_w005_labeled_warmup_ratings.csv`
+- `results/gender_followup_available_w005_review_bundle_2026-06-13.zip`
+- `scripts/build_commonvoice_gender_followup_artifact.py`
+- `tests/test_build_commonvoice_gender_followup_artifact.py`
+- `tests/test_build_mixed_training_set_commonvoice.py`
+- `tests/test_openvoice_train_vae_mixed_metadata_controls.py`
+- `tests/test_openvoice_infer_controllable_baseline_only.py`
+- `tests/test_build_listening_report_metadata_template.py`
+
+Goal:
+
+- Turn the CommonVoice gender preflight into the first reproducible
+  gender-only candidate checkpoint and listening gate, without reviving
+  age/accent as claims.
+
+Implementation:
+
+- Added `scripts/build_commonvoice_gender_followup_artifact.py` to subset an
+  existing CommonVoice embedding artifact from the deterministic gender
+  speaker manifest.
+- The new artifact builder fails by default if manifest clips are missing, so
+  partial coverage cannot be mistaken for the full plan.
+- Built an explicit available-subset artifact with `--allow-missing`:
+  - matched clips: `1181/1788`
+  - missing clips: `607`
+  - matched speakers: `656`
+  - matched clips by gender: `female=493`, `male=688`
+  - matched speakers by gender: `female=312`, `male=344`
+- Patched `scripts/build_mixed_training_set.py` so unlabeled CommonVoice rows
+  without pseudo-style fields are safe. This matters because the gender-only
+  artifact intentionally has metadata labels, not pseudo emotion labels.
+- Extended `examples/openvoice_train_vae_mixed.py` with
+  `--metadata-control-targets`, defaulting to `gender,age` for compatibility
+  but allowing `--metadata-control-targets gender` for a true gender-only run.
+- Built `embeddings/openvoice_mixed_gender_followup_available_base.pt`:
+  - total rows: `2006`
+  - CommonVoice rows: `1181`, all gender-labeled
+  - CREMA-D rows: `546`, true style-labeled
+  - Expresso rows: `279`, true style-labeled
+- Trained `embeddings/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup.pt`
+  from the current style-distilled reference checkpoint using:
+  - `--metadata-control-weight 0.05`
+  - `--metadata-control-targets gender`
+  - `--metadata-gender-dim 9`
+  - `--style-teacher-weight 0.05`
+  - `--style-teacher-datasets CommonVoice`
+  - `--schedule labeled_warmup`
+  - `--epochs 1000`
+- Added `--baseline-only` to `examples/openvoice_infer_controllable.py` so
+  metadata-only listening panels do not need to generate all style variants.
+- Patched `scripts/build_listening_report.py` so baseline rows with
+  `gender_control` / `age_control` remain scoreable in rating CSVs.
+- Generated a compact review panel with four source speakers:
+  source, no-metadata baseline, baseline+female, and baseline+male.
+
+Result:
+
+- The end-to-end gender-only candidate path now exists and trains.
+- The current candidate is deliberately labeled an available-subset run, not
+  the full preflight-selected CommonVoice plan.
+- No paper-facing gender-control finding is recorded yet. The next gate is
+  perceptual: if the female/male rows sound identical or only like generic
+  speaker/timbre shifts, the result remains diagnostic.
+
+How to listen:
+
+```bash
+cd /Users/steve/UVM-plaid/dp-vc/results/gender_followup_available_w005_review_bundle_2026-06-13
+python3 -m http.server 8000
+```
+
+Open:
+
+```text
+http://localhost:8000/results/listening_gender_followup_available_w005_labeled_warmup.html
+```
+
+Listen per source in this order:
+
+1. Source
+2. Baseline
+3. Baseline + female control
+4. Baseline + male control
+
+Key interpretation:
+
+- This branch tests Joe's recommended metadata-control direction in the most
+  conservative way: gender-only first, no age/accent claims, and perceptual
+  review before metrics or paper language.
+- If the panel fails perceptually, the useful result is that gender is
+  objectively present in embeddings but still not controllable through this
+  scalar speaker-embedding VAE knob.
+- If the panel passes perceptually, the next step is objective gender/verifier
+  evaluation plus a fuller extraction of the missing `607` manifest clips.
+
+Validation:
+
+- `Validation`: `.venv/bin/python -m unittest tests.test_build_commonvoice_gender_followup_artifact tests.test_openvoice_train_vae_mixed_metadata_controls` first failed before implementation because the artifact script was missing and metadata controls always returned both `gender` and `age`.
+- `Validation`: `.venv/bin/python -m unittest tests.test_build_mixed_training_set_commonvoice` first failed before implementation because unlabeled CommonVoice artifacts without pseudo-style fields raised an `IndexError`.
+- `Validation`: `.venv/bin/python -m unittest tests.test_openvoice_infer_controllable_baseline_only` first failed before implementation because `--baseline-only` did not exist.
+- `Validation`: `.venv/bin/python -m unittest tests.test_build_listening_report_metadata_template` first failed before implementation because scoreable metadata-control baseline rows were omitted from the rating CSV.
+- `Validation`: `.venv/bin/python -m unittest tests.test_build_listening_report_metadata_template tests.test_openvoice_infer_controllable_baseline_only tests.test_build_commonvoice_gender_followup_artifact tests.test_openvoice_train_vae_mixed_metadata_controls tests.test_build_mixed_training_set_commonvoice` passed (`8` tests).
+- `Validation`: `.venv/bin/python scripts/build_commonvoice_gender_followup_artifact.py --commonvoice-embeddings embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt --speaker-manifest results/commonvoice_gender_followup_speakers.csv --output embeddings/openvoice_commonvoice_gender_followup_available_emb.pt --report-json results/commonvoice_gender_followup_artifact.json --report-md results/commonvoice_gender_followup_artifact.md` failed as designed with `607` missing manifest clips.
+- `Validation`: `.venv/bin/python scripts/build_commonvoice_gender_followup_artifact.py --commonvoice-embeddings embeddings/openvoice_commonvoice_cvrare_expanded_emb.pt --speaker-manifest results/commonvoice_gender_followup_speakers.csv --output embeddings/openvoice_commonvoice_gender_followup_available_emb.pt --report-json results/commonvoice_gender_followup_artifact.json --report-md results/commonvoice_gender_followup_artifact.md --allow-missing` wrote the explicit available-subset artifact.
+- `Validation`: `.venv/bin/python scripts/build_mixed_training_set.py --commonvoice embeddings/openvoice_commonvoice_gender_followup_available_emb.pt --cremad embeddings/openvoice_cremad_emb.pt --expresso embeddings/openvoice_expresso_emb.pt --output embeddings/openvoice_mixed_gender_followup_available_base.pt --commonvoice-min-clips-per-speaker 1 --commonvoice-max-clips-per-speaker 2 --acceptance-policy confidence_only` wrote the mixed training artifact with `1181` gender-control rows.
+- `Validation`: `.venv/bin/python examples/openvoice_train_vae_mixed.py --embeddings embeddings/openvoice_mixed_gender_followup_available_base.pt --output embeddings/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup.pt --epochs 1000 --schedule labeled_warmup --init-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt --metadata-control-weight 0.05 --metadata-control-targets gender --metadata-gender-dim 9 --metadata-control-report results/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup_report.json --style-teacher-checkpoint embeddings/openvoice_vae_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup.pt --style-teacher-weight 0.05 --style-teacher-dims 0-8 --style-teacher-datasets CommonVoice` completed and wrote the checkpoint/report.
+- `Validation`: baseline-only OpenVoice generation completed for no-metadata,
+  female-control, and male-control batches, writing `12` generated audio rows.
+- `Validation`: listening HTML validation found `16` audio refs, `0` missing
+  refs, and `8` scoreable rating rows (`female`, `male`).
+- `Validation`: zip validation found `28` files, `16` audio refs, and `0`
+  missing audio refs inside
+  `results/gender_followup_available_w005_review_bundle_2026-06-13.zip`.
+
+FINDINGS.md review:
+
+- Reviewed and intentionally not updated. This branch has a trained candidate
+  and listening gate, but no verified perceptual or objective gender-control
+  finding yet.
+
+Next:
+
+- `[NOW]` Stephen should listen to the four-row panel before sending it to Joe.
+- `[SOON]` If perceptual gender control is audible, run objective speaker /
+  gender-verifier diagnostics and build a Joe-facing bundle.
+- `[SOON]` If the panel sounds identical or generic, document the result as a
+  limitation and prioritize paper/evaluation cleanup over more scalar metadata
+  tuning.
+- `[SOON]` Extract the missing `607` manifest clips if this path remains worth
+  scaling beyond the available subset.
 
 ---
 

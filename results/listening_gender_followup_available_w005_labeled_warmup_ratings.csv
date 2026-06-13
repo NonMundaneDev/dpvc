@@ -1,0 +1,9 @@
+source_stem,style,gender_control,age_control,audio_file,emotion_match_1_5,naturalness_1_5,intelligibility_1_5,identity_shift_1_5,notes
+female_1_cremad_1002,baseline,female,,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/female_1_cremad_1002_baseline_female.wav,,,,,
+female_2_cremad_1012,baseline,female,,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/female_2_cremad_1012_baseline_female.wav,,,,,
+male_1_cremad_1003,baseline,female,,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/male_1_cremad_1003_baseline_female.wav,,,,,
+male_2_cremad_1051,baseline,female,,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/male_2_cremad_1051_baseline_female.wav,,,,,
+female_1_cremad_1002,baseline,male,,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/female_1_cremad_1002_baseline_male.wav,,,,,
+female_2_cremad_1012,baseline,male,,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/female_2_cremad_1012_baseline_male.wav,,,,,
+male_1_cremad_1003,baseline,male,,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/male_1_cremad_1003_baseline_male.wav,,,,,
+male_2_cremad_1051,baseline,male,,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/male_2_cremad_1051_baseline_male.wav,,,,,

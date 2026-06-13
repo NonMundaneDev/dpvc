@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections import Counter
 from pathlib import Path
 
 import torch
@@ -280,24 +281,42 @@ def build_selected_style_row_weights(
     return row_weights, style_weights
 
 
+def parse_metadata_control_targets(raw):
+    targets = [item.strip() for item in (raw or "").split(",") if item.strip()]
+    if not targets:
+        targets = ["gender", "age"]
+    invalid = [target for target in targets if target not in {"gender", "age"}]
+    if invalid:
+        raise ValueError(
+            f"Unsupported metadata-control targets: {invalid}. "
+            "Supported targets: ['gender', 'age']"
+        )
+    duplicates = [target for target, count in Counter(targets).items() if count > 1]
+    if duplicates:
+        raise ValueError(f"Duplicate metadata-control targets: {duplicates}")
+    return targets
+
+
 def build_metadata_controls(data, args, supported_styles, device):
     if args.metadata_control_weight <= 0:
         return None, None, [], {}
 
-    target_specs = [
-        (
+    available_specs = {
+        "gender": (
             "gender",
             "metadata_gender_scalar",
             "metadata_gender_mask",
             args.metadata_gender_dim,
         ),
-        (
+        "age": (
             "age",
             "metadata_age_ordinal_scalar",
             "metadata_age_mask",
             args.metadata_age_dim,
         ),
-    ]
+    }
+    selected_targets = parse_metadata_control_targets(args.metadata_control_targets)
+    target_specs = [available_specs[target] for target in selected_targets]
     dims = [spec[3] for spec in target_specs]
     if len(set(dims)) != len(dims):
         raise ValueError(f"Metadata control dims must be unique, got {dims}")
@@ -340,10 +359,8 @@ def build_metadata_controls(data, args, supported_styles, device):
     report = {
         "enabled": True,
         "weight": float(args.metadata_control_weight),
-        "dims": {
-            "gender": int(args.metadata_gender_dim),
-            "age": int(args.metadata_age_dim),
-        },
+        "targets": selected_targets,
+        "dims": {name: int(dim) for name, _, _, dim in target_specs},
         "labeled_rows": counts,
         "artifact_report": data.get("metadata_control_report", {}),
     }
@@ -459,6 +476,14 @@ def main():
         help=(
             "Masked direct latent-control loss for CommonVoice age/gender "
             "metadata (default: 0.0, disabled)"
+        ),
+    )
+    ap.add_argument(
+        "--metadata-control-targets",
+        default="gender,age",
+        help=(
+            "Comma-separated metadata targets for direct latent-control loss "
+            "(supported: gender, age; default: gender,age)"
         ),
     )
     ap.add_argument(

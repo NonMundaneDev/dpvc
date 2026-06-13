@@ -1,0 +1,86 @@
+{
+  "enabled": true,
+  "weight": 0.05,
+  "targets": [
+    "gender"
+  ],
+  "dims": {
+    "gender": 9
+  },
+  "labeled_rows": {
+    "gender": 1181
+  },
+  "artifact_report": {
+    "schema": {
+      "metadata_gender_scalar": "female/female_feminine=-1, male/male_masculine=1",
+      "metadata_gender_mask": "1 when gender scalar is known, else 0",
+      "metadata_age_ordinal_scalar": "CommonVoice age bucket mapped youngest=-1 to oldest=1",
+      "metadata_age_mask": "1 when age scalar is known, else 0"
+    },
+    "recommended_control_dims": {
+      "gender_dim": 9,
+      "age_dim": 10,
+      "free_dims": [
+        11,
+        12,
+        13,
+        14
+      ]
+    },
+    "age_control_order": [
+      "teens",
+      "twenties",
+      "thirties",
+      "forties",
+      "fifties",
+      "sixties",
+      "seventies",
+      "eighties",
+      "nineties"
+    ],
+    "gender_normalization": {
+      "female": "female",
+      "female_feminine": "female",
+      "male": "male",
+      "male_masculine": "male"
+    },
+    "rows": 2006,
+    "age_control_rows": 1167,
+    "gender_control_rows": 1181,
+    "age_gender_control_rows": 1167,
+    "by_dataset": {
+      "CommonVoice": {
+        "rows": 1181,
+        "age_control_rows": 1167,
+        "gender_control_rows": 1181,
+        "age_gender_control_rows": 1167
+      },
+      "CREMA-D": {
+        "rows": 546,
+        "age_control_rows": 0,
+        "gender_control_rows": 0,
+        "age_gender_control_rows": 0
+      },
+      "Expresso": {
+        "rows": 279,
+        "age_control_rows": 0,
+        "gender_control_rows": 0,
+        "age_gender_control_rows": 0
+      }
+    },
+    "age_raw_counts": {
+      "twenties": 574,
+      "thirties": 222,
+      "teens": 144,
+      "fifties": 69,
+      "fourties": 113,
+      "sixties": 29,
+      "seventies": 14,
+      "eighties": 2
+    },
+    "gender_raw_counts": {
+      "male_masculine": 688,
+      "female_feminine": 493
+    }
+  }
+}

@@ -59,6 +59,20 @@ python examples/openvoice_infer_controllable.py \
     --seed 42
 ```
 
+For metadata-only listening checks, generate just the anonymized baseline while
+setting the metadata control:
+
+```bash
+python examples/openvoice_infer_controllable.py \
+    --source-dir examples/source_speakers/ \
+    --out output/gender_followup_panel/ \
+    --vae-checkpoint embeddings/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup.pt \
+    --baseline-only \
+    --gender-control female \
+    --gender-control-dim 9 \
+    --seed 42
+```
+
 Generate only a subset of styles for focused evaluation:
 
 ```bash
@@ -1114,12 +1128,16 @@ python examples/openvoice_train_vae_mixed.py \
     --embeddings embeddings/openvoice_mixed_teacher_cvrare_hybrid_extra_base.pt \
     --output embeddings/openvoice_vae_mixed_teacher_cvrare_metadata_control.pt \
     --metadata-control-weight 0.1 \
+    --metadata-control-targets gender,age \
     --metadata-gender-dim 9 \
     --metadata-age-dim 10 \
     --metadata-control-report results/openvoice_vae_mixed_teacher_cvrare_metadata_control_report.json \
     --schedule labeled_warmup \
     --schedule-epochs 1000
 ```
+
+Use `--metadata-control-targets gender` for a true gender-only follow-up that
+does not apply an age-control loss.
 
 Before drawing conclusions, generate a listening panel that holds source/style
 fixed while varying `--gender-control` and `--age-control`; the manifest will
@@ -1129,6 +1147,16 @@ The first local smoke panel for this path is:
 
 - `results/listening_metadata_w010_labeled_warmup.html`
 - `results/listening_metadata_w010_labeled_warmup_ratings.csv`
+
+The first gender-only available-subset follow-up panel is:
+
+- `results/listening_gender_followup_available_w005_labeled_warmup.html`
+- `results/listening_gender_followup_available_w005_labeled_warmup_ratings.csv`
+- `results/gender_followup_available_w005_review_bundle_2026-06-13.zip`
+
+Important limitation: this gender follow-up reused already-extracted
+CommonVoice embeddings and matched `1181/1788` preflight-selected clips. It is
+an available-subset candidate, not the full preflight plan.
 
 Schedule meanings:
 

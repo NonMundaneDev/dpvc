@@ -533,8 +533,10 @@ def _scalar_confidence(value):
 def accepted_commonvoice_style(cv_data, row_idx: int, threshold_map: Dict[str, float], acceptance_policy: str):
     if acceptance_policy == "artifact_selected":
         selected_mask = cv_data.get('pseudo_style_selected_mask')
-        selected_style = cv_data.get('pseudo_style_selected', [None])[row_idx]
-        selected_reason = cv_data.get('pseudo_style_selected_reason', ['artifact_missing'])[row_idx]
+        selected_style = payload_value(cv_data, 'pseudo_style_selected', row_idx)
+        selected_reason = payload_value(
+            cv_data, 'pseudo_style_selected_reason', row_idx
+        ) or 'artifact_missing'
         selected_conf = None
         if selected_mask is None:
             raise ValueError(
@@ -548,8 +550,8 @@ def accepted_commonvoice_style(cv_data, row_idx: int, threshold_map: Dict[str, f
             return selected_style, selected_conf, selected_reason or 'artifact_selected'
         return None, selected_conf, selected_reason or 'artifact_rejected'
 
-    style = cv_data.get('pseudo_style', [None])[row_idx]
-    confidence = cv_data.get('pseudo_style_confidence', [None])[row_idx]
+    style = payload_value(cv_data, 'pseudo_style', row_idx)
+    confidence = payload_value(cv_data, 'pseudo_style_confidence', row_idx)
     if style is None or confidence is None:
         return None, None, 'missing_style_or_confidence'
     confidence = _scalar_confidence(confidence)
