@@ -122,7 +122,7 @@ Priority tags:
 - [x] `[DONE]` Ingest Joe's focused `neutral`/`sad` listening feedback with `scripts/ingest_control_selection_feedback.py`; the shortlist now promotes `neutral` and `sad` to headline controls, with `sad` explicitly caveated as perceptible but subtle
 - [x] `[DONE]` Preflight the local CommonVoice gender follow-up before training; `/Users/steve/datasets/cv-corpus-21.0-2025-03-14/en` has enough balanced gender-known speaker coverage for a gender-only follow-up manifest, but this is data-readiness only
 - [x] `[DONE]` Start the gender-focused follow-up from `results/commonvoice_gender_followup_speakers.csv`; branch `research/commonvoice-gender-followup` builds an available-subset artifact, trains the first gender-only checkpoint, and creates a review bundle for perceptual gating
-- [ ] `[NOW]` Listen to `results/gender_followup_available_w005_review_bundle_2026-06-13.zip` locally before sending broader claims to Joe; promote gender only if female/male controls sound perceptible and not just like generic timbre/identity shifts
+- [x] `[DONE]` Listen to `results/gender_followup_available_w005_review_bundle_2026-06-13.zip` locally before sending broader claims to Joe; local review found the female/male controls were not reliably perceptible as gender controls and sounded more like subtle/generic speaker-timbre movement, so gender is not promoted
 - [x] `[DONE]` Start paper-facing simplification around the current reference guard by adding a conservative shortlist gate: source separability decides which labels are fair to evaluate, generated-output metrics decide which labels are plausible, and listening evidence decides which labels can become headline claims
 - [ ] `[SOON]` Mark accent explicitly out of scope for the current OpenVoice speaker-embedding VAE path, because Joe expects accent information to live in the content representation rather than the speaker embedding
 - [ ] `[SOON]` Reframe age as optional broad-bucket classification only, not continuous scalar control; keep it lower priority than gender and top-style selection
@@ -134,7 +134,7 @@ Priority tags:
 - [ ] `[SOON]` Compare strict pseudo-label filtering against looser confidence-only or minimally filtered CommonVoice pseudo labels, because Joe's May 14 question raised a valid possibility that filtering may discard useful breadth once all CommonVoice rows have weak labels
 - [ ] `[SOON]` If metadata controls stay in scope, run a narrow gender-focused balanced-control follow-up rather than another broad age/gender/accent sweep; the separability probe shows gender has objective structure, while the first listening panel still says perceptual controllability is unproven
 - [ ] `[SOON]` Add per-dimension metadata latent diagnostics for dims `9-10` and free dims `11-14`, because the separability probe confirms gender survives in `vae_mu` but does not prove the intended scalar control dim is the one carrying the signal
-- [ ] `[SOON]` Extract the 607 missing clips from `results/commonvoice_gender_followup_speakers.csv` before treating the gender follow-up as the full preflight plan; the current available-subset artifact matched `1181/1788` selected clips from the already-extracted expanded CommonVoice artifact
+- [ ] `[SOON]` Extract the 607 missing clips from `results/commonvoice_gender_followup_speakers.csv` only if gender is revisited with a materially stronger objective; the current available-subset artifact matched `1181/1788` selected clips and failed the perceptual gate, so scaling the same checkpoint is not the next move
 - [ ] `[SOON]` Do not retry age/accent scalar controls without better labels, class balancing, or explicit perceptual/acoustic targets; the current probe finds weak age structure and weak-to-moderate accent structure that does not survive strongly in metadata-control latents
 - [ ] `[SOON]` Build an independent labeled speaker-verification trial CSV for final EER, because the current ECAPA threshold is derived from source-vs-baseline proxy trials
 - [ ] `[SOON]` Add repeated-seed confidence intervals for the current reference tables before freezing final paper claims, because most ablations so far use deterministic single-seed comparisons
@@ -4565,14 +4565,67 @@ FINDINGS.md review:
 
 Next:
 
-- `[NOW]` Stephen should listen to the four-row panel before sending it to Joe.
-- `[SOON]` If perceptual gender control is audible, run objective speaker /
-  gender-verifier diagnostics and build a Joe-facing bundle.
-- `[SOON]` If the panel sounds identical or generic, document the result as a
-  limitation and prioritize paper/evaluation cleanup over more scalar metadata
+- `[DONE]` Stephen listened to the four-row panel; see section 0.63.
+- `[DONE]` The panel sounded subtle/generic rather than reliably gender
+  controlled, so the result is documented as a limitation.
+- `[NOW]` Prioritize paper/evaluation cleanup over more scalar metadata-control
   tuning.
-- `[SOON]` Extract the missing `607` manifest clips if this path remains worth
-  scaling beyond the available subset.
+- `[SOON]` Extract the missing `607` manifest clips only if this path is
+  revisited with a materially stronger objective, not to scale the current
+  failed-gate checkpoint unchanged.
+
+---
+
+### 0.63 Gender Follow-Up Listening Gate Outcome (2026-07-09, branch `research/commonvoice-gender-followup`)
+
+Source artifacts:
+
+- `results/gender_followup_available_w005_review_bundle_2026-06-13.zip`
+- `results/gender_followup_available_w005_review_bundle_2026-06-13/`
+- `results/listening_gender_followup_available_w005_labeled_warmup.html`
+- `results/listening_gender_followup_available_w005_labeled_warmup_ratings.csv`
+- `results/listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md`
+- `results/commonvoice_gender_followup_artifact.md`
+- `results/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup_report.json`
+
+Goal:
+
+- Resolve the perceptual gate for the first gender-only available-subset
+  checkpoint before sending any broader gender claim to Joe or running
+  objective verifier diagnostics.
+
+Result:
+
+- Stephen listened to the four-source panel.
+- The `female` / `male` controls were not reliably perceptible as gender
+  controls.
+- The differences sounded closer to subtle, inconsistent, or generic
+  speaker/timbre movement than to a stable controllable gender attribute.
+- No paper-facing gender-control finding is promoted from this checkpoint.
+
+Key interpretation:
+
+- This is a diagnostic limitation, not a new headline claim.
+- The result is consistent with Finding 37: gender is objectively recoverable in
+  OpenVoice embeddings and metadata-control latents, but direct scalar
+  metadata control has not produced listener-clear gender control.
+- Do not run objective gender/speaker-verifier diagnostics as claim evidence for
+  this checkpoint after the perceptual gate failed.
+- Keep the paper story anchored on the current reference guard plus the two
+  perceptually confirmed headline style controls: `neutral` and `sad`.
+
+FINDINGS.md review:
+
+- Added Finding 43 because this is a verified local perceptual gate outcome
+  that fixes the gender-control status for the available-subset follow-up.
+
+Next:
+
+- `[NOW]` Prioritize paper/evaluation cleanup around the current reference
+  guard and two confirmed style controls.
+- `[SOON]` Revisit gender only with a materially stronger setup, such as full
+  extraction of the preflight-selected clips plus a better-balanced or more
+  perceptually grounded objective, or a bounded latent-capacity comparison.
 
 ---
 

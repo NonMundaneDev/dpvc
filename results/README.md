@@ -28,11 +28,14 @@ of perceptible age/gender control.
 
 CommonVoice gender-only available-subset follow-up artifacts from 2026-06-13:
 
-This is the first gender-only candidate after the neutral/sad control gate. It
-is not yet paper-facing evidence because no perceptual or objective
-gender-control result has been verified. It also reuses the already-extracted
-expanded CommonVoice artifact and therefore matches `1181/1788` preflight
-manifest clips, not the full preflight-selected plan.
+This is the first gender-only candidate after the neutral/sad control gate.
+Local listening on 2026-07-09 found that the `female` / `male` controls were
+not reliably perceptible as gender controls and sounded closer to subtle or
+generic speaker/timbre movement. These artifacts are therefore diagnostic
+engineering evidence, not paper-facing proof of perceptible gender control. The
+run also reuses the already-extracted expanded CommonVoice artifact and
+therefore matches `1181/1788` preflight manifest clips, not the full
+preflight-selected plan.
 
 | File | Rows | Script | Backs |
 |------|------|--------|-------|
@@ -41,6 +44,7 @@ manifest clips, not the full preflight-selected plan.
 | `openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup_report.json` | training config | [`examples/openvoice_train_vae_mixed.py`](../examples/openvoice_train_vae_mixed.py) | Gender-only candidate checkpoint record |
 | `listening_gender_followup_available_w005_labeled_warmup.html` | 4-source browser listening panel | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Perceptual gate for the gender-only candidate |
 | `listening_gender_followup_available_w005_labeled_warmup_ratings.csv` | 8 scoreable rows | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Rating sheet for female/male controls |
+| `listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md` | local listening outcome | manual perceptual review | FINDINGS Finding 43 |
 | `gender_followup_available_w005_review_bundle_2026-06-13.zip` | 28 files | manual bundle | Self-contained local/Joe review bundle |
 
 External speaker-verifier artifacts from 2026-05-28:
@@ -406,6 +410,7 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `commonvoice_gender_followup_preflight.md` | local CommonVoice gender-readiness summary | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Worklog-only preflight for the future gender-only follow-up |
 | `commonvoice_gender_followup_preflight.json` | machine-readable gender-readiness summary | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Worklog-only preflight for the future gender-only follow-up |
 | `commonvoice_gender_followup_speakers.csv` | deterministic gender-balanced speaker manifest | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Input contract for a future gender-only branch |
+| `listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md` | local review: gender controls are not reliably perceptible and sound more like generic timbre/speaker movement | manual perceptual review | FINDINGS Finding 43 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.

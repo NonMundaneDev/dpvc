@@ -3093,7 +3093,7 @@ Artifacts:
 2. ~~**Does style control generalize across source speakers?**~~ → **Answered in Finding 6.** Brightness generalizes (7/9 styles); F0 does not. Some speaker-style combinations collapse.
 3. ~~**How do we evaluate emotion controllability?**~~ → **Answered in Finding 7.** emotion2vec Recall Rate + emo_sim (per EmoVoice) is the primary metric. Recall is 20% — training gap identified.
 4. **Can CommonVoice-style broad speaker coverage improve recall once we mix the datasets together more carefully?** Mostly answered in Findings 30-35: yes, if rare pseudo-label supply is expanded and selected rows are preserved through speaker-first sampling. The expanded rare-supply mixed teacher reaches `47.0%` emotion recall and `0.2995` novelty gain, and the `sad/enunciated` strength guard keeps `47.0%` recall while improving WER/MOS. The decoder-prototype pilots preserve novelty but do not beat that guard, generated-audio failure mining localizes the remaining hard styles to `disgust`, `fear`, and `anger`, the failure-conditioned plus anti-neutral follow-ups confirm that embedding-space proxies do not escape neutral collapse, and the generated-audio strength grid shows that style-specific audio calibration can improve `anger` / `fear` rows but is not yet a safe global default.
-5. **Can we train gender and selected emotion/style knobs simultaneously?** Partly narrowed by Finding 37 and the May 28 Joe meeting: gender has recoverable structure in the current embeddings and metadata-control latents, and Joe considers gender important enough to repair if unclear. The remaining question is whether a larger gender-known CommonVoice extraction plus a gender-focused objective can produce listener-clear control alone and then with the top separable styles. Age is now low-priority broad-bucket only, and accent should be out of scope for the current OpenVoice speaker-embedding VAE path.
+5. **Can we train gender and selected emotion/style knobs simultaneously?** Narrowed by Findings 37 and 43 plus the May 28 Joe meeting: gender has recoverable structure in the current embeddings and metadata-control latents, and Joe considers gender important enough to repair if unclear, but the first gender-only available-subset follow-up did not produce listener-clear control. The current paper should not claim gender control. A future gender retry needs a materially stronger setup before testing gender plus top separable styles. Age is now low-priority broad-bucket only, and accent should be out of scope for the current OpenVoice speaker-embedding VAE path.
 6. ~~**Can an independent speaker verifier confirm the novelty signal?**~~ -> **Partly answered in Finding 36.** ECAPA corroborates the current guard's identity shift, but the EER threshold is proxy-calibrated; a final paper/security claim still needs an independent labeled trial CSV.
 7. **Can an adversary re-identify speakers from F0 alone?** If so, embedding-only DP is insufficient — motivates joint protection.
 8. **What is the minimum speaker count for style learning?** We jumped from 3 to 91. Where's the threshold?
@@ -3164,6 +3164,7 @@ Privacy / DP noise is **one application** of use cases (3) and (4), not the pape
 40. The source training-data separability audit gives the first control-selection evidence after Joe's May 28 pivot: CREMA-D emotion labels are mostly strong before conversion (`anger=0.9451`, `disgust=0.9341`, `fear=0.7692`, `happy=0.9053`, `neutral=0.9263`, `sad=0.8842` direct recall), while `confused` is weak (`0.2703` embedding F1) and Expresso-only `enunciated` / `whisper` are supported but quality-sensitive (`0.5000` / `0.5161` embedding F1). This supports a shortlist workflow: source separability decides which controls are fair to evaluate, but generated-output metrics and perceptual review decide which controls become headline claims.
 41. The first paper-facing control shortlist narrows the current style claims before listening: `neutral` and `sad` are candidate headline controls pending focused review, `happy`, `enunciated`, and `whisper` are supported but quality-sensitive, and `anger`, `confused`, `disgust`, and `fear` remain diagnostic/limitation controls.
 42. Joe's focused neutral/sad review resolves the first perceptual gate: `neutral` and `sad` are now headline controls under the conservative recommendation. `neutral` is clearly supported; `sad` is perceptible but subtle/source-dependent. The paper should claim two headline style controls, not all nine.
+43. The first gender-only available-subset CommonVoice follow-up does not establish perceptual gender control. Local listening found the `female` / `male` controls subtle, inconsistent, or closer to generic speaker/timbre movement than stable gender control. This keeps metadata controls diagnostic and blocks objective verifier work as claim evidence for this checkpoint.
 
 ## Finding 40: Source Training Labels Are Mostly Separable, But Generated Claims Still Need Perceptual Gating
 
@@ -3336,6 +3337,45 @@ Hard emotions remain limitations under current evidence.
 - `results/control_selection_recommendation.md`
 - `scripts/ingest_control_selection_feedback.py`
 - `scripts/build_control_selection_recommendation.py`
+
+## Finding 43: Gender-Only Available-Subset Panel Does Not Establish Perceptual Gender Control
+
+**Question.** Does the first gender-only CommonVoice follow-up produce
+listener-clear `female` and `male` controls?
+
+**Method.** We built a compact four-source listening panel for
+`embeddings/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup.pt`.
+Each source row contained source audio, no-metadata baseline, baseline+female,
+and baseline+male. The candidate was intentionally scoped to gender only: no
+age/accent claim and no gender-plus-emotion claim.
+
+The run used the available-subset CommonVoice artifact, not the full preflight
+plan: `1181/1788` selected clips were matched from the already-extracted
+expanded CommonVoice artifact.
+
+**Result.** Local listening on 2026-07-09 found that the `female` / `male`
+controls were not reliably perceptible as gender controls. The differences
+sounded closer to subtle, inconsistent, or generic speaker/timbre movement than
+to a stable controllable gender attribute.
+
+**Implication for the paper.** Do not claim gender control from this checkpoint.
+This result is diagnostic: Finding 37 shows gender structure is objectively
+recoverable in embeddings and metadata-control latents, but this direct scalar
+speaker-embedding VAE knob did not convert that structure into listener-clear
+gender control. Objective gender or speaker-verifier diagnostics on this
+checkpoint should not be used as claim-establishing evidence after the
+perceptual gate failed.
+
+The paper story should remain anchored on the current reference guard and the
+two perceptually confirmed headline style controls: `neutral` and `sad`.
+
+**Evidence files.**
+
+- `results/listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md`
+- `results/listening_gender_followup_available_w005_labeled_warmup.html`
+- `results/listening_gender_followup_available_w005_labeled_warmup_ratings.csv`
+- `results/commonvoice_gender_followup_artifact.md`
+- `results/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup_report.json`
 
 ## May 28 Meeting Alignment with Joe
 
