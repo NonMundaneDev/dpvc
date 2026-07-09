@@ -36,6 +36,7 @@ The dedicated next-step plans live in:
 - **[`IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md`](IMPLEMENTATION_PLAN_mixed-data-pseudolabel-teacher.md)** — the technical plan for the current experiment slice on `research/controllable-vae`
 - **[`EVIDENCE_DEMO_PACKET.md`](EVIDENCE_DEMO_PACKET.md)** — the one-page evidence/demo packet for the current substantial result and next branch
 - **[`PAPER_METHODS_AND_EVIDENCE.md`](PAPER_METHODS_AND_EVIDENCE.md)** — paper-facing methods outline, claim-to-evidence map, listening entrypoints, and Joe-facing Q&A
+- **[`PAPER_EVIDENCE_CHECKLIST.md`](PAPER_EVIDENCE_CHECKLIST.md)** — short paper-readiness checklist: ready evidence, current claim boundary, and remaining blockers
 - **[`docs/metric_collapse_guide.md`](docs/metric_collapse_guide.md)** — plain-English metric and collapse definitions for meetings and paper writing
 - **[`IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md`](IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md)** — age/gender metadata-control plan and audit results
 - **[`IMPLEMENTATION_PLAN_metadata-separability-probe.md`](IMPLEMENTATION_PLAN_metadata-separability-probe.md)** — objective metadata separability diagnostic before more age/gender training

@@ -4629,6 +4629,54 @@ Next:
 
 ---
 
+### 0.64 Paper Evidence Cleanup (2026-07-09, branch `research/commonvoice-gender-followup`)
+
+Source artifacts:
+
+- `PAPER_METHODS_AND_EVIDENCE.md`
+- `PAPER_EVIDENCE_CHECKLIST.md`
+- `MEETING_BRIEF_JOE_2026-07-09.md`
+- `FINDINGS.md`
+- `results/control_selection_recommendation.md`
+- `results/listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md`
+
+Goal:
+
+- Make the paper-facing source of truth match the current evidence after the
+  neutral/sad listening gate and the failed gender-only perceptual gate.
+
+Implementation:
+
+- Updated `PAPER_METHODS_AND_EVIDENCE.md` so `neutral` and `sad` are no longer
+  described as pending-listening controls.
+- Updated the metadata-control language so gender is no longer framed as an
+  active near-term paper claim after the gender-only panel failed perceptually.
+- Added `PAPER_EVIDENCE_CHECKLIST.md` as the short paper-readiness tracker.
+- Linked the checklist from `README.md`.
+
+Current claim boundary:
+
+- Current reference guard is the paper/evaluation anchor.
+- Headline style controls: `neutral`, `sad`.
+- Secondary or demo-only candidates: `happy`, `enunciated`, `whisper`.
+- Diagnostic/limitation controls: `anger`, `confused`, `disgust`, `fear`,
+  gender, age, accent.
+
+Remaining paper blockers:
+
+- Formal DP accounting and privacy-utility curves.
+- Independent labeled speaker-verification / EER trial.
+- Repeated-seed confidence intervals for final tables.
+- Decision on whether Joe's existing `neutral` / `sad` review is enough or
+  whether a small broader listener panel is needed.
+
+Next:
+
+- `[NOW]` Ask Joe which blocker matters most before writing.
+- `[SOON]` Implement the smallest validation task that answers that blocker.
+
+---
+
 ## 1. Project Overview
 
 **dpvc** is a Python library for **differentially private voice conversion** — it anonymizes a speaker's identity by passing their voice embedding through a VAE with calibrated DP noise, then reconstructs audio with a modified (anonymized) speaker embedding.
