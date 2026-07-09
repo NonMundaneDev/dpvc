@@ -33,9 +33,11 @@ Local listening on 2026-07-09 found that the `female` / `male` controls were
 not reliably perceptible as gender controls and sounded closer to subtle or
 generic speaker/timbre movement. These artifacts are therefore diagnostic
 engineering evidence, not paper-facing proof of perceptible gender control. The
-run also reuses the already-extracted expanded CommonVoice artifact and
-therefore matches `1181/1788` preflight manifest clips, not the full
-preflight-selected plan.
+post-listening acoustic sanity check reached the same conservative read: the
+`female` control had higher median F0 than the `male` control in only `1/4`
+source pairs. The run also reuses the already-extracted expanded CommonVoice
+artifact and therefore matches `1181/1788` preflight manifest clips, not the
+full preflight-selected plan.
 
 | File | Rows | Script | Backs |
 |------|------|--------|-------|
@@ -45,6 +47,9 @@ preflight-selected plan.
 | `listening_gender_followup_available_w005_labeled_warmup.html` | 4-source browser listening panel | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Perceptual gate for the gender-only candidate |
 | `listening_gender_followup_available_w005_labeled_warmup_ratings.csv` | 8 scoreable rows | [`scripts/build_listening_report.py`](../scripts/build_listening_report.py) | Rating sheet for female/male controls |
 | `listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md` | local listening outcome | manual perceptual review | FINDINGS Finding 43 |
+| `gender_followup_available_w005_acoustic_diagnostic.md` | 4-source summary | [`scripts/analyze_gender_followup_acoustics.py`](../scripts/analyze_gender_followup_acoustics.py) | Diagnostic acoustic sanity check after failed listening gate |
+| `gender_followup_available_w005_acoustic_diagnostic.csv` | 12 audio rows | [`scripts/analyze_gender_followup_acoustics.py`](../scripts/analyze_gender_followup_acoustics.py) | Per-output F0 / centroid diagnostic |
+| `gender_followup_available_w005_acoustic_pairs.csv` | 4 source pairs | [`scripts/analyze_gender_followup_acoustics.py`](../scripts/analyze_gender_followup_acoustics.py) | Source-level female-vs-male F0 / centroid deltas |
 | `gender_followup_available_w005_review_bundle_2026-06-13.zip` | 28 files | manual bundle | Self-contained local/Joe review bundle |
 
 External speaker-verifier artifacts from 2026-05-28:
@@ -411,6 +416,7 @@ Expanded rare-supply generated-audio evaluation from 2026-05-05:
 | `commonvoice_gender_followup_preflight.json` | machine-readable gender-readiness summary | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Worklog-only preflight for the future gender-only follow-up |
 | `commonvoice_gender_followup_speakers.csv` | deterministic gender-balanced speaker manifest | [`scripts/preflight_commonvoice_gender_followup.py`](../scripts/preflight_commonvoice_gender_followup.py) | Input contract for a future gender-only branch |
 | `listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md` | local review: gender controls are not reliably perceptible and sound more like generic timbre/speaker movement | manual perceptual review | FINDINGS Finding 43 |
+| `gender_followup_available_w005_acoustic_diagnostic.md` | acoustic proxy review: female-control median F0 exceeds male-control median F0 in only `1/4` source pairs | [`scripts/analyze_gender_followup_acoustics.py`](../scripts/analyze_gender_followup_acoustics.py) | Diagnostic support for Finding 43 |
 
 - The expanded rare-supply run is now the strongest checked-in controllability
   / novelty result, but not the cleanest quality result.

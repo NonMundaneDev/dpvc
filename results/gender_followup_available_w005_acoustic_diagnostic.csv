@@ -1,0 +1,13 @@
+source_stem,condition,generated_file,duration_sec,rms_dbfs,median_f0_hz,voiced_frame_rate,spectral_centroid_hz,gender_control_dim,gender_control_value
+female_1_cremad_1002,baseline,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/female_1_cremad_1002_baseline.wav,2.4961,-39.8665,202.2936,0.5547,1559.4894,,
+female_2_cremad_1012,baseline,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/female_2_cremad_1012_baseline.wav,2.2988,-31.7248,210.0000,0.6520,1286.4864,,
+male_1_cremad_1003,baseline,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/male_1_cremad_1003_baseline.wav,3.2276,-37.2802,157.7011,0.5563,1734.4427,,
+male_2_cremad_1051,baseline,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/male_2_cremad_1051_baseline.wav,1.7647,-34.5581,98.4375,0.6879,1062.0131,,
+female_1_cremad_1002,female,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/female_1_cremad_1002_baseline_female.wav,2.4961,-41.2029,200.4711,0.5587,1613.3214,9,-1.0
+female_2_cremad_1012,female,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/female_2_cremad_1012_baseline_female.wav,2.2988,-32.0998,210.0000,0.6564,1297.3148,9,-1.0
+male_1_cremad_1003,female,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/male_1_cremad_1003_baseline_female.wav,3.2276,-38.7366,187.6630,0.5312,1797.6573,9,-1.0
+male_2_cremad_1051,female,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/male_2_cremad_1051_baseline_female.wav,1.7647,-36.2320,98.4375,0.6936,968.3805,9,-1.0
+female_1_cremad_1002,male,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/female_1_cremad_1002_baseline_male.wav,2.4961,-43.8548,213.0485,0.4939,1680.9113,9,1.0
+female_2_cremad_1012,male,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/female_2_cremad_1012_baseline_male.wav,2.2988,-32.9763,220.5000,0.6035,1290.0773,9,1.0
+male_1_cremad_1003,male,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/male_1_cremad_1003_baseline_male.wav,3.2276,-40.1931,182.2812,0.5312,1860.0765,9,1.0
+male_2_cremad_1051,male,/Users/steve/UVM-plaid/dp-vc/output/gender_followup_available_w005_2026-06-13/male_2_cremad_1051_baseline_male.wav,1.7647,-37.7949,99.3243,0.6647,951.8159,9,1.0

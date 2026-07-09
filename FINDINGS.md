@@ -3358,6 +3358,12 @@ controls were not reliably perceptible as gender controls. The differences
 sounded closer to subtle, inconsistent, or generic speaker/timbre movement than
 to a stable controllable gender attribute.
 
+A post-listening acoustic sanity check agreed with that conservative read:
+in the four-source review bundle, `female`-control median F0 was higher than
+`male`-control median F0 in only `1/4` source pairs. Median `female` minus
+`male` F0 delta was `-5.69 Hz`, and median spectral-centroid delta was
+`-27.59 Hz`. This is an acoustic proxy only, not a perceptual classifier.
+
 **Implication for the paper.** Do not claim gender control from this checkpoint.
 This result is diagnostic: Finding 37 shows gender structure is objectively
 recoverable in embeddings and metadata-control latents, but this direct scalar
@@ -3374,6 +3380,9 @@ two perceptually confirmed headline style controls: `neutral` and `sad`.
 - `results/listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md`
 - `results/listening_gender_followup_available_w005_labeled_warmup.html`
 - `results/listening_gender_followup_available_w005_labeled_warmup_ratings.csv`
+- `results/gender_followup_available_w005_acoustic_diagnostic.md`
+- `results/gender_followup_available_w005_acoustic_diagnostic.csv`
+- `results/gender_followup_available_w005_acoustic_pairs.csv`
 - `results/commonvoice_gender_followup_artifact.md`
 - `results/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup_report.json`
 

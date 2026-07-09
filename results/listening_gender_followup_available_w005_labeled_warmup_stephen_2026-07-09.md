@@ -67,9 +67,38 @@ This fails the perceptual gate for a paper-facing gender-control claim.
 - Keep age and accent out of headline scope unless a later result has both
   objective structure and listener-clear perceptual evidence.
 
+## Acoustic Sanity Check
+
+After the listening gate failed, a lightweight acoustic diagnostic checked
+whether the generated `female` / `male` controls moved simple pitch-like cues in
+a consistent direction.
+
+Artifacts:
+
+- `results/gender_followup_available_w005_acoustic_diagnostic.md`
+- `results/gender_followup_available_w005_acoustic_diagnostic.csv`
+- `results/gender_followup_available_w005_acoustic_pairs.csv`
+
+Result:
+
+- `female`-control median F0 was higher than `male`-control median F0 in only
+  `1/4` source pairs.
+- Median `female` minus `male` F0 delta was `-5.69 Hz`.
+- Median `female` minus `male` spectral-centroid delta was `-27.59 Hz`.
+
+Interpretation:
+
+- This is an acoustic proxy, not a perceptual gender classifier.
+- It supports the same conservative conclusion as listening: the current
+  scalar gender knob does not produce a consistent, listener-clear gender
+  control.
+
 ## Validation
 
 - `Validation`: Stephen listened to the four-source review bundle and
   classified the outcome as not reliably perceptible gender control.
 - `Validation`: no numeric ratings were fabricated from the aggregate review;
   this Markdown file records the qualitative gate outcome.
+- `Validation`: the acoustic sanity check ran locally on the existing
+  `output/gender_followup_available_w005_2026-06-13/generation_manifest.jsonl`
+  review audio; it is diagnostic only and does not override the listening gate.

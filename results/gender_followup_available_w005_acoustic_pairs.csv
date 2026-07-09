@@ -1,0 +1,5 @@
+source_stem,baseline_median_f0_hz,female_median_f0_hz,male_median_f0_hz,female_minus_male_f0_hz,baseline_spectral_centroid_hz,female_spectral_centroid_hz,male_spectral_centroid_hz,female_minus_male_centroid_hz
+female_1_cremad_1002,202.2936,200.4711,213.0485,-12.5774,1559.4894,1613.3214,1680.9113,-67.5899
+female_2_cremad_1012,210.0000,210.0000,220.5000,-10.5000,1286.4864,1297.3148,1290.0773,7.2375
+male_1_cremad_1003,157.7011,187.6630,182.2812,5.3818,1734.4427,1797.6573,1860.0765,-62.4192
+male_2_cremad_1051,98.4375,98.4375,99.3243,-0.8868,1062.0131,968.3805,951.8159,16.5646

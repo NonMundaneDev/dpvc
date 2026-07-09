@@ -4585,6 +4585,9 @@ Source artifacts:
 - `results/listening_gender_followup_available_w005_labeled_warmup.html`
 - `results/listening_gender_followup_available_w005_labeled_warmup_ratings.csv`
 - `results/listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md`
+- `results/gender_followup_available_w005_acoustic_diagnostic.md`
+- `results/gender_followup_available_w005_acoustic_diagnostic.csv`
+- `results/gender_followup_available_w005_acoustic_pairs.csv`
 - `results/commonvoice_gender_followup_artifact.md`
 - `results/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup_report.json`
 
@@ -4601,11 +4604,17 @@ Result:
   controls.
 - The differences sounded closer to subtle, inconsistent, or generic
   speaker/timbre movement than to a stable controllable gender attribute.
+- A post-listening acoustic sanity check also failed to show a consistent
+  pitch-like gender-control direction: `female`-control median F0 was higher
+  than `male`-control median F0 in only `1/4` source pairs, with median
+  `female` minus `male` F0 delta `-5.69 Hz`.
 - No paper-facing gender-control finding is promoted from this checkpoint.
 
 Key interpretation:
 
 - This is a diagnostic limitation, not a new headline claim.
+- The acoustic check is only a proxy, but it supports the listening result
+  rather than contradicting it.
 - The result is consistent with Finding 37: gender is objectively recoverable in
   OpenVoice embeddings and metadata-control latents, but direct scalar
   metadata control has not produced listener-clear gender control.

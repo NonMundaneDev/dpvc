@@ -80,6 +80,15 @@ Local listening result:
   movement;
 - no gender claim should be promoted.
 
+Quick acoustic sanity check after listening:
+
+- a simple F0/centroid diagnostic on the four-source gender review bundle found
+  `female`-control median F0 above `male`-control median F0 in only `1/4`
+  source pairs;
+- median `female` minus `male` F0 delta was `-5.69 Hz`;
+- this is only an acoustic proxy, not a perceptual classifier, but it agrees
+  with the listening-gate decision not to promote gender control.
+
 Interpretation:
 
 - Gender structure is objectively present in embeddings and metadata-control
