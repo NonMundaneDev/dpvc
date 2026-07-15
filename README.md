@@ -11,14 +11,18 @@ published work. Ongoing controllable-VAE research has moved to the fork:
 
 - [NonMundaneDev/dpvc](https://github.com/NonMundaneDev/dpvc)
 
-Canonical research branch:
+Canonical long-lived research branch:
 
 - **`research/controllable-vae`**
 
-Current experiment focus on that branch:
+Active July recovery branch:
 
-- **paper-method/evidence consolidation, using the canonical evidence packet as
-  the current listening entrypoint**
+- **`research/commonvoice-gender-followup`**
+
+Current experiment focus:
+
+- **matched style-control recovery, historical metadata-control recovery, and
+  July paper closeout**
 
 Immediate next queue:
 
@@ -29,6 +33,8 @@ Immediate next queue:
 5. use the canonical evidence packet, paper-method packet, and metric guide to explain what already works; treat the first CommonVoice age/gender listening panel as diagnostic because it sounded identical or like generic speaker/timbre shifts
 6. the trained generated-audio-calibrated checkpoint is diagnostic, not a new reference: it verifies the trainer hook and preserves external speaker novelty, but loses to the current guard on recall/WER/novelty/collapse and Joe did not hear generated `disgust` as perceptually clear
 7. Joe's focused listening review now resolves the first control-selection gate: `neutral` and `sad` are headline controls, with `sad` described as perceptible but subtle; `happy`, `enunciated`, and `whisper` stay quality-sensitive secondary controls, and `anger`, `confused`, `disgust`, and `fear` stay diagnostic/limitation controls
+8. the July 15 matched recovery study confirms that legacy anger was stronger, while current whisper preserves its large control movement with better WER/MOS; whisper is now the first secondary listening candidate
+9. Joe's exact March metadata checkpoints have been reproduced: the first age/gender model shows consistent female-above-male F0 movement and good strength-1 preservation, but it remains provisional until the new five-speaker listening gate is complete
 
 The dedicated next-step plans live in:
 
@@ -37,6 +43,7 @@ The dedicated next-step plans live in:
 - **[`EVIDENCE_DEMO_PACKET.md`](EVIDENCE_DEMO_PACKET.md)** — the one-page evidence/demo packet for the current substantial result and next branch
 - **[`PAPER_METHODS_AND_EVIDENCE.md`](PAPER_METHODS_AND_EVIDENCE.md)** — paper-facing methods outline, claim-to-evidence map, listening entrypoints, and Joe-facing Q&A
 - **[`PAPER_EVIDENCE_CHECKLIST.md`](PAPER_EVIDENCE_CHECKLIST.md)** — short paper-readiness checklist: ready evidence, current claim boundary, and remaining blockers
+- **[`MEETING_BRIEF_JOE_2026-07-16.md`](MEETING_BRIEF_JOE_2026-07-16.md)** — current Joe brief with the matched style and historical metadata recovery results
 - **[`docs/metric_collapse_guide.md`](docs/metric_collapse_guide.md)** — plain-English metric and collapse definitions for meetings and paper writing
 - **[`IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md`](IMPLEMENTATION_PLAN_commonvoice-metadata-controls.md)** — age/gender metadata-control plan and audit results
 - **[`IMPLEMENTATION_PLAN_metadata-separability-probe.md`](IMPLEMENTATION_PLAN_metadata-separability-probe.md)** — objective metadata separability diagnostic before more age/gender training
@@ -45,7 +52,7 @@ The dedicated next-step plans live in:
 - **[`IMPLEMENTATION_PLAN_control-selection-evaluation.md`](IMPLEMENTATION_PLAN_control-selection-evaluation.md)** — paper-facing control-selection plan after Joe's May 28 guidance
 - **[`IMPLEMENTATION_PLAN_control-feedback-gender-preflight.md`](IMPLEMENTATION_PLAN_control-feedback-gender-preflight.md)** — current feedback-ingestion and gender-readiness preflight plan
 
-We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. The current research branch also has first-pass CommonVoice metadata-control plumbing for age/gender scalar controls. That path trains and generates, but the first perceptual panel sounded identical or like generic speaker/timbre shifts. A follow-up separability probe shows gender is objectively recoverable in embeddings and VAE latents, while age/accent are weak. The first gender-only available-subset follow-up also failed the perceptual gate: female/male controls sounded subtle, inconsistent, or like generic speaker/timbre movement rather than reliable gender control. Metadata controls therefore remain diagnostic infrastructure rather than paper-facing perceptual claims. Primary entry points:
+We’ve extended the library with a **controllable** VAE that exposes 9 style knobs (anger, confused, disgust, enunciated, fear, happy, neutral, sad, whisper) on top of the DP anonymization pipeline. The current research branch also has first-pass CommonVoice metadata-control plumbing for age/gender scalar controls. That path trains and generates, but the first perceptual panel sounded identical or like generic speaker/timbre shifts. A follow-up separability probe shows gender is objectively recoverable in embeddings and VAE latents, while age/accent are weak. The first gender-only available-subset follow-up also failed the perceptual gate. A separate July 15 recovery of Joe's exact March age/gender checkpoint now shows materially stronger and consistent acoustic gender direction with good strength-1 WER/MOS; this historical candidate is listening-gated and does not yet change the paper claim. Primary entry points:
 
 - **[`examples/README.md`](examples/README.md)** — end-to-end reproduction guide (extraction → training → controllable inference → evaluation).
 - **[`FINDINGS.md`](FINDINGS.md)** — paper-facing findings with methodology and per-row takeaways.
@@ -55,6 +62,8 @@ We’ve extended the library with a **controllable** VAE that exposes 9 style kn
 - **[`scripts/build_control_selection_recommendation.py`](scripts/build_control_selection_recommendation.py)** — paper-facing shortlist builder that intersects source separability, generated metrics, collapse diagnostics, external novelty, and perceptual evidence.
 - **[`scripts/ingest_control_selection_feedback.py`](scripts/ingest_control_selection_feedback.py)** — structured ingestion path for Joe/Stephen focused-listening feedback before rerunning the shortlist gate.
 - **[`scripts/preflight_commonvoice_gender_followup.py`](scripts/preflight_commonvoice_gender_followup.py)** — local CommonVoice gender-readiness preflight for a future gender-only metadata follow-up.
+- **[`scripts/build_control_recovery_comparison.py`](scripts/build_control_recovery_comparison.py)** — matched legacy/current style comparison and review bundle builder.
+- **[`scripts/run_historical_metadata_recovery.py`](scripts/run_historical_metadata_recovery.py)** — exact historical age/gender checkpoint recovery panel and acoustic diagnostic.
 
 OpenVoice is the **canonical controllable pipeline**. ControlVC remains in the
 repository as a useful DP baseline and wrapper reference, but not as the

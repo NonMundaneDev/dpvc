@@ -51,9 +51,10 @@ STYLES = ['anger', 'confused', 'disgust', 'enunciated', 'fear',
           'happy', 'neutral', 'sad', 'whisper']
 
 
-def parse_filename(path):
+def parse_filename(path, conditions=None):
     stem = path.stem
-    for style in STYLES + ['baseline']:
+    condition_names = conditions or STYLES
+    for style in condition_names + ['baseline']:
         suffix = f"_{style}"
         if stem.endswith(suffix):
             return stem[:-len(suffix)], style
@@ -82,7 +83,20 @@ def main():
     ap.add_argument("--reference", default=None,
                     help="Fixed non-matching reference .wav for all files. "
                          "If unset, uses each file's same-speaker baseline as reference.")
+    ap.add_argument(
+        "--conditions",
+        default=None,
+        help=(
+            "Optional comma-separated filename suffixes to score instead of the "
+            "nine default styles (for example male_s1,female_s1)."
+        ),
+    )
     args = ap.parse_args()
+    conditions = (
+        [item.strip() for item in args.conditions.split(",") if item.strip()]
+        if args.conditions
+        else STYLES
+    )
 
     in_dir = Path(args.input)
     files = sorted(in_dir.glob("*.wav"))
@@ -95,7 +109,7 @@ def main():
     per_file = []
     by_speaker = defaultdict(dict)
     for path in files:
-        speaker, style = parse_filename(path)
+        speaker, style = parse_filename(path, conditions)
         if speaker is None:
             print(f"  skipping (no style suffix): {path.name}")
             continue
@@ -178,7 +192,9 @@ def main():
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(
+            f, fieldnames=list(rows[0].keys()), lineterminator='\n'
+        )
         writer.writeheader()
         writer.writerows(rows)
 
@@ -197,7 +213,7 @@ def main():
         print(f"Min / Max             : {min(all_vals):.3f} / {max(all_vals):.3f}")
 
     print("\nPer-style MOS:")
-    for style in ['baseline'] + STYLES:
+    for style in ['baseline'] + conditions:
         vals = scores_by_style.get(style, [])
         if vals:
             print(f"  {style:12s}: mean={statistics.mean(vals):.3f}  "
@@ -210,7 +226,7 @@ def main():
         for row in rows:
             if row['delta_vs_baseline']:
                 per_style_delta[row['style']].append(float(row['delta_vs_baseline']))
-        for style in STYLES:
+        for style in conditions:
             deltas = per_style_delta.get(style, [])
             if deltas:
                 print(f"  {style:12s}: mean={statistics.mean(deltas):+.3f}  "

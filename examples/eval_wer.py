@@ -52,10 +52,11 @@ TRANSFORM = jiwer.Compose([
 ])
 
 
-def parse_filename(path):
+def parse_filename(path, conditions=None):
     """Return (speaker_id, style) parsed from stem, or (None, None)."""
     stem = path.stem
-    for style in STYLES + ['baseline']:
+    condition_names = conditions or STYLES
+    for style in condition_names + ['baseline']:
         suffix = f"_{style}"
         if stem.endswith(suffix):
             return stem[:-len(suffix)], style
@@ -98,7 +99,20 @@ def main():
                     help="Ground-truth transcript string. If set, every file is "
                          "compared to this text (absolute WER). If unset, each "
                          "file is compared to its same-speaker baseline transcription.")
+    ap.add_argument(
+        "--conditions",
+        default=None,
+        help=(
+            "Optional comma-separated filename suffixes to score instead of the "
+            "nine default styles (for example male_s1,female_s1)."
+        ),
+    )
     args = ap.parse_args()
+    conditions = (
+        [item.strip() for item in args.conditions.split(",") if item.strip()]
+        if args.conditions
+        else STYLES
+    )
 
     in_dir = Path(args.input)
     files = sorted(in_dir.glob("*.wav"))
@@ -111,7 +125,7 @@ def main():
     per_file = []
     by_speaker = defaultdict(dict)
     for path in files:
-        speaker, style = parse_filename(path)
+        speaker, style = parse_filename(path, conditions)
         if speaker is None:
             print(f"  skipping (no style suffix): {path.name}")
             continue
@@ -201,7 +215,9 @@ def main():
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(
+            f, fieldnames=list(rows[0].keys()), lineterminator='\n'
+        )
         writer.writeheader()
         writer.writerows(rows)
 
@@ -233,7 +249,7 @@ def main():
 
     if wers_by_style:
         print("\nPer-style WER (lower = more intelligible relative to reference):")
-        for style in STYLES:
+        for style in conditions:
             vals = wers_by_style.get(style, [])
             if vals:
                 import statistics

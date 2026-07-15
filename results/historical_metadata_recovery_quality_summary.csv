@@ -1,0 +1,9 @@
+model,attribute,strength,endpoint_rows,mean_wer,median_wer,wer_ge_0_8_count,mean_mos_delta,median_positive_minus_negative_f0_hz,positive_endpoint_higher_f0,acoustic_pairs
+joe_age_gender_v1,gender,1.0,10,0.0571,0.0000,0,-0.0387,39.0485,5,5
+joe_age_gender_v1,gender,2.0,10,0.2000,0.1071,0,-0.0090,99.9816,5,5
+joe_age_gender_v1,age,1.0,10,0.1107,0.0000,0,-0.0223,11.9376,5,5
+joe_age_gender_v1,age,2.0,10,0.2179,0.0000,0,-0.0112,10.2887,3,5
+joe_age_gender_accent_v2,gender,1.0,10,0.0412,0.0000,0,-0.0578,15.3342,5,5
+joe_age_gender_accent_v2,gender,2.0,10,0.0706,0.0000,0,-0.1363,67.2102,5,5
+joe_age_gender_accent_v2,age,1.0,10,0.0294,0.0000,0,-0.0476,7.2549,5,5
+joe_age_gender_accent_v2,age,2.0,10,0.1494,0.0000,0,-0.1521,14.8546,4,5

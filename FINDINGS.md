@@ -1,6 +1,6 @@
 # Key Findings — Controllable DP Voice Conversion
 
-**Last updated:** 2026-05-29 (control-selection shortlist added)
+**Last updated:** 2026-07-15 (control and historical metadata recovery added)
 **Authors:** Stephen Oladele, Joe Near
 
 ---
@@ -3385,6 +3385,75 @@ two perceptually confirmed headline style controls: `neutral` and `sad`.
 - `results/gender_followup_available_w005_acoustic_pairs.csv`
 - `results/commonvoice_gender_followup_artifact.md`
 - `results/openvoice_vae_mixed_gender_followup_available_w005_labeled_warmup_report.json`
+
+## Finding 44: The Old Control Memory Is Real, but Recovery Is Style-Specific
+
+**Question.** Did the earlier project model really support controls such as
+anger and whisper, and did the current reference guard lose them?
+
+**Method.** We matched the legacy combined CREMA-D + Expresso evaluation corpus
+and the current reference-guard corpus by all `11` source speakers and all ten
+conditions (baseline plus nine controls). The comparison uses `99` styled rows
+per model and joins emotion2vec, Whisper WER, SQUIM MOS delta, and OpenVoice
+novelty metrics. A five-style, five-source listening dashboard covers anger,
+happy, neutral, sad, and whisper.
+
+**Result.** Joe's memory is supported, but the current system is not uniformly
+worse. Legacy anger has higher target recall (`27.3%` versus `9.1%`). Current
+whisper preserves almost the same large novelty movement (`0.643` versus
+`0.656`) while improving WER (`0.289` versus `0.448`), improving MOS delta
+(`-0.067` versus `-0.101`), and reducing high-WER collapses from `3` to `0`.
+Current happy improves recall from `0%` to `45.5%`, but mean WER rises from
+`0.115` to `0.398`, so it remains quality-sensitive. Current neutral and sad
+both reach `90.9%` recall.
+
+**Implication.** The old broader control story should not be dismissed, but it
+also should not be restored wholesale. Anger is a targeted regression,
+whisper is a credible recovered secondary candidate pending listening, and
+happy needs row-level quality gating. The matched panel, not aggregate metrics
+alone, decides whether the paper expands beyond neutral and sad.
+
+**Evidence files.**
+
+- `scripts/build_control_recovery_comparison.py`
+- `results/control_recovery_old_vs_current_summary.md`
+- `results/control_recovery_old_vs_current_by_style.csv`
+- `results/control_recovery_old_vs_current_review_bundle_2026-07-15.zip`
+
+## Finding 45: Joe's Historical Metadata Models Have Stronger Gender Direction Than the Recent Follow-Up
+
+**Question.** Did Joe's March CommonVoice metadata experiments produce a more
+usable age/gender control than the recent mixed and gender-only checkpoints?
+
+**Method.** We recovered the exact committed checkpoints from `de65862`
+(age + gender) and `8bfb1fe` (age + gender + accent). Both use eight latent
+dimensions with historical age on dim `0`, gender on dim `1`, and historical
+polarity male `-1` / female `+1`. We generated five source speakers at the
+trained endpoints (`1`) and the extrapolated old demo setting (`2`), then ran
+F0/centroid diagnostics, Whisper `base` WER, and SQUIM MOS.
+
+**Result.** The first age/gender model produces female-above-male median F0 on
+all `5/5` speakers. The median gap is `39.05 Hz` at strength `1` and `99.98 Hz`
+at strength `2`. At strength `1`, paired gender mean WER is `0.057` and mean
+MOS delta is `-0.039`. Strength `2` raises paired mean WER to `0.200`. The
+second model is also directionally consistent (`5/5`) but weaker at strength
+`1` (`15.33 Hz` median gap). Age movements are less interpretable and remain
+diagnostic.
+
+**Implication.** This does not overturn Finding 43, which applies to the recent
+gender-only checkpoint and a completed negative listening gate. It identifies
+a materially stronger historical gender candidate with good preservation at
+the trained endpoint. Perceptual review is now warranted. If listeners hear
+stable named gender endpoints, one bounded joint gender-plus-style replication
+becomes justified; otherwise the result remains an acoustic recovery only.
+
+**Evidence files.**
+
+- `scripts/run_historical_metadata_recovery.py`
+- `scripts/summarize_historical_metadata_quality.py`
+- `results/historical_metadata_recovery_summary.md`
+- `results/historical_metadata_recovery_quality_summary.md`
+- `results/historical_metadata_recovery_review_bundle_2026-07-15.zip`
 
 ## May 28 Meeting Alignment with Joe
 

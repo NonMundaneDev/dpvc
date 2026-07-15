@@ -1,6 +1,6 @@
 # Paper Evidence Checklist
 
-**Date:** 2026-07-09
+**Date:** 2026-07-15
 **Branch:** `research/commonvoice-gender-followup`
 **Purpose:** short checklist of what is ready, what should be claimed, and what
 still blocks final paper writing.
@@ -15,11 +15,17 @@ Use this as the paper-facing claim boundary:
   `mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard`.
 - The current headline style controls are `neutral` and `sad`.
 - `Sad` should be described as perceptible but subtle/source-dependent.
-- `Happy`, `enunciated`, and `whisper` are secondary or demo-only candidates,
-  not headline controls unless a later focused review promotes them.
+- `Whisper` is now the first secondary recovery candidate: matched metrics show
+  that its large control movement survived while WER and MOS improved, but the
+  July 15 listening gate is still pending.
+- `Happy` and `enunciated` remain quality-sensitive secondary candidates.
 - `Anger`, `confused`, `disgust`, and `fear` are diagnostic or limitation
   controls under current evidence.
-- Gender, age, and accent controls are diagnostic/future work, not paper claims.
+- The recent gender checkpoint remains a negative perceptual result. Joe's
+  recovered historical age/gender checkpoint is a separate provisional
+  candidate with strong acoustic direction and good preservation; it is not a
+  paper claim unless the new listening gate passes.
+- Age and accent remain diagnostic/future work.
 
 ## Ready Evidence
 
@@ -32,6 +38,8 @@ Use this as the paper-facing claim boundary:
 | External identity-shift corroboration | Ready as proxy evidence | `results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.md`; `FINDINGS.md` Finding 36 |
 | Hard-style limitation evidence | Ready | `results/generated_audio_content_repair_gate.md`; `FINDINGS.md` Findings 35, 38, 39 |
 | Metadata-control limitation evidence | Ready | `results/listening_metadata_w010_labeled_warmup.md`; `results/listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md`; `FINDINGS.md` Findings 37, 43 |
+| Matched legacy/current control recovery | Ready objectively; listening pending | `results/control_recovery_old_vs_current_summary.md`; `FINDINGS.md` Finding 44 |
+| Historical metadata recovery | Ready objectively; listening pending | `results/historical_metadata_recovery_quality_summary.md`; `FINDINGS.md` Finding 45 |
 
 ## Blocking Before Paper Submission
 
@@ -67,25 +75,26 @@ These are the highest-value missing pieces before final submission:
 
 ## Optional, Not Blocking
 
-- Focused secondary review for `happy`, `enunciated`, or `whisper`.
-- A materially stronger future gender retry, but only if it uses a stronger
-  objective or capacity comparison rather than scaling the failed-gate scalar
-  checkpoint unchanged.
+- Focused recovery review for `whisper`, then `happy` and `anger` if time allows.
+- One bounded joint gender-plus-style replication only if the recovered
+  historical gender candidate passes the five-speaker listening gate.
 - Larger CommonVoice extraction for gender only if paired with that materially
   stronger gender objective.
 
 ## Do Not Start Next
 
 - Another `disgust` repair loop without new perceptual training evidence.
-- Another scalar age/gender/accent sweep.
+- Another new scalar age/gender/accent training sweep before the recovered
+  historical gender listening gate is resolved.
 - A gender classifier or speaker-verifier pass used to promote the failed
   gender checkpoint after the listening gate failed.
 - A larger CommonVoice extraction as a substitute for a clearer objective.
 
 ## Immediate Next Task
 
-Use the checklist to drive paper cleanup:
+Resolve the two July 15 listening gates, then freeze the experiment set:
 
-1. Make the paper outline use the current claim set.
-2. Decide which blocking evidence item Joe wants first.
-3. Implement the smallest validation task that answers that blocker.
+1. Listen to historical v1 gender at strength `1`, then strength `2`.
+2. Listen to current-versus-legacy whisper, then happy/anger if time remains.
+3. Use Joe's July 16 decision to allow at most one final joint replication.
+4. Complete the highest-priority submission blocker and begin the paper draft.

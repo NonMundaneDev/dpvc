@@ -52,6 +52,30 @@ full preflight-selected plan.
 | `gender_followup_available_w005_acoustic_pairs.csv` | 4 source pairs | [`scripts/analyze_gender_followup_acoustics.py`](../scripts/analyze_gender_followup_acoustics.py) | Source-level female-vs-male F0 / centroid deltas |
 | `gender_followup_available_w005_review_bundle_2026-06-13.zip` | 28 files | manual bundle | Self-contained local/Joe review bundle |
 
+Matched control and historical metadata recovery artifacts from 2026-07-15:
+
+The matched control study compares the old combined style model and the current
+reference guard on the same `11` speakers and all nine controls. The historical
+metadata study re-runs Joe's exact March checkpoints from commits `de65862` and
+`8bfb1fe` over five speakers at trained and extrapolated control strengths.
+Both studies remain listening-gated; objective movement or quality preservation
+alone does not establish a paper-facing perceptual control.
+
+| File | Rows | Script | Backs |
+|------|------|--------|-------|
+| `control_recovery_old_vs_current.csv` | 220 condition rows | [`scripts/build_control_recovery_comparison.py`](../scripts/build_control_recovery_comparison.py) | Finding 44 matched row evidence |
+| `control_recovery_old_vs_current_by_style.csv` | 9 style rows | [`scripts/build_control_recovery_comparison.py`](../scripts/build_control_recovery_comparison.py) | Finding 44 style-level comparison |
+| `control_recovery_old_vs_current_summary.md` | summary | [`scripts/build_control_recovery_comparison.py`](../scripts/build_control_recovery_comparison.py) | Finding 44 interpretation |
+| `control_recovery_old_vs_current_review_bundle_2026-07-15.zip` | 5 styles x 5 sources | [`scripts/build_control_recovery_comparison.py`](../scripts/build_control_recovery_comparison.py) | Listening gate for anger, happy, neutral, sad, and whisper |
+| `historical_metadata_recovery_generation_manifest.jsonl` | 90 generated rows | [`scripts/run_historical_metadata_recovery.py`](../scripts/run_historical_metadata_recovery.py) | Finding 45 exact historical checkpoint rerun |
+| `historical_metadata_recovery_acoustic_summary.csv` | 8 aggregate rows | [`scripts/run_historical_metadata_recovery.py`](../scripts/run_historical_metadata_recovery.py) | Finding 45 F0/centroid diagnostic |
+| `historical_metadata_recovery_quality_summary.md` | 8 aggregate rows | [`scripts/summarize_historical_metadata_quality.py`](../scripts/summarize_historical_metadata_quality.py) | Finding 45 Whisper WER and SQUIM MOS summary |
+| `eval_wer_historical_metadata_joe_age_gender_v1.csv` | 45 generated rows | [`examples/eval_wer.py`](../examples/eval_wer.py) | Finding 45 v1 content preservation |
+| `eval_wer_historical_metadata_joe_age_gender_accent_v2.csv` | 45 generated rows | [`examples/eval_wer.py`](../examples/eval_wer.py) | Finding 45 v2 content preservation |
+| `eval_mos_historical_metadata_joe_age_gender_v1.csv` | 45 generated rows | [`examples/eval_mos.py`](../examples/eval_mos.py) | Finding 45 v1 predicted naturalness |
+| `eval_mos_historical_metadata_joe_age_gender_accent_v2.csv` | 45 generated rows | [`examples/eval_mos.py`](../examples/eval_mos.py) | Finding 45 v2 predicted naturalness |
+| `historical_metadata_recovery_review_bundle_2026-07-15.zip` | 2 models x 5 sources x 9 conditions | [`scripts/run_historical_metadata_recovery.py`](../scripts/run_historical_metadata_recovery.py) | Historical age/gender listening gate |
+
 External speaker-verifier artifacts from 2026-05-28:
 
 | File | Rows | Script | Backs |

@@ -1,0 +1,9 @@
+model,attribute,strength,pairs,positive_endpoint_higher_f0,median_positive_minus_negative_f0_hz,median_positive_minus_negative_centroid_hz
+joe_age_gender_accent_v2,age,1.0,5,5,7.2549,-340.8260
+joe_age_gender_accent_v2,age,2.0,5,4,14.8546,-736.2752
+joe_age_gender_accent_v2,gender,1.0,5,5,15.3342,-240.2316
+joe_age_gender_accent_v2,gender,2.0,5,5,67.2102,-510.2463
+joe_age_gender_v1,age,1.0,5,5,11.9376,-671.2181
+joe_age_gender_v1,age,2.0,5,3,10.2887,-1198.5185
+joe_age_gender_v1,gender,1.0,5,5,39.0485,586.3817
+joe_age_gender_v1,gender,2.0,5,5,99.9816,1205.3094

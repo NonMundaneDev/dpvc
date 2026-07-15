@@ -1,6 +1,6 @@
 # Paper Methods and Evidence Packet
 
-**Date:** 2026-07-09
+**Date:** 2026-07-15
 **Branch:** `research/commonvoice-gender-followup`
 **Purpose:** turn the current research state into a paper-facing methods and
 evidence outline before starting another training branch.
@@ -24,7 +24,11 @@ The strongest current paper story is:
 > separability probing shows gender is objectively recoverable, but the
 > gender-only available-subset listening panel did not establish perceptual
 > gender control; age/accent controls also remain too weak or non-perceptual for
-> headline claims.
+> headline claims. A July 15 recovery of Joe's exact March age/gender model
+> shows much stronger objective gender direction than the recent checkpoint,
+> but it remains provisional until its five-speaker listening gate is complete.
+> A matched old/current style study also makes `whisper` the first secondary
+> recovery candidate pending listening.
 
 This should be the paper-writing posture:
 
@@ -35,6 +39,8 @@ This should be the paper-writing posture:
 - present CommonVoice age/gender controls as implemented infrastructure and
   future work, because the first broad metadata panel and the later gender-only
   follow-up did not show perceptible metadata control;
+- treat the recovered historical gender model separately from the failed recent
+  checkpoint: its objective result justifies listening, not a positive claim;
 - separate objective metrics from perceptual listening, and do not promote a
   setting unless both support the claim.
 - use `PAPER_EVIDENCE_CHECKLIST.md` as the short list of remaining validation
@@ -59,6 +65,13 @@ The first detailed report to inspect is:
 
 ```text
 http://localhost:8000/results/listening_mixed_teacher_cvrare_hybrid_style_distill_labeled_warmup_sad_enunc_guard.html
+```
+
+For the July 15 recovery decision, open these first:
+
+```text
+http://localhost:8000/results/historical_metadata_recovery_review_bundle_2026-07-15/index.html
+http://localhost:8000/results/control_recovery_old_vs_current_review_bundle_2026-07-15/index.html
 ```
 
 ## Proposed Paper Method
@@ -116,7 +129,12 @@ in the current metadata-control latent space. The first gender-only
 available-subset checkpoint then trained and generated correctly, but local
 listening found the `female` / `male` controls subtle, inconsistent, or closer
 to generic speaker/timbre movement than reliable gender control. Metadata
-controls are therefore not paper-facing positive results.
+controls are therefore not paper-facing positive results. The exact historical
+age/gender checkpoint from commit `de65862` is now a provisional exception
+worth rechecking: it produces female-above-male F0 movement on `5/5` test
+speakers with a `39.05 Hz` median gap, mean WER `0.057`, and mean MOS delta
+`-0.039` at the trained endpoint. Those metrics establish consistent movement
+and preservation, not perceptual gender; its listening gate is still open.
 
 ### Training Data
 
@@ -210,6 +228,8 @@ The key rule for paper writing:
 | External speaker verification corroborates identity shift. | Finding 36 shows ECAPA mean styled novelty gain of `0.3594` and only `6/99` styled rows accepted as source at a proxy threshold. | `FINDINGS.md` Finding 36; `results/eval_external_speaker_verifier_cvrare_sad_enunc_guard.md` | The threshold is proxy-calibrated; final EER needs independent labeled trials. |
 | Stronger metric-selected style settings should not be promoted yet. | Finding 35 plus Joe's five-row review showed `0/5` candidate wins; Finding 38 formalizes this as a content-repair gate and promotes `0/33` hard-style strength rows. | `results/listening_mixed_teacher_cvrare_strength_grid_ab_review_priority_joe_2026-05-19.md`; `results/generated_audio_content_repair_gate.md` | The grid remains useful for diagnostics and candidate mining, but not preset selection. |
 | CommonVoice metadata controls are implemented but not perceptually validated. | The first metadata panel sounded identical/generic, Finding 37 shows gender is separable while age/accent remain weak, and Finding 43 shows the gender-only available-subset panel still did not establish perceptual gender control. | `results/listening_metadata_w010_labeled_warmup.md`; `results/commonvoice_metadata_separability_mixed_metadata_base.md`; `results/listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md`; `FINDINGS.md` Findings 37 and 43 | Treat as future work, not a current paper result; do not use objective verifier diagnostics to promote the failed-gate gender checkpoint. |
+| Older style controls are recoverable selectively. | Finding 44 shows legacy anger had stronger target recall, while current whisper preserves nearly the same large novelty movement with better WER/MOS and no high-WER collapses. | `results/control_recovery_old_vs_current_summary.md`; `FINDINGS.md` Finding 44 | Listening decides whether whisper or happy expands the claim set. |
+| Joe's historical age/gender checkpoint has stronger objective gender direction. | Finding 45 shows `5/5` female-above-male F0 direction, `39.05 Hz` median gap, `0.057` mean WER, and `-0.039` MOS delta at strength `1`. | `results/historical_metadata_recovery_quality_summary.md`; `FINDINGS.md` Finding 45 | Provisional only; F0 is not a perceptual gender classifier and listening is pending. |
 
 ## Current Positive Results
 
@@ -311,15 +331,19 @@ strong gender structure in embeddings and VAE latents, but weak age/accent
 structure. The later gender-only available-subset follow-up also failed the
 perceptual gate: `female` / `male` controls sounded subtle, inconsistent, or
 like generic speaker/timbre movement. Metadata controls therefore remain
-diagnostic infrastructure and future work.
+diagnostic infrastructure and future work. Separately, the exact historical
+age/gender model now shows strong and consistent acoustic gender direction with
+good strength-1 preservation. It is a listening candidate, not yet a claim.
 
 ### What should happen next?
 
-The immediate next moves should be paper/evidence cleanup, not broad blind
-training runs:
+The immediate next moves should resolve the bounded July recovery gates, then
+return to paper/evidence cleanup:
 
-- keep the claim set consistent: current reference guard plus `neutral` and
-  `sad`;
+- listen to the recovered historical gender model at strengths `1` and `2`;
+- listen to current-versus-legacy whisper, then happy/anger if time remains;
+- allow at most one final joint gender-plus-style replication if the historical
+  gender perceptual gate passes;
 - use `PAPER_EVIDENCE_CHECKLIST.md` to track remaining paper blockers;
 - add repeated-seed confidence intervals before freezing paper tables.
 - add independent speaker-verification/EER trials before final privacy/security
@@ -328,19 +352,17 @@ training runs:
 
 ## Next Research Queue
 
-1. Paper/evidence cleanup around the current reference guard, `neutral`, `sad`,
-   and explicit limitations.
-2. Repeated-seed confidence intervals for final candidate tables.
-3. Independent labeled speaker-verification trial CSV for final EER.
-4. Formal DP accounting and privacy-utility curves.
-5. Optional broader listening for `neutral` / `sad`, and only then optional
-   secondary review for `happy`, `enunciated`, or `whisper`.
-6. Future gender retry only with a materially stronger setup, not another
-   scalar metadata-control sweep.
+1. Resolve historical gender and matched whisper listening gates.
+2. Freeze the final control set with Joe on July 16.
+3. Run at most one final joint replication if the gender gate passes.
+4. Add repeated-seed confidence intervals for final candidate tables.
+5. Complete independent EER and formal DP accounting/privacy-utility curves.
+6. Run the final bounded listener study and draft the paper in July.
 
 ## Validation
 
-- This packet does not add a new model result.
+- This packet now includes two recovery studies, Findings 44-45, without
+  promoting their listening-pending candidates.
 - It now points to the verified control-shortlist artifact in
   `results/control_selection_recommendation.md` and the gender-gate outcome in
   `results/listening_gender_followup_available_w005_labeled_warmup_stephen_2026-07-09.md`.

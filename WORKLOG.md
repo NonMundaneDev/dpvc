@@ -1,6 +1,6 @@
 # Controllable DP Voice Conversion — Work Log
 
-**Last updated:** 2026-06-13
+**Last updated:** 2026-07-15
 **Branches:** `feat/controlvc`, `feat/openvoice-expresso`, `feat/f0-style-control`, `feat/cremad-experiments`, `feat/openvoice-pipeline-stabilization`, `feat/commonvoice-pretrain`, `feat/speaker-novelty-metric`, `research/eval-ablations`, `research/commonvoice-finetune-ablation`, `research/commonvoice-objective-ablation`, `research/commonvoice-rich-objectives`, `research/commonvoice-partial-label-pretrain`, `research/combined-data-pseudolabel-mix`, `research/mixed-data-pseudolabel-quality`, `research/nontrump-style-strength-sweep`, `integration/research-rollup`, `research/controllable-vae`, `research/commonvoice-metadata-controls`, `docs/paper-methods-and-evidence`, `research/external-speaker-verifier`, `research/metadata-separability-probe`, `research/generated-audio-content-repair`, `research/generated-audio-calibrated-objective`, `research/generated-audio-calibrated-training`, `research/control-selection-evaluation`, `research/control-shortlist`, `research/control-feedback-gender-preflight`, `research/commonvoice-gender-followup`
 **Author:** Stephen Oladele (with Claude, and Joe Near's upstream work)
 
@@ -4683,6 +4683,79 @@ Next:
 
 - `[NOW]` Ask Joe which blocker matters most before writing.
 - `[SOON]` Implement the smallest validation task that answers that blocker.
+
+---
+
+### 0.65 Matched Style-Control Recovery (2026-07-15, branch `research/commonvoice-gender-followup`)
+
+Goal:
+
+- Answer Joe's question about why older anger/whisper controls appeared to work
+  by comparing the old combined model and current reference guard on identical
+  sources and controls.
+
+Implementation:
+
+- Added `scripts/build_control_recovery_comparison.py` and focused tests.
+- Joined the two fully matched `110`-row manifests to emotion, WER, MOS, and
+  novelty metrics.
+- Built a self-contained five-style, five-source listening dashboard and
+  ratings sheet.
+
+Result:
+
+- Legacy anger recall is higher (`27.3%` versus `9.1%`).
+- Current whisper keeps nearly the same novelty movement (`0.643` versus
+  `0.656`) while improving WER (`0.289` versus `0.448`) and removing three
+  legacy high-WER collapses.
+- Current happy improves recall from `0%` to `45.5%`, but mean WER rises to
+  `0.398`, so it remains quality-sensitive.
+- Current neutral and sad both reach `90.9%` recall.
+
+Next:
+
+- `[NOW]` Listen to whisper first, then happy and anger, before changing the
+  paper control set.
+- `[SOON]` Treat anger as a targeted regression only if Joe wants it in the
+  final emotion subset.
+
+### 0.66 Historical Metadata-Control Recovery (2026-07-15, branch `research/commonvoice-gender-followup`)
+
+Goal:
+
+- Reproduce Joe's exact March age/gender models and determine whether their old
+  demo behavior was stronger than the recent failed-gate gender checkpoint.
+
+Implementation:
+
+- Recovered `examples/openvoice_vae_features.pt` from commit `de65862` and
+  `examples/openvoice_vae_features2.pt` from commit `8bfb1fe` without adding
+  duplicate checkpoints to the repository.
+- Restored the historical dim order and polarity: age dim `0`, gender dim `1`,
+  male `-1`, female `+1`.
+- Generated `90` outputs over two checkpoints, five speakers, trained endpoint
+  strength `1`, and extrapolated old-demo strength `2`.
+- Added custom-condition support to the WER/MOS evaluators and produced paired
+  acoustic, WER, and MOS summaries.
+
+Result:
+
+- The first age/gender model moves female above male F0 on `5/5` speakers, with
+  a median `39.05 Hz` gap at strength `1` and `99.98 Hz` at strength `2`.
+- Strength `1` preserves content and quality well: paired gender mean WER
+  `0.057`, mean MOS delta `-0.039`, and no rows with WER at least `0.8`.
+- Strength `2` makes the shift much larger but raises mean WER to `0.200`.
+- The second checkpoint is also directionally consistent but weaker at the
+  trained endpoint (`15.33 Hz`).
+- Age remains acoustically/perceptually ambiguous and should not be promoted.
+
+Next:
+
+- `[NOW]` Run Stephen's perceptual gate on v1 gender strength `1`, then `2`.
+- `[NOW]` Use `MEETING_BRIEF_JOE_2026-07-16.md` to decide whether one final
+  joint gender-plus-style replication is justified.
+- `[SOON]` Freeze model development after that bounded decision and complete
+  the selected paper evidence blocker in July.
 
 ---
 
